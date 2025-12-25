@@ -1,0 +1,75 @@
+project: "dokploy-templates-cloudflare"
+version: "1.0.0"
+reference: "./AGENTS.md"
+
+# Workspace settings
+workspace:
+  name: "Dokploy Templates + Cloudflare"
+  root: "./"
+  
+  # Files to exclude from AI context
+  exclude:
+    - "node_modules/**"
+    - ".git/**"
+    - ".env.local"
+    - "*.pem"
+    - "*.key"
+  
+  # Custom file watchers
+  watch:
+    - "blueprints/**/*.{yml,toml}"
+    - "tests/**/*.test.ts"
+    - "meta.json"
+
+# AI Settings
+ai:
+  model: "claude-opus-4"
+  max_context_tokens: 12000
+  response_timeout: 300  # seconds
+  async_tasks: true     # Enable background execution
+
+# Custom Commands available in Windsurf
+commands:
+  validate_all:
+    description: "Validate all templates"
+    command: "npm run validate:all"
+    
+  test_coverage:
+    description: "Run full test suite with coverage"
+    command: "npm run test:coverage"
+    
+  deploy_staging:
+    description: "Deploy to staging environment"
+    command: "npm run deploy:staging"
+    
+  generate_docs:
+    description: "Generate template documentation"
+    command: "npm run docs:generate"
+    
+  cf_test:
+    description: "Test Cloudflare integrations"
+    command: "npm run test:cloudflare"
+
+# Async workflow definitions
+workflows:
+  - name: "template-validation-pipeline"
+    trigger: "file-change"
+    pattern: "blueprints/**/*.{yml,toml}"
+    steps:
+      - id: "syntax-check"
+        command: "npm run lint:toml blueprints/*.toml"
+      - id: "structure-validate"
+        command: "npm run validate -- blueprints/*"
+      - id: "report"
+        action: "notify on completion"
+  
+  - name: "test-on-change"
+    trigger: "file-change"
+    pattern: "blueprints/**/* OR tests/**/*"
+    steps:
+      - id: "run-tests"
+        command: "npm run test:coverage"
+      - id: "coverage-check"
+        action: "check if >80%"
+      - id: "suggest-improvements"
+        action: "identify coverage gaps"

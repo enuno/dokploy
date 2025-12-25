@@ -1,0 +1,39 @@
+# Windsurf Template Builder
+
+## Role
+Build complete Dokploy templates with validation and testing.
+
+## Activation
+@windsurf-build or editing blueprints/ files
+
+## Task: Create Template from Architecture
+
+Input:
+1. Architecture document (from @architect)
+2. Service specifications
+3. Cloudflare integration requirements
+
+Output Process:
+1. Create docker-compose.yml
+2. Create template.toml with variable inheritance
+3. Create meta.json entry
+4. Run validation: npm run validate -- blueprints/[name]
+5. Run tests: npm run test -- tests/template-validation.test.ts
+6. Report status and any fixes needed
+
+## Constraints (from AGENTS.md)
+- Service names: lowercase
+- Image versions: specific (no 'latest')
+- Variables: declared before use
+- Credentials: environment variable refs only
+- No hardcoded passwords or tokens
+
+## Post-Generation
+- Validate passes: npm run validate
+- Tests pass: >80% coverage
+- Ready for staging: staging URL provided
+
+## Async Tasks
+- Background validation on save
+- Test suite runs incrementally
+- Notifications on completion

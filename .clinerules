@@ -1,0 +1,573 @@
+# Cline (Claude Dev) Configuration
+
+**Version:** 1.0.0  
+**Last Updated:** December 24, 2025  
+**File Location:** `CLINE.md` or `.clinerules`  
+**Purpose:** Cline/Claude Dev MCP server configuration for local template orchestration
+
+---
+
+## 📌 Source of Truth
+
+**Reference:** `AGENTS.md` (universal standards)
+
+Cline provides **local MCP (Model Context Protocol)** execution with sandboxed file access and command execution.
+
+---
+
+## 🎯 Cline MCP Server Configuration
+
+### Cline Setup (.clinerules)
+
+```
+# Cline Configuration for Dokploy Templates + Cloudflare
+
+[SYSTEM_PROMPT]
+You are Cline, the local MCP executor for Dokploy template development.
+Your role: Execute commands locally, modify files safely, run tests and validations.
+
+Primary Reference: AGENTS.md (follow all standards from there)
+
+Key Responsibilities:
+- Validate templates using npm run validate
+- Execute test suites with proper coverage reporting
+- Deploy to staging environment for testing
+- Manage file operations safely (never rm -rf)
+- Report on Cloudflare API integration status
+- Provide real-time feedback on validation/test results
+
+[MCP_SERVERS]
+# Local execution context
+mcp_tool_category = "local-dev"
+sandbox_mode = true
+allow_file_operations = true
+allow_command_execution = true
+max_execution_time = 300  # 5 minutes per command
+
+[PERMISSIONS]
+# Files: Read/Write
+read_access = "/**"
+write_access = "/blueprints/**, /tests/**, /scripts/**, /docs/**"
+
+# Commands: Allowed
+allowed_commands = [
+  "npm run validate -- blueprints/*",
+  "npm run test -- tests/*.test.ts",
+  "npm run type-check",
+  "npm run lint:ts",
+  "npm run format -- **",
+  "npm run deploy:staging -- --template=*",
+  "npm run build:template blueprints/*",
+  "npm run generate:meta"
+]
+
+# Commands: Forbidden
+forbidden_commands = [
+  "npm install -g",
+  "rm -rf",
+  "sudo *",
+  "git push",
+  "git commit",
+  "DELETE FROM *"
+]
+
+[CONSTRAINTS]
+# From AGENTS.md Section 7 (Permissions)
+- Always validate before making changes
+- Ask before: package installs, git operations, destructive operations
+- Never hardcode credentials
+- Reference AGENTS.md for all standards
+- Test coverage must exceed 80%
+- Staging deployment required before PR
+```
+
+### Cline Memory Context
+
+When using Cline for this project:
+
+```
+System Memory:
+- Project: Dokploy Open Source Templates with Cloudflare Integration
+- Location: https://github.com/enuno/dokploy
+- Standards: AGENTS.md (centralized source of truth)
+- Tech Stack: TypeScript, Docker Compose, TOML, Cloudflare APIs
+
+Template Structure (AGENTS.md Section 4):
+- blueprints/[template-name]/
+  - docker-compose.yml (service definition)
+  - template.toml (variable configuration)
+  - [template-name].svg (logo)
+  - cloudflare-[service].js (optional CF integration)
+
+Variable Pattern (AGENTS.md Section 4.4):
+[variables]
+main_domain = "${domain}"                    # Dokploy auto-generates
+postgres_password = "${password:32}"         # Helper: random 32-byte password
+cf_api_token = "${CF_API_TOKEN}"            # Reference env variable
+api_url = "https://${main_domain}/api"      # Chain from upstream variable
+
+Testing Standards (AGENTS.md Section 5):
+- Unit tests: Template validation, variable inheritance
+- Integration tests: Cloudflare API endpoints
+- Coverage: Must exceed 80%
+- Staging: Deploy and verify before PR submission
+```
+
+---
+
+## 🚀 Cline Task Workflows
+
+### Task 1: Validate All Templates
+
+```
+User: "Use Cline to validate all templates in the project"
+
+Cline Action:
+1. Execute: npm run validate:all
+2. Report on results:
+   - Total templates
+   - Valid templates ✅
+   - Failed templates ❌ (with error details)
+   - Required fixes
+
+3. For each failure, suggest fix:
+   - Undefined variables: "Add to [variables] section"
+   - Version tags: "Replace 'latest' with specific version"
+   - Service name mismatch: "Align service names in docker-compose and template.toml"
+
+4. Provide summary report
+```
+
+### Task 2: Run Full Test Suite with Coverage
+
+```
+User: "Cline: Run test coverage and report"
+
+Cline Action:
+1. Execute: npm run test:coverage
+2. Report on:
+   - Total test count
+   - Pass/fail breakdown
+   - Coverage percentage (must be >80%)
+   - Files below 80% coverage
+   - Specific failures with diffs
+
+3. Suggest improvements:
+   - "Add test for [scenario]"
+   - "Mock [dependency] for isolated testing"
+   - "Increase coverage for [file] from X% to >80%"
+
+4. Provide actionable recommendations
+```
+
+### Task 3: Deploy Template to Staging
+
+```
+User: "Cline: Deploy Grafana template to staging and verify"
+
+Cline Action:
+1. Validate locally: npm run validate -- blueprints/grafana
+2. Execute deployment: npm run deploy:staging --template=grafana
+3. Monitor deployment (30s timeout):
+   - Deployment status
+   - Service health checks
+   - Port accessibility
+   - Environment variable verification
+4. Test accessibility:
+   - HTTP endpoint reachable?
+   - Expected response from /health?
+   - Service logs show errors?
+5. Report:
+   - Staging URL: https://dokploy-staging.../grafana-xyz
+   - Status: ✅ Ready for PR | ❌ Issues found
+   - Logs and errors (if any)
+```
+
+### Task 4: Test Cloudflare Integration
+
+```
+User: "Cline: Test Cloudflare API integration for templates"
+
+Cline Action:
+1. Verify CF credentials: CF_API_TOKEN env variable set
+2. Execute: npm run test:cloudflare
+3. Report on:
+   - API endpoint reachability
+   - Authentication success
+   - D1 database connectivity (if applicable)
+   - R2 bucket access (if applicable)
+   - KV store operations (if applicable)
+   - Worker deployment readiness (if applicable)
+4. Identify issues:
+   - Missing credentials
+   - Invalid endpoints
+   - Permission errors
+   - Network issues
+5. Suggest fixes per AGENTS.md Section 3
+```
+
+### Task 5: Code Quality Scan
+
+```
+User: "Cline: Run all code quality checks"
+
+Cline Action:
+1. Type checking: npm run type-check
+2. Linting: npm run lint:ts
+3. Formatting check: npm run format --check
+4. Template validation: npm run validate:all
+5. Security audit: npm run security:audit
+
+Report:
+- Quality score
+- Issues found (organized by type)
+- Auto-fixable issues
+- Manual fixes required
+- Coverage summary
+
+Offer: "Should I auto-fix formatting and linting issues?"
+```
+
+---
+
+## 📋 Cline Commands for Testing
+
+### Single Template Validation
+```bash
+# Validate one template
+npm run validate -- blueprints/grafana
+
+# Cline will report:
+✅ docker-compose.yml syntax: PASS
+✅ template.toml syntax: PASS
+✅ Variable declaration: PASS
+✅ Service name consistency: PASS
+❌ Issue: Hardcoded password detected in env variable
+   Fix: Change POSTGRES_PASSWORD = "hard..." to "=${password:32}"
+```
+
+### Run Specific Test File
+```bash
+# Test template validation
+npm run test -- tests/template-validation.test.ts
+
+# Test variable inheritance
+npm run test -- tests/env-variables.test.ts
+
+# Cline reports:
+- Pass/fail for each test
+- Coverage for that file
+- Failures with diffs
+```
+
+### Type Check
+```bash
+npm run type-check
+
+# Cline reports:
+- TypeScript errors found
+- File location and line number
+- Suggested fix
+```
+
+### Generate Template Base64 (for import)
+```bash
+npm run build:template blueprints/grafana
+
+# Cline reports:
+- Base64 configuration string
+- Size in bytes
+- Ready for copy-paste import
+```
+
+---
+
+## 🔒 Cline Permission Model
+
+### What Cline Can Do (Always)
+```
+✅ Read any file
+✅ List directories
+✅ Execute npm run validate/test/lint/format
+✅ Create new files in blueprints/
+✅ Modify template files
+✅ Run type checks
+✅ Generate reports
+```
+
+### What Cline Must Ask First
+```
+⚠️ npm install [package]
+⚠️ pnpm update
+⚠️ npm run deploy:staging (due to resource cost)
+⚠️ npm run test:cloudflare (requires CF credentials)
+⚠️ git commit or git push
+⚠️ Delete files or directories
+```
+
+### What Cline Must Never Do
+```
+🚫 npm install -g
+🚫 rm -rf [directory]
+🚫 sudo commands
+🚫 Direct database mutations
+🚫 Production deployments
+🚫 Modify Cloudflare zones (non-staging)
+🚫 Execute arbitrary shell commands
+```
+
+---
+
+## 🛠️ Cline Configuration Files
+
+### .clinerules (Project Root)
+
+```yaml
+version: "1.0"
+project: "dokploy-templates-cloudflare"
+description: "AI-assisted Dokploy template generation with Cloudflare integration"
+
+# Standards
+standards_reference: "./AGENTS.md"
+
+# Available MCP Servers
+mcp_servers:
+  local:
+    type: "local-execution"
+    capabilities: ["file", "command", "report"]
+    sandboxed: true
+
+# Custom Commands for Cline
+custom_commands:
+  validate:
+    description: "Validate all templates"
+    command: "npm run validate:all"
+    
+  test:coverage:
+    description: "Run test suite with coverage"
+    command: "npm run test:coverage"
+    
+  deploy:staging:
+    description: "Deploy template to staging"
+    command: "npm run deploy:staging"
+    
+  cf:test:
+    description: "Test Cloudflare integration"
+    command: "npm run test:cloudflare"
+
+# File Access Policies
+file_access:
+  read_all: true
+  write_patterns:
+    - "/blueprints/**"
+    - "/tests/**"
+    - "/docs/**"
+  exclude_patterns:
+    - ".env.local"
+    - ".git/**"
+    - "node_modules/**"
+```
+
+### ai-agent.config.json (Agent Service Config)
+
+```json
+{
+  "agents": {
+    "cline": {
+      "type": "local-mcp-executor",
+      "enabled": true,
+      "config": {
+        "sandbox_mode": true,
+        "max_execution_time_seconds": 300,
+        "max_file_size_mb": 10,
+        "allow_file_writes": true,
+        "allow_command_execution": true,
+        "credentials": {
+          "env_vars_required": [
+            "CF_API_TOKEN",
+            "CF_ACCOUNT_ID"
+          ]
+        }
+      },
+      "permissions": {
+        "allowed_commands": [
+          "npm run validate*",
+          "npm run test*",
+          "npm run lint*",
+          "npm run format*",
+          "npm run type-check*",
+          "npm run generate:meta*",
+          "npm run build:template*"
+        ],
+        "forbidden_commands": [
+          "npm install -g*",
+          "sudo*",
+          "rm -rf*",
+          "git push*",
+          "git commit*"
+        ]
+      }
+    }
+  }
+}
+```
+
+---
+
+## 📊 Cline Reporting Standards
+
+### Report Format (Cline Output)
+
+```
+## Validation Report: grafana Template
+
+### File Summary
+- docker-compose.yml: ✅ Valid
+- template.toml: ✅ Valid
+- meta.json: ✅ Entry exists
+
+### Variable Validation
+✅ All declared variables in [variables] section
+✅ All references (${var_name}) are declared
+✅ No circular references detected
+✅ No hardcoded credentials found
+
+### Docker Compose Validation
+✅ Version 3.8+
+✅ Service names lowercase
+✅ No hardcoded ports/container_name/networks
+✅ All image versions specific (no 'latest')
+
+### Template.toml Validation
+✅ Proper TOML syntax
+✅ All sections present ([variables], [config])
+✅ serviceName matches docker-compose
+✅ Variable interpolation consistent
+
+### Cloudflare Integration
+⚠️ Optional (if template has CF support)
+✅ CF variables properly declared
+✅ CF credentials use env variable refs
+✅ Documentation exists
+
+### Summary
+✅ Template ready for deployment
+Staging URL: https://dokploy-staging.../grafana-abc123
+```
+
+---
+
+## 🎯 Integration with Multi-Agent Workflow
+
+Cline's role in broader multi-agent orchestration:
+
+```
+AGENTS.md (Source of Truth)
+    ↓
+Claude → Designs template
+    ↓
+Cursor → Implements template
+    ↓
+Cline → Validates and tests locally
+    ↓
+Copilot → Provides inline suggestions
+    ↓
+Windsurf → Orchestrates async workflows
+    ↓
+GitHub Actions → CI/CD automated testing
+```
+
+Cline is the **execution engine** that validates everything before human review.
+
+---
+
+## 💬 Example Cline Conversations
+
+### Conversation 1: Validate and Deploy
+
+```
+User: "Cline, validate all templates and report status"
+
+Cline:
+Running validation suite...
+
+📊 Results:
+- Total templates: 12
+- Valid: 10 ✅
+- Issues: 2 ❌
+
+Issues Found:
+1. grafana: Variable '${API_KEY}' undefined
+   Fix: Add to [variables] section
+   
+2. pocketbase: Image tag 'latest' detected
+   Fix: Change to specific version (e.g., 'latest-release')
+
+Would you like me to fix these issues?
+```
+
+### Conversation 2: Test Coverage Analysis
+
+```
+User: "Cline, check test coverage and identify gaps"
+
+Cline:
+Running test suite with coverage report...
+
+📈 Coverage Summary:
+- Overall: 82% ✅ (Target: >80%)
+- template-validation.test.ts: 95% ✅
+- env-variables.test.ts: 72% ❌
+- cloudflare-api.test.ts: 65% ❌
+
+Gaps to address:
+- env-variables: Missing test for nested variable refs
+  Suggest: Add test for "api_url = https://${domain}/api"
+  
+- cloudflare-api: Missing error handling tests
+  Suggest: Add tests for invalid CF tokens, timeout scenarios
+
+Would you like me to write these tests?
+```
+
+### Conversation 3: Troubleshoot CF Integration
+
+```
+User: "Cline, debug Cloudflare integration failures"
+
+Cline:
+Testing Cloudflare API connectivity...
+
+⚠️ Issues detected:
+
+1. CF_API_TOKEN not found in environment
+   Error: "ENOENT: environment variable not set"
+   Fix: Run `export CF_API_TOKEN=your-token` before testing
+   
+2. CF_ACCOUNT_ID missing from template.toml variables
+   Error: "Undefined variable CF_ACCOUNT_ID"
+   Fix: Add to [variables] section:
+   ```
+   cf_account_id = "${CF_ACCOUNT_ID}"
+   ```
+   
+3. D1 Database endpoint unreachable
+   Error: "ECONNREFUSED" on test connection
+   Fix: Verify D1 database exists and token has permissions
+
+Recommend: Set env variables, then retry with:
+npm run test:cloudflare --verbose
+```
+
+---
+
+## 🔗 Cline + Other Tools
+
+- **With Claude:** Claude designs; Cline validates locally
+- **With Cursor:** Cursor edits files; Cline runs tests in background
+- **With GitHub Actions:** Cline runs locally for fast feedback; GHA runs in CI for final validation
+- **With Windsurf:** Windsurf orchestrates async; Cline provides real-time feedback
+
+---
+
+**Remember:** Cline is your local validation engine. Use it to test templates, run validations, and provide real-time feedback before committing.

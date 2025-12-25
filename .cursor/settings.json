@@ -1,0 +1,32 @@
+{
+  "workspaceSettings": {
+    "codebaseIndexing": {
+      "enabled": true,
+      "excludePatterns": [
+        "node_modules/**",
+        ".git/**",
+        "dist/**",
+        "build/**",
+        "coverage/**",
+        ".env.local"
+      ]
+    },
+    "aiSettings": {
+      "modelPreference": "claude-opus-4",
+      "contextWindow": "auto",
+      "tokenBudget": 8000,
+      "codebaseAwareness": "maximal"
+    },
+    "editorDefaults": {
+      "formatOnSave": true,
+      "lintOnSave": true,
+      "defaultFormatter": "prettier"
+    },
+    "customCommands": {
+      "validate": "npm run validate:all",
+      "test": "npm run test:coverage",
+      "format": "npm run format",
+      "lint": "npm run lint:ts"
+    }
+  }
+}

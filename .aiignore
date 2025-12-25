@@ -1,0 +1,91 @@
+# .aiignore - Files Excluded from AI Context
+
+# DO NOT COMMIT: Secrets & Credentials
+.env.local
+.env.production.local
+.env.test.local
+secrets.json
+*.pem
+*.key
+*.p12
+*.p8
+
+# Git History (Large Context)
+.git/**
+.gitignore
+.github/workflows/logs/**
+
+# Dependencies (Noise)
+node_modules/**
+.next/**
+dist/**
+build/**
+coverage/**
+*.lock
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Cache & Temp Files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# Build Artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# API Keys & Tokens (Hardcoded)
+# If found in code, should be flagged
+cloudflare_api_key_*
+cf_zone_id_*
+
+# Database Files (Local Dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/**
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Platform-Specific
+Thumbs.db
+
+# Testing Artifacts
+.nyc_output/**
+*.lcov
+
+# IDE Config (User-Specific)
+.vscode/settings.json.local
+.idea/workspace.xml
+
+# Environment-Specific
+staging.env
+production.env
+
+# Compiled Outputs (Regenerated)
+**/*.js.map
+**/*.ts.js
+*.min.js
+*.min.css
+
+# Media Files (Large)
+*.mp4
+*.mov
+*.zip
+*.tar.gz
+
+# This File Itself (Meta)
+.aiignore
+
+# Note: AGENTS.md and all *_AGENT_*.md files ARE included (they're the standards)
