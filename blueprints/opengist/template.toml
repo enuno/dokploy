@@ -1,0 +1,36 @@
+# Opengist - Self-hosted Git-backed pastebin
+# https://github.com/thomiceli/opengist
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+og_secret_key = "${base64:64}"
+og_ssh_enabled = "true"
+og_log_level = "warn"
+
+[[config.domains]]
+serviceName = "opengist"
+port = 6157
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+OPENGIST_DOMAIN = "${domain}"
+
+# ===========================================
+# PostgreSQL Database Configuration
+# ===========================================
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Security
+# ===========================================
+OG_SECRET_KEY = "${og_secret_key}"
+
+# ===========================================
+# Optional Features
+# ===========================================
+OG_SSH_ENABLED = "${og_ssh_enabled}"
+OG_LOG_LEVEL = "${og_log_level}"

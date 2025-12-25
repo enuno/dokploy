@@ -25,9 +25,11 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [grafana-observability](blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |
 | [haven](blueprints/haven/) | High Availability Vault for Events on Nostr with S3 backend | 5 | Ready |
 | [homarr](blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
+| [kestra](blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
 | [n8n](blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |
 | [onedev](blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
+| [opengist](blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
 | [paaster](blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
 | [padloc](blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
 | [paperless-ngx](blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
