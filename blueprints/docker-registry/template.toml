@@ -1,0 +1,71 @@
+# Docker Registry - OCI Distribution Specification Implementation
+# https://github.com/distribution/distribution
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+registry_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "registry"
+port = 5000
+host = "${registry_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Registry Domain
+# ===========================================================================
+REGISTRY_DOMAIN = "${registry_domain}"
+
+# ===========================================================================
+# Storage Configuration
+# ===========================================================================
+# Default: filesystem (local storage)
+# By default, the registry uses local filesystem storage.
+# For S3/R2 storage, add ALL S3 variables via Dokploy's Environment UI.
+# See README.md for full S3/R2 setup instructions.
+#
+# Required S3 variables (add via Environment UI):
+# REGISTRY_STORAGE = "s3"
+# REGISTRY_STORAGE_S3_REGIONENDPOINT = "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+# REGISTRY_STORAGE_S3_ACCESSKEY = "your-access-key"
+# REGISTRY_STORAGE_S3_SECRETKEY = "your-secret-key"
+# REGISTRY_STORAGE_S3_BUCKET = "docker-registry"
+# REGISTRY_STORAGE_S3_REGION = "auto"
+# REGISTRY_STORAGE_S3_ROOTDIRECTORY = "/"
+# REGISTRY_STORAGE_S3_SECURE = "true"
+# REGISTRY_STORAGE_S3_V4AUTH = "true"
+# REGISTRY_STORAGE_S3_CHUNKSIZE = "5242880"
+
+# ===========================================================================
+# Registry Settings
+# ===========================================================================
+# Enable image deletion (for garbage collection)
+DELETE_ENABLED = "true"
+
+# Logging level: debug, info, warn, error
+LOG_LEVEL = "info"
+
+# Log format: text, json
+LOG_FORMATTER = "text"
+
+# ===========================================================================
+# Authentication (Optional)
+# ===========================================================================
+# For basic auth, you need to:
+# 1. Generate htpasswd file: htpasswd -Bbn user password > htpasswd
+# 2. Mount the file into the container
+# 3. Set REGISTRY_AUTH=htpasswd in docker-compose.yml
+#
+# For production, consider using:
+# - Cloudflare Zero Trust for access control
+# - Token-based authentication
+# - OAuth2 proxy

@@ -1,0 +1,104 @@
+# Haven - High Availability Vault for Events on Nostr
+# Personal relay with Private, Chat, Inbox, Outbox + Blossom media server
+# https://github.com/bitvora/haven
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+haven_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "haven"
+port = 3355
+host = "${haven_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Core Configuration (REQUIRED)
+# ===========================================================================
+HAVEN_DOMAIN = "${haven_domain}"
+
+# Your Nostr public key (npub format)
+# Generate at: https://nostrtool.com or use your existing npub
+OWNER_NPUB = "npub1your_public_key_here"
+
+# ===========================================================================
+# Database Configuration
+# ===========================================================================
+# Database engine: badger (default, faster) or lmdb (more stable)
+DB_ENGINE = "badger"
+
+# LMDB map size in bytes (10GB default, only used if DB_ENGINE=lmdb)
+# LMDB_MAPSIZE = "10737418240"
+
+# ===========================================================================
+# Relay Names & Descriptions
+# ===========================================================================
+PRIVATE_RELAY_NAME = "Haven Private"
+PRIVATE_RELAY_DESCRIPTION = "Private relay for drafts, eCash, and sensitive notes"
+
+CHAT_RELAY_NAME = "Haven Chat"
+CHAT_RELAY_DESCRIPTION = "Encrypted DM relay with web-of-trust filtering"
+
+INBOX_RELAY_NAME = "Haven Inbox"
+INBOX_RELAY_DESCRIPTION = "Inbox for notifications, mentions, and zaps"
+
+OUTBOX_RELAY_NAME = "Haven Outbox"
+OUTBOX_RELAY_DESCRIPTION = "Public notes repository with auto-broadcast"
+
+# Optional: Relay icon URL
+# RELAY_ICON = "https://example.com/relay-icon.png"
+
+# ===========================================================================
+# Web of Trust (Chat Relay)
+# ===========================================================================
+# How many hops to follow in the trust graph (1-5, default: 3)
+CHAT_RELAY_WOT_DEPTH = "3"
+
+# How often to refresh the trust cache (hours)
+CHAT_RELAY_WOT_REFRESH_INTERVAL_HOURS = "24"
+
+# Minimum followers required to bypass WoT
+CHAT_RELAY_MINIMUM_FOLLOWERS = "3"
+
+# ===========================================================================
+# Import Settings (Optional)
+# ===========================================================================
+# Start date for importing old notes
+IMPORT_START_DATE = "2020-01-01"
+
+# How often to check for new notes to import (seconds)
+IMPORT_QUERY_INTERVAL_SECONDS = "3600"
+
+# ===========================================================================
+# Inbox Settings
+# ===========================================================================
+# How often to pull notifications from other relays (seconds)
+INBOX_PULL_INTERVAL_SECONDS = "600"
+
+# ===========================================================================
+# Cloudflare R2 Backup (Optional)
+# ===========================================================================
+# Set to "aws" for R2/S3 backup, "none" to disable
+BACKUP_PROVIDER = "none"
+BACKUP_INTERVAL_HOURS = "24"
+
+# Cloudflare R2 credentials (only needed if BACKUP_PROVIDER=aws)
+# S3_ACCESS_KEY = "your-r2-access-key"
+# S3_SECRET_KEY = "your-r2-secret-key"
+# S3_REGION = "auto"
+# S3_BUCKET = "haven-backup"
+
+# ===========================================================================
+# Tor Hidden Service (Optional)
+# ===========================================================================
+# Set to "1" to enable Tor hidden service
+TOR_ENABLED = "0"

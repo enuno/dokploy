@@ -1,0 +1,44 @@
+# Forgejo Dokploy Template Configuration
+# https://forgejo.org/docs/
+
+[variables]
+domain = "${domain}"
+secret_key = "${base64:64}"
+internal_token = "${base64:48}"
+postgres_password = "${password:32}"
+
+# Domain configuration - routes traffic to Forgejo web UI
+[[config.domains]]
+serviceName = "forgejo"
+port = 3000
+host = "${domain}"
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+FORGEJO_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration
+# ===========================================
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Security Keys (Auto-generated)
+# ===========================================
+FORGEJO_SECRET_KEY = "${secret_key}"
+FORGEJO_INTERNAL_TOKEN = "${internal_token}"
+
+# ===========================================
+# Optional Settings (Defaults provided)
+# ===========================================
+# Set to "true" to disable new user registration
+FORGEJO_DISABLE_REGISTRATION = "false"
+
+# Set to "true" to require login to view repos
+FORGEJO_REQUIRE_SIGNIN = "false"
+
+# Log level: Trace, Debug, Info, Warn, Error
+FORGEJO_LOG_LEVEL = "Info"

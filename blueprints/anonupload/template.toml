@@ -1,0 +1,52 @@
+# AnonUpload Dokploy Template Configuration
+# https://github.com/supernova3339/anonupload
+
+[variables]
+domain = "${domain}"
+admin_email = "admin@${domain}"
+admin_password = "${password:16}"
+contact_email = "abuse@${domain}"
+
+# Domain configuration - routes traffic to AnonUpload web UI
+[[config.domains]]
+serviceName = "anonupload"
+port = 80
+host = "${domain}"
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+ANONUPLOAD_DOMAIN = "${domain}"
+
+# ===========================================
+# Admin Credentials
+# ===========================================
+ADMIN_EMAIL = "${admin_email}"
+ADMIN_PASSWORD = "${admin_password}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+APP_NAME = "AnonUpload - Secure File Sharing"
+APP_DESC = "Privacy-focused anonymous file sharing"
+APP_CONTACT_EMAIL = "${contact_email}"
+
+# ===========================================
+# File Upload Configuration
+# ===========================================
+# Comma-separated list of allowed file extensions
+APP_FILELIST = "jpeg,jpg,gif,png,zip,xls,xlsx,doc,docx,pdf,mp3,mp4,mpeg,wav,avi,rar,7z,txt,tar,gz"
+
+# Enable/disable file size verification
+APP_SIZE_VERIFICATION = "true"
+
+# Maximum upload size in bytes (10 GB default)
+APP_MAX_SIZE = "10000000000"
+
+# Minimum upload size in bytes (0 = no minimum)
+APP_MIN_SIZE = "0"
+
+# Seconds to wait before download link becomes active
+APP_DOWNLOAD_TIME = "30"

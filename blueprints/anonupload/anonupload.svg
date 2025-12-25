@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#1a1a2e" stroke="#4a4a6a" stroke-width="2"/>
+
+  <!-- Cloud shape -->
+  <path d="M25 58 C20 58 16 54 16 49 C16 44 20 40 25 40 C25 35 30 30 37 30 C42 30 46 33 48 37 C50 35 53 34 56 34 C64 34 70 40 70 48 C70 48 70 48 70 48 C75 48 80 52 80 58 C80 64 75 68 70 68 L30 68 C26 68 23 65 23 61 C23 59 24 58 25 58 Z" fill="#3a86ff"/>
+
+  <!-- Upload arrow -->
+  <path d="M50 42 L50 58" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M43 49 L50 42 L57 49" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Privacy mask/incognito eyes -->
+  <ellipse cx="38" cy="78" rx="6" ry="4" fill="#4a4a6a"/>
+  <ellipse cx="62" cy="78" rx="6" ry="4" fill="#4a4a6a"/>
+  <circle cx="38" cy="78" r="2" fill="#ffffff"/>
+  <circle cx="62" cy="78" r="2" fill="#ffffff"/>
+  <path d="M32 78 L68 78" stroke="#4a4a6a" stroke-width="3" stroke-linecap="round"/>
+</svg>

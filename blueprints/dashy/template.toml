@@ -1,0 +1,21 @@
+# Dashy - Personal Dashboard
+# https://github.com/Lissy93/dashy
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "dashy"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DASHY_DOMAIN = "${domain}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+NODE_ENV = "production"

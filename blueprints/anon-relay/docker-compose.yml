@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  anon-relay:
+    image: ghcr.io/anyone-protocol/ator-protocol:latest
+    restart: always
+    init: true
+    volumes:
+      # Configuration directory - persists anonrc and custom configs
+      - anon-config:/etc/anon
+      # Data directory - persists relay state, keys, and hidden service data
+      - anon-data:/var/lib/anon
+      # Runtime directory - persists control socket and runtime state
+      - anon-run:/var/run/anon
+    environment:
+      # Required: Accept Terms of Service (v0.4.9.7+)
+      ACCEPT_TOS: "1"
+      # Relay identification
+      ANON_NICKNAME: ${ANON_NICKNAME:-AnonRelay}
+      ANON_CONTACT: ${ANON_CONTACT:-anonymous@example.com}
+      # Optional: Ethereum wallet for rewards
+      ANON_WALLET: ${ANON_WALLET:-}
+      # Control port authentication (hashed password)
+      ANON_HASHED_CONTROL_PASSWORD: ${ANON_HASHED_CONTROL_PASSWORD:-}
+      # Network configuration
+      ANON_ORPORT: ${ANON_ORPORT:-9001}
+      ANON_DIRPORT: ${ANON_DIRPORT:-9030}
+      ANON_CONTROLPORT: ${ANON_CONTROLPORT:-9051}
+    networks:
+      - anon-net
+      - dokploy-network
+    # Expose ports without host binding (Dokploy requirement)
+    # ORPort: Main relay traffic
+    # DirPort: Directory mirror
+    # ControlPort: Local control (not exposed externally)
+    expose:
+      - "9001"
+      - "9030"
+      - "9051"
+    # For relay operation, ORPort and DirPort need external access
+    # These ports should be forwarded at the host/firewall level
+    ports:
+      - "${ANON_ORPORT:-9001}:9001"
+      - "${ANON_DIRPORT:-9030}:9030"
+    healthcheck:
+      # Check if anon process is running and control port responds
+      test: ["CMD-SHELL", "echo 'GETINFO status/circuit-established' | nc -q 1 localhost 9051 | grep -q '250' || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
+
+volumes:
+  anon-config:
+    driver: local
+  anon-data:
+    driver: local
+  anon-run:
+    driver: local
+
+networks:
+  anon-net:
+    driver: bridge
+  dokploy-network:
+    external: true

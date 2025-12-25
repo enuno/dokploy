@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  anonupload:
+    image: ghcr.io/supernova3339/anonfiles:1
+    restart: always
+    volumes:
+      - anonupload-files:/var/www/html/files
+    environment:
+      # Admin credentials
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set admin email}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set admin password}
+      # Application settings
+      APP_NAME: ${APP_NAME:-AnonUpload - Secure File Sharing}
+      APP_DESC: ${APP_DESC:-Privacy-focused anonymous file sharing}
+      APP_CONTACT_EMAIL: ${APP_CONTACT_EMAIL:?Set contact email}
+      APP_BASE_URL: https://${ANONUPLOAD_DOMAIN:?Set your domain}/
+      # File upload configuration
+      APP_FILELIST: ${APP_FILELIST:-jpeg,jpg,gif,png,zip,xls,xlsx,doc,docx,pdf,mp3,mp4,mpeg,wav,avi,rar,7z,txt,tar,gz}
+      APP_SIZE_VERIFICATION: ${APP_SIZE_VERIFICATION:-true}
+      APP_FILE_DESTINATION: files
+      APP_MAX_SIZE: ${APP_MAX_SIZE:-10000000000}
+      APP_MIN_SIZE: ${APP_MIN_SIZE:-0}
+      APP_DOWNLOAD_TIME: ${APP_DOWNLOAD_TIME:-30}
+    networks:
+      - anonupload-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.anonupload.rule=Host(`${ANONUPLOAD_DOMAIN}`)"
+      - "traefik.http.routers.anonupload.entrypoints=websecure"
+      - "traefik.http.routers.anonupload.tls.certresolver=letsencrypt"
+      - "traefik.http.services.anonupload.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  anonupload-files:
+    driver: local
+
+networks:
+  anonupload-net:
+    driver: bridge
+  dokploy-network:
+    external: true

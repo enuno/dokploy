@@ -1,0 +1,39 @@
+# Padloc - Open-Source Password Manager
+# https://github.com/padloc/padloc
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "padloc-pwa"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+PADLOC_DOMAIN = "${domain}"
+
+# ===========================================
+# Email Configuration (SMTP - Required)
+# Get credentials from your email provider
+# Supported providers: Gmail, SendGrid, Mailgun, AWS SES, etc.
+# ===========================================
+# Gmail example: smtp.gmail.com (requires app-specific password)
+# SendGrid: smtp.sendgrid.net
+# Mailgun: smtp.mailgun.org
+PL_EMAIL_SERVER = ""
+PL_EMAIL_PORT = "587"
+PL_EMAIL_USER = ""
+PL_EMAIL_PASSWORD = ""
+PL_EMAIL_FROM = ""
+
+# ===========================================
+# Optional Application Settings
+# ===========================================
+# Report errors to Padloc developers (default: false for privacy)
+PL_REPORT_ERRORS = "false"
+
+# Enable TOTP-based multi-factor authentication (default: true)
+PL_MFA_TOTP_ENABLED = "true"

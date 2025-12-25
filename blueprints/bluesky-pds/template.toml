@@ -1,0 +1,63 @@
+# Bluesky PDS (Personal Data Server)
+# AT Protocol implementation for self-hosted social networking
+# https://github.com/bluesky-social/pds
+
+[variables]
+domain = "${domain}"
+jwt_secret = "${base64:32}"
+admin_password = "${password:24}"
+plc_rotation_key = "${base64:64}"
+
+[[config.domains]]
+serviceName = "pds"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+PDS_DOMAIN = "${domain}"
+
+# ===========================================
+# Security Secrets (AUTO-GENERATED)
+# ===========================================
+PDS_JWT_SECRET = "${jwt_secret}"
+PDS_ADMIN_PASSWORD = "${admin_password}"
+PDS_PLC_ROTATION_KEY = "${plc_rotation_key}"
+
+# ===========================================
+# Storage Configuration (INTERNAL)
+# ===========================================
+PDS_DATA_DIRECTORY = "/pds"
+PDS_BLOBSTORE_DISK_LOCATION = "/pds/blocks"
+
+# ===========================================
+# AT Protocol Services (BLUESKY INFRASTRUCTURE)
+# These are official endpoints required for federation
+# ===========================================
+PDS_DID_PLC_URL = "https://plc.directory"
+PDS_BSKY_APP_VIEW_URL = "https://api.bsky.app"
+PDS_BSKY_APP_VIEW_DID = "did:web:api.bsky.app"
+PDS_REPORT_SERVICE_URL = "https://mod.bsky.app"
+PDS_REPORT_SERVICE_DID = "did:plc:ar7c4by46qjdydhdevvrndac"
+PDS_CRAWLERS = "https://bsky.network"
+
+# ===========================================
+# Email Configuration (OPTIONAL)
+# Required for password reset and user notifications
+# Format: smtp://username:password@smtp.example.com:587
+# Examples:
+#   - Cloudflare Email Routing
+#   - SendGrid: smtp://apikey:YOUR_API_KEY@smtp.sendgrid.net:587
+#   - Gmail: smtp://your-email@gmail.com:app-password@smtp.gmail.com:587
+# ===========================================
+PDS_EMAIL_SMTP_URL = ""
+PDS_EMAIL_FROM_ADDRESS = ""
+
+# ===========================================
+# Application Settings (OPTIONAL)
+# ===========================================
+PDS_BLOB_UPLOAD_LIMIT = "52428800"
+LOG_ENABLED = "true"
+LOG_LEVEL = "info"

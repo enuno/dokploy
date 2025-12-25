@@ -1,0 +1,74 @@
+services:
+  # =============================================================================
+  # warp-docker - Cloudflare WARP Client in Docker
+  # Official WARP client with GOST proxy for SOCKS5/HTTP access
+  # =============================================================================
+  warp:
+    image: caomingjun/warp:latest
+    restart: always
+    volumes:
+      # Persist WARP registration and configuration
+      - warp-data:/var/lib/cloudflare-warp
+    environment:
+      # =======================================================================
+      # WARP Configuration
+      # =======================================================================
+      # Delay before WARP daemon starts (increase on slow systems)
+      WARP_SLEEP: ${WARP_SLEEP:-2}
+
+      # WARP+ license key (optional - for premium features)
+      WARP_LICENSE_KEY: ${WARP_LICENSE_KEY:-}
+
+      # =======================================================================
+      # Proxy Configuration
+      # =======================================================================
+      # GOST proxy arguments (default: SOCKS5/HTTP on port 1080)
+      GOST_ARGS: ${GOST_ARGS:--L :1080}
+
+      # =======================================================================
+      # Advanced Options
+      # =======================================================================
+      # Enable host connectivity checks and auto-remediation
+      BETA_FIX_HOST_CONNECTIVITY: ${BETA_FIX_HOST_CONNECTIVITY:-true}
+
+      # Register consumer account even with Zero Trust MDM config
+      REGISTER_WHEN_MDM_EXISTS: ${REGISTER_WHEN_MDM_EXISTS:-false}
+
+    # Required for WARP TUN device
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    networks:
+      - warp-docker-net
+      - dokploy-network
+    # Expose proxy port for other containers and host
+    ports:
+      - "${WARP_PORT:-1080}:1080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -x socks5://127.0.0.1:1080 -s https://cloudflare.com/cdn-cgi/trace | grep -q 'warp=on\\|warp=plus'"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  warp-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  warp-docker-net:
+    driver: bridge
+  dokploy-network:
+    external: true

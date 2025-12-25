@@ -1,0 +1,57 @@
+# warp-docker - Cloudflare WARP Client in Docker
+# Official WARP client with GOST proxy for SOCKS5/HTTP access
+# https://github.com/cmj2002/warp-docker
+
+# =============================================================================
+# Variables
+# =============================================================================
+# Note: No domain needed - warp-docker is a proxy server, not a web application
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# WARP Configuration
+# ===========================================================================
+# Delay (seconds) before WARP daemon starts
+# Increase if container starts before network is ready
+WARP_SLEEP = "2"
+
+# WARP+ license key (optional)
+# Get from: https://1.1.1.1/ app or WARP+ subscription
+# Note: Delete warp-data volume after changing this value
+# WARP_LICENSE_KEY = "your-warp-plus-key"
+
+# ===========================================================================
+# Proxy Configuration
+# ===========================================================================
+# GOST proxy arguments
+# Default: -L :1080 (SOCKS5/HTTP on port 1080)
+# Example for multiple ports: -L :1080 -L :8080
+GOST_ARGS = "-L :1080"
+
+# Host port mapping
+WARP_PORT = "1080"
+
+# ===========================================================================
+# Advanced Options
+# ===========================================================================
+# Enable automatic host connectivity checks and remediation
+BETA_FIX_HOST_CONNECTIVITY = "true"
+
+# Register consumer account even when MDM config exists
+# Useful when adjusting Zero Trust settings
+REGISTER_WHEN_MDM_EXISTS = "false"
+
+# ===========================================================================
+# Using warp-docker from Other Containers
+# ===========================================================================
+# Other containers on dokploy-network can use warp-docker as their proxy:
+#
+# Environment variables for target container:
+#   HTTP_PROXY=http://warp:1080
+#   HTTPS_PROXY=http://warp:1080
+#   ALL_PROXY=socks5://warp:1080
+#
+# Or configure per-application proxy settings to point to warp:1080

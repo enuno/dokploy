@@ -1,0 +1,96 @@
+# Paperless-ngx Dokploy Template Configuration
+# https://docs.paperless-ngx.com/
+
+[variables]
+domain = "${domain}"
+secret_key = "${base64:64}"
+admin_user = "admin"
+admin_password = "${password:16}"
+postgres_password = "${password:32}"
+
+# Domain configuration - routes traffic to paperless web UI
+[[config.domains]]
+serviceName = "paperless"
+port = 8000
+host = "${domain}"
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Domain Configuration (for Traefik routing)
+# ===========================================
+PAPERLESS_DOMAIN = "${domain}"
+
+# ===========================================
+# Paperless-ngx Core Settings
+# ===========================================
+PAPERLESS_URL = "https://${domain}"
+PAPERLESS_SECRET_KEY = "${secret_key}"
+
+# Admin user created on first run
+PAPERLESS_ADMIN_USER = "${admin_user}"
+PAPERLESS_ADMIN_PASSWORD = "${admin_password}"
+
+# ===========================================
+# Database Configuration (PostgreSQL)
+# ===========================================
+PAPERLESS_DBENGINE = "postgresql"
+PAPERLESS_DBHOST = "postgres"
+PAPERLESS_DBPORT = "5432"
+PAPERLESS_DBNAME = "paperless"
+PAPERLESS_DBUSER = "paperless"
+PAPERLESS_DBPASS = "${postgres_password}"
+
+# PostgreSQL container password (must match PAPERLESS_DBPASS)
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Redis Configuration
+# ===========================================
+PAPERLESS_REDIS = "redis://redis:6379"
+
+# ===========================================
+# Tika & Gotenberg (Document Processing)
+# ===========================================
+PAPERLESS_TIKA_ENABLED = "1"
+PAPERLESS_TIKA_ENDPOINT = "http://tika:9998"
+PAPERLESS_TIKA_GOTENBERG_ENDPOINT = "http://gotenberg:3000"
+
+# ===========================================
+# OCR Settings
+# ===========================================
+PAPERLESS_OCR_LANGUAGE = "eng"
+PAPERLESS_OCR_MODE = "skip"
+PAPERLESS_OCR_CLEAN = "clean"
+PAPERLESS_OCR_DESKEW = "true"
+PAPERLESS_OCR_ROTATE_PAGES = "true"
+PAPERLESS_OCR_OUTPUT_TYPE = "pdfa"
+
+# ===========================================
+# Performance Settings (Home Lab Optimized)
+# ===========================================
+PAPERLESS_TASK_WORKERS = "2"
+PAPERLESS_THREADS_PER_WORKER = "1"
+PAPERLESS_WEBSERVER_WORKERS = "2"
+PAPERLESS_CONSUMER_POLLING = "30"
+PAPERLESS_CONSUMER_POLLING_DELAY = "5"
+
+# ===========================================
+# Localization
+# ===========================================
+PAPERLESS_TIME_ZONE = "America/Chicago"
+PAPERLESS_DATE_ORDER = "MDY"
+
+# ===========================================
+# Paths (Container Internal)
+# ===========================================
+PAPERLESS_DATA_DIR = "/usr/src/paperless/data"
+PAPERLESS_MEDIA_ROOT = "/usr/src/paperless/media"
+PAPERLESS_CONSUMPTION_DIR = "/usr/src/paperless/consume"
+PAPERLESS_EXPORT_DIR = "/usr/src/paperless/export"
+
+# ===========================================
+# Security
+# ===========================================
+PAPERLESS_COOKIE_PREFIX = "paperless_"
+PAPERLESS_ENABLE_HTTP_REMOTE_USER = "false"

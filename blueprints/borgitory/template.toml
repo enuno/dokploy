@@ -1,0 +1,33 @@
+# Borgitory - Web UI for managing BorgBackup repositories
+# Self-hosted backup management with scheduling, monitoring, and cloud sync
+# https://github.com/mlapaglia/borgitory
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "borgitory"
+port = 8000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+BORGITORY_DOMAIN = "${domain}"
+
+# ===========================================
+# Application Settings (INTERNAL)
+# ===========================================
+BORGITORY_HOST = "0.0.0.0"
+BORGITORY_PORT = "8000"
+BORGITORY_DATA_DIR = "/app/data"
+
+# ===========================================
+# Optional Settings
+# ===========================================
+# Enable debug mode for troubleshooting
+BORGITORY_DEBUG = "false"
+
+# Timezone for backup scheduling (e.g., America/New_York, Europe/London)
+TZ = "UTC"

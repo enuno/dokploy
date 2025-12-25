@@ -1,0 +1,59 @@
+# Nostpy Relay - Python-based Nostr Relay
+# High-performance relay with PostgreSQL and Redis
+# https://github.com/UTXOnly/nostpy-relay
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+nostpy_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "websocket-handler"
+port = 8008
+host = "${nostpy_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Core Configuration (REQUIRED)
+# ===========================================================================
+NOSTPY_DOMAIN = "${nostpy_domain}"
+
+# PostgreSQL password - CHANGE THIS!
+POSTGRES_PASSWORD = "${randomPassword()}"
+
+# ===========================================================================
+# Relay Identity
+# ===========================================================================
+# Your Nostr public key in HEX format (for admin privileges)
+# ADMIN_PUBKEY = "your_hex_pubkey_here"
+
+# Contact email (used in NIP-11 relay info)
+# CONTACT = "admin@example.com"
+
+# Relay icon URL
+# RELAY_ICON = "https://example.com/icon.png"
+
+# ===========================================================================
+# Web of Trust (Optional)
+# ===========================================================================
+# Enable Web of Trust filtering
+WOT_ENABLED = "True"
+
+# ===========================================================================
+# Database Configuration
+# ===========================================================================
+POSTGRES_USER = "nostr"
+POSTGRES_DB = "nostr"
+
+# ===========================================================================
+# Version
+# ===========================================================================
+VERSION = "v1.2.0"

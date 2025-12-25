@@ -1,0 +1,81 @@
+services:
+  # =============================================================================
+  # Warpod - Cloudflare WARP Proxy Server
+  # Routes container traffic through Cloudflare WARP network
+  # =============================================================================
+  warpod:
+    image: ghcr.io/deepwn/warpod:latest
+    restart: always
+    hostname: warpod
+    environment:
+      # =======================================================================
+      # Mode Selection (choose one)
+      # =======================================================================
+      # FREE MODE: Leave all credentials empty for free WARP account
+      # MDM MODE: Set WARP_ORG_ID + WARP_AUTH_CLIENT_ID + WARP_AUTH_CLIENT_SECRET
+      # WARP+ MODE: Set WARP_LICENSE for premium features
+
+      # =======================================================================
+      # Zero Trust / MDM Configuration (Optional)
+      # =======================================================================
+      # Organization ID from Cloudflare Zero Trust dashboard
+      WARP_ORG_ID: ${WARP_ORG_ID:-}
+
+      # Service Token credentials (from Zero Trust > Access > Service Auth)
+      WARP_AUTH_CLIENT_ID: ${WARP_AUTH_CLIENT_ID:-}
+      WARP_AUTH_CLIENT_SECRET: ${WARP_AUTH_CLIENT_SECRET:-}
+
+      # =======================================================================
+      # WARP+ License (Optional)
+      # =======================================================================
+      WARP_LICENSE: ${WARP_LICENSE:-}
+
+      # =======================================================================
+      # Proxy Ports
+      # =======================================================================
+      # SOCKS5 proxy port
+      SOCK_PORT: ${SOCK_PORT:-1080}
+
+      # HTTP proxy port
+      HTTP_PORT: ${HTTP_PORT:-1081}
+
+      # HTTPS proxy port
+      HTTPS_PORT: ${HTTPS_PORT:-1082}
+
+      # Internal WARP service port
+      WARP_LISTEN_PORT: ${WARP_LISTEN_PORT:-41080}
+
+      # =======================================================================
+      # Proxy Authentication (Optional)
+      # =======================================================================
+      # Format: username:password
+      PROXY_AUTH: ${PROXY_AUTH:-}
+
+    networks:
+      - warpod-net
+      - dokploy-network
+    # Expose proxy ports for other containers to use
+    # Note: No Traefik labels - this is a proxy server, not a web app
+    ports:
+      - "${SOCKS_EXPOSE_PORT:-1080}:1080"
+      - "${HTTP_EXPOSE_PORT:-1081}:1081"
+      - "${HTTPS_EXPOSE_PORT:-1082}:1082"
+    healthcheck:
+      test: ["CMD", "curl", "-x", "socks5://127.0.0.1:1080", "-s", "-o", "/dev/null", "-w", "%{http_code}", "https://cloudflare.com/cdn-cgi/trace"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  warpod-net:
+    driver: bridge
+  dokploy-network:
+    external: true

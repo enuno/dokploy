@@ -1,0 +1,49 @@
+# Paaster Dokploy Template Configuration
+# https://github.com/WardPearce/paaster
+# Secure end-to-end encrypted pastebin with Cloudflare R2 storage
+
+[variables]
+domain = "${domain}"
+cookie_secret = "${base64:64}"
+
+# Domain configuration - routes traffic to Paaster web UI
+[[config.domains]]
+serviceName = "paaster"
+port = 3000
+host = "${domain}"
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+PAASTER_DOMAIN = "${domain}"
+
+# ===========================================
+# Session Security
+# ===========================================
+# Secure random value for cookie-based sessions
+COOKIE_SECRET = "${cookie_secret}"
+
+# ===========================================
+# MongoDB Configuration
+# ===========================================
+MONGO_DB = "paasterv3"
+
+# ===========================================
+# Cloudflare R2 Storage Configuration
+# ===========================================
+# Get these from Cloudflare Dashboard > R2 > Manage R2 API Tokens
+#
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_ENDPOINT = ""
+
+# R2 API Token credentials
+S3_ACCESS_KEY_ID = ""
+S3_SECRET_ACCESS_KEY = ""
+
+# Bucket name (must exist in R2)
+S3_BUCKET = ""
+
+# R2 uses 'auto' for region
+S3_REGION = "auto"

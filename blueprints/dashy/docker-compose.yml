@@ -1,0 +1,65 @@
+services:
+  # =============================================================================
+  # Dashy - Personal Dashboard
+  # =============================================================================
+  dashy:
+    image: lissy93/dashy:3.1.1
+    restart: always
+    volumes:
+      # Configuration storage (YAML config file)
+      - dashy-config:/app/user-data
+    environment:
+      # =======================================================================
+      # Application Configuration
+      # =======================================================================
+      # Node environment (production mode)
+      NODE_ENV: production
+
+      # =======================================================================
+      # Domain Configuration
+      # =======================================================================
+      # Domain for the dashboard
+      DOMAIN: ${DASHY_DOMAIN:?Set your domain (e.g., dashboard.example.com)}
+    networks:
+      - dashy-net
+      - dokploy-network
+    labels:
+      # Traefik routing labels
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashy.rule=Host(`${DASHY_DOMAIN}`)"
+      - "traefik.http.routers.dashy.entrypoints=websecure"
+      - "traefik.http.routers.dashy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashy.middlewares=dashy-security@docker"
+
+      # Security headers middleware (defense-in-depth)
+      - "traefik.http.middlewares.dashy-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.dashy-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.dashy-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.dashy-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.dashy-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Service configuration
+      - "traefik.http.services.dashy.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "node", "/app/services/healthcheck"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  dashy-config:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  dashy-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -1,0 +1,155 @@
+services:
+  # =============================================================================
+  # Haven - High Availability Vault for Events on Nostr
+  # Personal relay with Private, Chat, Inbox, Outbox + Blossom media server
+  # =============================================================================
+  haven:
+    image: ghcr.io/bitvora/haven:v1.1.0
+    restart: always
+    init: true
+    volumes:
+      - haven-data:/app/db
+      - haven-blossom:/app/blossom
+    environment:
+      # =======================================================================
+      # Core Configuration
+      # =======================================================================
+      OWNER_NPUB: ${OWNER_NPUB:?Set owner npub (e.g., npub1...)}
+      RELAY_URL: ${HAVEN_DOMAIN:?Set Haven domain}
+      RELAY_PORT: "3355"
+      RELAY_BIND_ADDRESS: "0.0.0.0"
+
+      # Database (badger or lmdb)
+      DB_ENGINE: ${DB_ENGINE:-badger}
+      LMDB_MAPSIZE: ${LMDB_MAPSIZE:-10737418240}
+
+      # Blossom Media Server
+      BLOSSOM_PATH: /app/blossom
+
+      # =======================================================================
+      # Private Relay (Owner-only, auth-protected)
+      # =======================================================================
+      PRIVATE_RELAY_NAME: ${PRIVATE_RELAY_NAME:-Haven Private}
+      PRIVATE_RELAY_NPUB: ${OWNER_NPUB}
+      PRIVATE_RELAY_DESCRIPTION: ${PRIVATE_RELAY_DESCRIPTION:-Private relay for drafts and sensitive notes}
+      PRIVATE_RELAY_ICON: ${RELAY_ICON:-}
+      PRIVATE_RELAY_ALLOW_EMPTY_FILTERS: "false"
+      PRIVATE_RELAY_ALLOW_COMPLEX_FILTERS: "true"
+      PRIVATE_RELAY_EVENT_IP_LIMITER_TOKENS_PER_INTERVAL: "50"
+      PRIVATE_RELAY_EVENT_IP_LIMITER_INTERVAL: "1"
+      PRIVATE_RELAY_EVENT_IP_LIMITER_MAX_TOKENS: "100"
+      PRIVATE_RELAY_CONNECTION_RATE_LIMITER_TOKENS_PER_INTERVAL: "3"
+      PRIVATE_RELAY_CONNECTION_RATE_LIMITER_INTERVAL: "5"
+      PRIVATE_RELAY_CONNECTION_RATE_LIMITER_MAX_TOKENS: "9"
+
+      # =======================================================================
+      # Chat Relay (DMs with web-of-trust filtering)
+      # =======================================================================
+      CHAT_RELAY_NAME: ${CHAT_RELAY_NAME:-Haven Chat}
+      CHAT_RELAY_NPUB: ${OWNER_NPUB}
+      CHAT_RELAY_DESCRIPTION: ${CHAT_RELAY_DESCRIPTION:-Chat relay for encrypted DMs}
+      CHAT_RELAY_ICON: ${RELAY_ICON:-}
+      CHAT_RELAY_WOT_DEPTH: ${CHAT_RELAY_WOT_DEPTH:-3}
+      CHAT_RELAY_WOT_REFRESH_INTERVAL_HOURS: ${CHAT_RELAY_WOT_REFRESH_INTERVAL_HOURS:-24}
+      CHAT_RELAY_MINIMUM_FOLLOWERS: ${CHAT_RELAY_MINIMUM_FOLLOWERS:-3}
+      CHAT_RELAY_ALLOW_EMPTY_FILTERS: "false"
+      CHAT_RELAY_ALLOW_COMPLEX_FILTERS: "false"
+      CHAT_RELAY_EVENT_IP_LIMITER_TOKENS_PER_INTERVAL: "50"
+      CHAT_RELAY_EVENT_IP_LIMITER_INTERVAL: "1"
+      CHAT_RELAY_EVENT_IP_LIMITER_MAX_TOKENS: "100"
+      CHAT_RELAY_CONNECTION_RATE_LIMITER_TOKENS_PER_INTERVAL: "3"
+      CHAT_RELAY_CONNECTION_RATE_LIMITER_INTERVAL: "3"
+      CHAT_RELAY_CONNECTION_RATE_LIMITER_MAX_TOKENS: "9"
+
+      # =======================================================================
+      # Inbox Relay (Notifications, mentions, zaps)
+      # =======================================================================
+      INBOX_RELAY_NAME: ${INBOX_RELAY_NAME:-Haven Inbox}
+      INBOX_RELAY_NPUB: ${OWNER_NPUB}
+      INBOX_RELAY_DESCRIPTION: ${INBOX_RELAY_DESCRIPTION:-Inbox for notifications and mentions}
+      INBOX_RELAY_ICON: ${RELAY_ICON:-}
+      INBOX_PULL_INTERVAL_SECONDS: ${INBOX_PULL_INTERVAL_SECONDS:-600}
+      INBOX_RELAY_ALLOW_EMPTY_FILTERS: "false"
+      INBOX_RELAY_ALLOW_COMPLEX_FILTERS: "false"
+      INBOX_RELAY_EVENT_IP_LIMITER_TOKENS_PER_INTERVAL: "10"
+      INBOX_RELAY_EVENT_IP_LIMITER_INTERVAL: "1"
+      INBOX_RELAY_EVENT_IP_LIMITER_MAX_TOKENS: "20"
+      INBOX_RELAY_CONNECTION_RATE_LIMITER_TOKENS_PER_INTERVAL: "3"
+      INBOX_RELAY_CONNECTION_RATE_LIMITER_INTERVAL: "1"
+      INBOX_RELAY_CONNECTION_RATE_LIMITER_MAX_TOKENS: "9"
+
+      # =======================================================================
+      # Outbox Relay (Public notes, auto-broadcast)
+      # =======================================================================
+      OUTBOX_RELAY_NAME: ${OUTBOX_RELAY_NAME:-Haven Outbox}
+      OUTBOX_RELAY_NPUB: ${OWNER_NPUB}
+      OUTBOX_RELAY_DESCRIPTION: ${OUTBOX_RELAY_DESCRIPTION:-Public notes repository}
+      OUTBOX_RELAY_ICON: ${RELAY_ICON:-}
+      OUTBOX_RELAY_ALLOW_EMPTY_FILTERS: "false"
+      OUTBOX_RELAY_ALLOW_COMPLEX_FILTERS: "false"
+      OUTBOX_RELAY_EVENT_IP_LIMITER_TOKENS_PER_INTERVAL: "10"
+      OUTBOX_RELAY_EVENT_IP_LIMITER_INTERVAL: "60"
+      OUTBOX_RELAY_EVENT_IP_LIMITER_MAX_TOKENS: "100"
+      OUTBOX_RELAY_CONNECTION_RATE_LIMITER_TOKENS_PER_INTERVAL: "3"
+      OUTBOX_RELAY_CONNECTION_RATE_LIMITER_INTERVAL: "1"
+      OUTBOX_RELAY_CONNECTION_RATE_LIMITER_MAX_TOKENS: "9"
+
+      # =======================================================================
+      # Import Settings (optional - import old notes)
+      # =======================================================================
+      IMPORT_START_DATE: ${IMPORT_START_DATE:-2020-01-01}
+      IMPORT_QUERY_INTERVAL_SECONDS: ${IMPORT_QUERY_INTERVAL_SECONDS:-3600}
+
+      # =======================================================================
+      # Backup Settings (Cloudflare R2 / S3)
+      # =======================================================================
+      BACKUP_PROVIDER: ${BACKUP_PROVIDER:-none}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+
+      # AWS/R2 Backup (set BACKUP_PROVIDER=aws for R2)
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-}
+      AWS_REGION: ${S3_REGION:-auto}
+      AWS_BUCKET_NAME: ${S3_BUCKET:-haven-backup}
+
+      # Tor (optional)
+      TOR_ENABLED: ${TOR_ENABLED:-0}
+
+    networks:
+      - haven-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.haven.rule=Host(`${HAVEN_DOMAIN}`)"
+      - "traefik.http.routers.haven.entrypoints=websecure"
+      - "traefik.http.routers.haven.tls.certresolver=letsencrypt"
+      - "traefik.http.services.haven.loadbalancer.server.port=3355"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3355"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  haven-data:
+    driver: local
+  haven-blossom:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  haven-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -1,0 +1,82 @@
+# WoT Relay - Web of Trust Nostr Relay
+# Archives every note from your trust network
+# https://github.com/bitvora/wot-relay
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+wot_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "wot-relay"
+port = 3334
+host = "${wot_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Core Configuration (REQUIRED)
+# ===========================================================================
+WOT_DOMAIN = "${wot_domain}"
+
+# Your Nostr public key in HEX format (NOT npub!)
+# Convert npub to hex at: https://nostrtool.com
+RELAY_PUBKEY = "your_hex_pubkey_here"
+
+# ===========================================================================
+# Relay Identity
+# ===========================================================================
+# Your relay's display name
+RELAY_NAME = "WoT Relay"
+
+# Describe your relay
+RELAY_DESCRIPTION = "Web of Trust Nostr Relay"
+
+# URL to your relay's icon
+# RELAY_ICON = "https://example.com/icon.png"
+
+# Contact information
+# RELAY_CONTACT = "admin@example.com"
+
+# ===========================================================================
+# Web of Trust Settings
+# ===========================================================================
+# How often to refresh the trust network (in hours)
+# Lower = more current, but more resource usage
+REFRESH_INTERVAL_HOURS = "24"
+
+# Minimum followers required to be included in WoT
+# Higher = more exclusive, fewer spam accounts
+# 3 is recommended to filter out bot accounts
+MINIMUM_FOLLOWERS = "3"
+
+# Comma-separated list of hex pubkeys to exclude from WoT
+# Use this to exclude high-bot-following accounts
+# Example: "hex1,hex2,hex3"
+IGNORE_FOLLOWS_LIST = ""
+
+# ===========================================================================
+# Archival Settings
+# ===========================================================================
+# WARNING: These settings significantly increase storage requirements!
+
+# Archive ALL notes from WoT members (not just recent)
+# Set to TRUE only if you have plenty of storage
+ARCHIVAL_SYNC = "FALSE"
+
+# Archive ALL reactions from WoT members
+# Set to TRUE only if you want complete reaction history
+ARCHIVE_REACTIONS = "FALSE"
+
+# ===========================================================================
+# Build Configuration
+# ===========================================================================
+# Version to build from GitHub
+WOT_VERSION = "v0.1.18"

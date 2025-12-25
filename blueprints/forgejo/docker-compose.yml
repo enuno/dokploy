@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:9
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - forgejo-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # User mapping
+      USER_UID: "1000"
+      USER_GID: "1000"
+      # Database configuration
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__database__USER: forgejo
+      FORGEJO__database__PASSWD: ${POSTGRES_PASSWORD:?Set database password}
+      # Server configuration
+      FORGEJO__server__DOMAIN: ${FORGEJO_DOMAIN:?Set your domain}
+      FORGEJO__server__ROOT_URL: https://${FORGEJO_DOMAIN:?Set your domain}/
+      FORGEJO__server__SSH_DOMAIN: ${FORGEJO_DOMAIN:?Set your domain}
+      FORGEJO__server__SSH_PORT: "22"
+      FORGEJO__server__SSH_LISTEN_PORT: "22"
+      FORGEJO__server__OFFLINE_MODE: "false"
+      FORGEJO__server__LFS_START_SERVER: "true"
+      # Security
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY: ${FORGEJO_SECRET_KEY:?Set a random secret key}
+      FORGEJO__security__INTERNAL_TOKEN: ${FORGEJO_INTERNAL_TOKEN:?Set internal token}
+      # Service settings
+      FORGEJO__service__DISABLE_REGISTRATION: ${FORGEJO_DISABLE_REGISTRATION:-false}
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: ${FORGEJO_REQUIRE_SIGNIN:-false}
+      FORGEJO__service__ENABLE_NOTIFY_MAIL: "false"
+      # Repository settings
+      FORGEJO__repository__DEFAULT_BRANCH: main
+      FORGEJO__repository__PREFERRED_LICENSES: MIT,Apache-2.0,GPL-3.0
+      # Session/Cache
+      FORGEJO__session__PROVIDER: file
+      FORGEJO__cache__ADAPTER: memory
+      # Logging
+      FORGEJO__log__MODE: console
+      FORGEJO__log__LEVEL: ${FORGEJO_LOG_LEVEL:-Info}
+    networks:
+      - forgejo-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forgejo.rule=Host(`${FORGEJO_DOMAIN}`)"
+      - "traefik.http.routers.forgejo.entrypoints=websecure"
+      - "traefik.http.routers.forgejo.tls.certresolver=letsencrypt"
+      - "traefik.http.services.forgejo.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: forgejo
+      POSTGRES_USER: forgejo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - forgejo-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo -d forgejo"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  forgejo-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  forgejo-net:
+    driver: bridge
+  dokploy-network:
+    external: true

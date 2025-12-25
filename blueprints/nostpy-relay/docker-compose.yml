@@ -1,0 +1,190 @@
+services:
+  # =============================================================================
+  # Nostpy Relay - Python-based Nostr Relay
+  # High-performance relay with PostgreSQL and Redis
+  # =============================================================================
+
+  # ===========================================================================
+  # WebSocket Handler - Client-facing connection handler
+  # ===========================================================================
+  websocket-handler:
+    image: ghcr.io/utxonly/nostpy-relay/websocket-handler:${VERSION:-v1.2.0}
+    build:
+      context: https://github.com/UTXOnly/nostpy-relay.git#main
+      dockerfile: docker/Dockerfile.websocket_handler
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      event-handler:
+        condition: service_started
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      WS_PORT: "8008"
+      EVENT_HANDLER_SVC: event-handler
+      EVENT_HANDLER_PORT: "8009"
+      DOMAIN: ${NOSTPY_DOMAIN:?Set Nostpy Relay domain}
+      ADMIN_PUBKEY: ${ADMIN_PUBKEY:-}
+    networks:
+      - nostpy-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nostpy.rule=Host(`${NOSTPY_DOMAIN}`)"
+      - "traefik.http.routers.nostpy.entrypoints=websecure"
+      - "traefik.http.routers.nostpy.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nostpy.loadbalancer.server.port=8008"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost',8008)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Event Handler - Business logic and database operations
+  # ===========================================================================
+  event-handler:
+    image: ghcr.io/utxonly/nostpy-relay/event-handler:${VERSION:-v1.2.0}
+    build:
+      context: https://github.com/UTXOnly/nostpy-relay.git#main
+      dockerfile: docker/Dockerfile.event_handler
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # PostgreSQL Write Connection
+      PGDATABASE_WRITE: ${POSTGRES_DB:-nostr}
+      PGUSER_WRITE: ${POSTGRES_USER:-nostr}
+      PGPASSWORD_WRITE: ${POSTGRES_PASSWORD:?Set PostgreSQL password}
+      PGHOST_WRITE: postgres
+      PGPORT_WRITE: "5432"
+
+      # PostgreSQL Read Connection (same as write for single-node)
+      PGDATABASE_READ: ${POSTGRES_DB:-nostr}
+      PGUSER_READ: ${POSTGRES_USER:-nostr}
+      PGPASSWORD_READ: ${POSTGRES_PASSWORD}
+      PGHOST_READ: postgres
+      PGPORT_READ: "5432"
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+
+      # Service
+      EVENT_HANDLER_PORT: "8009"
+
+      # Web of Trust
+      WOT_ENABLED: ${WOT_ENABLED:-True}
+
+      # Relay Info
+      DOMAIN: ${NOSTPY_DOMAIN}
+      ADMIN_PUBKEY: ${ADMIN_PUBKEY:-}
+      CONTACT: ${CONTACT:-}
+      ICON: ${RELAY_ICON:-}
+    networks:
+      - nostpy-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost',8009)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # PostgreSQL - Primary data storage
+  # ===========================================================================
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nostr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set PostgreSQL password}
+      POSTGRES_DB: ${POSTGRES_DB:-nostr}
+    networks:
+      - nostpy-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nostr} -d ${POSTGRES_DB:-nostr}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Redis - Pub/Sub and caching
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - nostpy-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  nostpy-net:
+    driver: bridge
+  dokploy-network:
+    external: true

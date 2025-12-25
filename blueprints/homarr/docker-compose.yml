@@ -1,0 +1,70 @@
+services:
+  # =============================================================================
+  # Homarr - Homelab Dashboard
+  # =============================================================================
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:1.47.0
+    restart: always
+    volumes:
+      # Configuration storage (apps, settings, widgets)
+      - homarr-data:/appdata
+
+      # Optional: Docker integration for container management features
+      # Uncomment to enable container stats, controls, and automation
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # =======================================================================
+      # Security Configuration
+      # =======================================================================
+      # Encryption key for sensitive data storage (cookies, sessions)
+      # Generate with: openssl rand -hex 32
+      SECRET_ENCRYPTION_KEY: ${SECRET_ENCRYPTION_KEY:?Set encryption key (64-char hex - generate with openssl rand -hex 32)}
+
+      # =======================================================================
+      # Domain Configuration
+      # =======================================================================
+      # Domain for the dashboard
+      DOMAIN: ${HOMARR_DOMAIN:?Set your domain (e.g., dashboard.example.com)}
+    networks:
+      - homarr-net
+      - dokploy-network
+    labels:
+      # Traefik routing labels
+      - "traefik.enable=true"
+      - "traefik.http.routers.homarr.rule=Host(`${HOMARR_DOMAIN}`)"
+      - "traefik.http.routers.homarr.entrypoints=websecure"
+      - "traefik.http.routers.homarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.homarr.middlewares=homarr-security@docker"
+
+      # Security headers middleware (defense-in-depth)
+      - "traefik.http.middlewares.homarr-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.homarr-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.homarr-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.homarr-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.homarr-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Service configuration
+      - "traefik.http.services.homarr.loadbalancer.server.port=7575"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7575"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  homarr-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  homarr-net:
+    driver: bridge
+  dokploy-network:
+    external: true

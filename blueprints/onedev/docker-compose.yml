@@ -1,0 +1,89 @@
+services:
+  # =============================================================================
+  # OneDev - Git Server with CI/CD, Kanban, and Packages
+  # =============================================================================
+  onedev:
+    image: 1dev/server:13.1.5
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - onedev-data:/opt/onedev
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Database Configuration (PostgreSQL)
+      hibernate_dialect: io.onedev.server.persistence.PostgreSQLDialect
+      hibernate_connection_driver_class: org.postgresql.Driver
+      hibernate_connection_url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-onedev}
+      hibernate_connection_username: ${POSTGRES_USER:-onedev}
+      hibernate_connection_password: ${POSTGRES_PASSWORD:?Set database password}
+
+      # Initial Setup (only used on first run)
+      initial_user: ${ONEDEV_ADMIN_USER:-admin}
+      initial_password: ${ONEDEV_ADMIN_PASSWORD:?Set admin password}
+      initial_email: ${ONEDEV_ADMIN_EMAIL:?Set admin email}
+      initial_server_url: https://${ONEDEV_DOMAIN:?Set OneDev domain}
+      initial_ssh_root_url: ssh://${ONEDEV_DOMAIN}:${ONEDEV_SSH_PORT:-6611}
+
+      # JVM Options (Home Lab Optimization)
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx1g -Xms512m}
+    networks:
+      - onedev-net
+      - dokploy-network
+    ports:
+      # SSH port exposed directly (Traefik doesn't handle SSH)
+      - "${ONEDEV_SSH_PORT:-6611}:6611"
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router
+      - "traefik.http.routers.onedev.rule=Host(`${ONEDEV_DOMAIN}`)"
+      - "traefik.http.routers.onedev.entrypoints=websecure"
+      - "traefik.http.routers.onedev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.onedev.loadbalancer.server.port=6610"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6610"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # =============================================================================
+  # PostgreSQL - Database
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onedev}
+      POSTGRES_USER: ${POSTGRES_USER:-onedev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - onedev-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-onedev} -d ${POSTGRES_DB:-onedev}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  onedev-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  onedev-net:
+    driver: bridge
+  dokploy-network:
+    external: true

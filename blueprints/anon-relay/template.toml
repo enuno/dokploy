@@ -1,0 +1,159 @@
+# ANyONe Protocol Relay Dokploy Template Configuration
+# https://docs.anyone.io/relay/start
+# https://github.com/anyone-protocol/ator-protocol
+
+[variables]
+# Relay identification (visible on network)
+relay_nickname = "${username}"
+relay_contact = "${email}"
+
+# Security: Hashed password for control port access
+# Generate with: anon --hash-password "your-password"
+control_password = "${password:24}"
+
+# Network ports (ORPort must be externally accessible)
+orport = "9001"
+dirport = "9030"
+controlport = "9051"
+
+# Optional: Ethereum wallet address for ANyONe rewards
+# Register at: https://docs.anyone.io/rewards/register
+wallet_address = ""
+
+# No domain configuration needed for relay-only operation
+# Hidden services generate their own .onion addresses
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Terms of Service (REQUIRED for v0.4.9.7+)
+# ===========================================
+ACCEPT_TOS = "1"
+
+# ===========================================
+# Relay Identification
+# ===========================================
+ANON_NICKNAME = "${relay_nickname}"
+ANON_CONTACT = "${relay_contact}"
+
+# ===========================================
+# Network Configuration
+# ===========================================
+ANON_ORPORT = "${orport}"
+ANON_DIRPORT = "${dirport}"
+ANON_CONTROLPORT = "${controlport}"
+
+# ===========================================
+# Security Configuration
+# ===========================================
+# Control port password (auto-generated)
+ANON_HASHED_CONTROL_PASSWORD = "${control_password}"
+
+# ===========================================
+# Rewards Configuration (Optional)
+# ===========================================
+# Ethereum wallet for ANyONe token rewards
+# Leave empty to run without rewards
+ANON_WALLET = "${wallet_address}"
+
+# ===========================================
+# Advanced Configuration
+# ===========================================
+# Bandwidth limit in KB/s (0 = unlimited)
+# ANON_BANDWIDTH_RATE = "0"
+# ANON_BANDWIDTH_BURST = "0"
+
+# ===========================================
+# Hidden Service Configuration
+# ===========================================
+# To expose Dokploy services as hidden services:
+# 1. Deploy this template first
+# 2. SSH into the container
+# 3. Edit /etc/anon/anonrc to add HiddenServiceDir blocks
+# 4. Restart the container
+#
+# Example HiddenServiceDir configuration:
+# HiddenServiceDir /var/lib/anon/hidden_service_webapp
+# HiddenServicePort 80 webapp-service:8080
+#
+# Or use the configure_hidden_service.sh script from scripts/anon/
+
+# Mount configuration file with custom anonrc
+[[config.mounts]]
+filePath = "/etc/anon/anonrc"
+content = """
+# Auto-generated ANyONe Relay Configuration
+# Documentation: https://docs.anyone.io/relay/start
+#
+# WARNING: This file is managed by Dokploy template.
+# Manual edits will persist but may be overwritten on re-deploy.
+
+# ===========================================
+# Relay Identity
+# ===========================================
+Nickname ${relay_nickname}
+ContactInfo ${relay_contact}
+
+# ===========================================
+# Network Ports
+# ===========================================
+# ORPort: Main relay traffic (must be externally accessible)
+ORPort ${orport}
+
+# DirPort: Directory mirror (helps network discovery)
+DirPort ${dirport}
+
+# ControlPort: Local management interface
+ControlPort ${controlport}
+
+# ===========================================
+# Security
+# ===========================================
+# Control port authentication
+HashedControlPassword ${control_password}
+
+# Run as non-exit relay (safer default)
+ExitPolicy reject *:*
+ExitRelay 0
+IPv6Exit 0
+
+# ===========================================
+# Data Directories
+# ===========================================
+DataDirectory /var/lib/anon
+RunAsDaemon 0
+
+# ===========================================
+# Hidden Services
+# ===========================================
+# Add hidden service configurations below.
+# Each service needs a HiddenServiceDir and one or more HiddenServicePort entries.
+#
+# Example: Expose a web application
+# HiddenServiceDir /var/lib/anon/hidden_service_webapp
+# HiddenServicePort 80 webapp-container:8080
+#
+# Example: Expose multiple ports for one service
+# HiddenServiceDir /var/lib/anon/hidden_service_api
+# HiddenServicePort 80 api-container:3000
+# HiddenServicePort 443 api-container:3443
+#
+# IMPORTANT: The target (e.g., webapp-container:8080) must be reachable
+# from this container via the dokploy-network.
+
+# ===========================================
+# Performance Tuning
+# ===========================================
+# Uncomment to limit bandwidth (in KB/s)
+# RelayBandwidthRate 1024
+# RelayBandwidthBurst 2048
+
+# Uncomment to limit memory usage
+# MaxMemInQueues 256 MB
+
+# ===========================================
+# Logging
+# ===========================================
+Log notice stdout
+SafeLogging 1
+"""

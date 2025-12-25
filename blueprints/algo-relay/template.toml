@@ -1,0 +1,96 @@
+# Algo Relay - Nostr's First Algorithmic Relay
+# Personalized feeds using weighted algorithms
+# https://github.com/bitvora/algo-relay
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+algo_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "algo-relay"
+port = 3334
+host = "${algo_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Core Configuration (REQUIRED)
+# ===========================================================================
+ALGO_DOMAIN = "${algo_domain}"
+
+# PostgreSQL password - CHANGE THIS!
+POSTGRES_PASSWORD = "${randomPassword()}"
+
+# ===========================================================================
+# Relay Identity
+# ===========================================================================
+# Your relay's display name
+RELAY_NAME = "Algo Relay"
+
+# Describe what makes your relay special
+RELAY_DESCRIPTION = "Personalized algorithmic Nostr relay"
+
+# Your Nostr public key (npub or hex)
+# RELAY_PUBKEY = "npub1..."
+
+# URL to your relay's icon
+# RELAY_ICON = "https://example.com/icon.png"
+
+# Contact information
+# RELAY_CONTACT = "admin@example.com"
+
+# ===========================================================================
+# Algorithm Weights
+# ===========================================================================
+# These weights control how posts are ranked in your feed.
+# Higher values = more influence on the algorithm.
+
+# Posts from authors you frequently interact with (comments, reactions, zaps)
+# Higher = see more from people you engage with
+WEIGHT_INTERACTIONS_WITH_AUTHOR = "1.0"
+
+# Global comment engagement on posts
+WEIGHT_COMMENTS_GLOBAL = "0.3"
+
+# Global reaction (like) engagement on posts
+WEIGHT_REACTIONS_GLOBAL = "0.2"
+
+# Global zap (bitcoin tips) engagement on posts
+# Zaps are weighted higher as they indicate quality content
+WEIGHT_ZAPS_GLOBAL = "0.5"
+
+# How much to favor recent posts over older ones
+WEIGHT_RECENCY = "1.0"
+
+# How quickly post scores decay over time (higher = faster decay)
+DECAY_RATE = "0.1"
+
+# ===========================================================================
+# Viral Content Handling
+# ===========================================================================
+# Engagement count that triggers "viral" classification
+VIRAL_THRESHOLD = "100"
+
+# Dampen viral posts to prevent feed domination (0.0-1.0)
+# Lower = less viral content in your feed
+VIRAL_POST_DAMPENING = "0.5"
+
+# ===========================================================================
+# Database Configuration
+# ===========================================================================
+POSTGRES_USER = "algo"
+POSTGRES_DB = "algo_relay"
+
+# ===========================================================================
+# Build Configuration
+# ===========================================================================
+# Version to build from GitHub
+ALGO_VERSION = "v0.2.0"

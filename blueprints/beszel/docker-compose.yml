@@ -1,0 +1,81 @@
+services:
+  # =============================================================================
+  # Beszel Hub - Lightweight Server Monitoring Dashboard
+  # Built on PocketBase with embedded SQLite
+  # =============================================================================
+  beszel:
+    image: henrygd/beszel:0.17.0
+    restart: always
+    volumes:
+      - beszel-data:/beszel_data
+    environment:
+      # =======================================================================
+      # Core Configuration
+      # =======================================================================
+      # URL of the web UI (required if serving at a subpath)
+      APP_URL: https://${BESZEL_DOMAIN:?Set Beszel domain}
+
+      # =======================================================================
+      # First User Setup (Optional - can create via UI)
+      # =======================================================================
+      # Create first admin user automatically
+      USER_EMAIL: ${ADMIN_EMAIL:-}
+      USER_PASSWORD: ${ADMIN_PASSWORD:-}
+
+      # =======================================================================
+      # Authentication Options
+      # =======================================================================
+      # Disable password authentication (use OAuth only)
+      DISABLE_PASSWORD_AUTH: ${DISABLE_PASSWORD_AUTH:-false}
+
+      # Enable OTP/2FA for users
+      MFA_OTP: ${MFA_OTP:-false}
+
+      # Auto-create users from OAuth/OIDC
+      USER_CREATION: ${USER_CREATION:-false}
+
+      # =======================================================================
+      # Multi-User Settings
+      # =======================================================================
+      # Allow all users to see all systems
+      SHARE_ALL_SYSTEMS: ${SHARE_ALL_SYSTEMS:-false}
+
+      # Allow viewing container details
+      CONTAINER_DETAILS: ${CONTAINER_DETAILS:-true}
+
+    networks:
+      - beszel-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.beszel.rule=Host(`${BESZEL_DOMAIN}`)"
+      - "traefik.http.routers.beszel.entrypoints=websecure"
+      - "traefik.http.routers.beszel.tls.certresolver=letsencrypt"
+      - "traefik.http.services.beszel.loadbalancer.server.port=8090"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8090/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  beszel-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  beszel-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -1,0 +1,57 @@
+services:
+  # =============================================================================
+  # GitIngest - Turn Git Repos into LLM-Friendly Text Digests
+  # =============================================================================
+  gitingest:
+    image: ghcr.io/coderamp-labs/gitingest:v0.3.1
+    restart: always
+    user: "1000:1000"
+    environment:
+      # Domain Configuration
+      ALLOWED_HOSTS: ${GITINGEST_DOMAIN:?Set GitIngest domain}, localhost, 127.0.0.1
+
+      # GitHub Token (optional - for private repos)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+
+      # Cloudflare R2 Storage (optional - for caching digests)
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-gitingest}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_ALIAS_HOST: ${S3_ALIAS_HOST:-}
+
+      # Metrics (optional)
+      GITINGEST_METRICS_ENABLED: ${METRICS_ENABLED:-false}
+
+      # Sentry Error Tracking (optional)
+      GITINGEST_SENTRY_DSN: ${SENTRY_DSN:-}
+
+      # Python Settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    networks:
+      - gitingest-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitingest.rule=Host(`${GITINGEST_DOMAIN}`)"
+      - "traefik.http.routers.gitingest.entrypoints=websecure"
+      - "traefik.http.routers.gitingest.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gitingest.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  gitingest-net:
+    driver: bridge
+  dokploy-network:
+    external: true

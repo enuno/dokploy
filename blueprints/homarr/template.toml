@@ -1,0 +1,24 @@
+# Homarr - Homelab Dashboard
+# https://github.com/homarr-labs/homarr
+
+[variables]
+domain = "${domain}"
+encryption_key = "${base64:64}"
+
+[[config.domains]]
+serviceName = "homarr"
+port = 7575
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+HOMARR_DOMAIN = "${domain}"
+
+# ===========================================
+# Security Configuration
+# ===========================================
+# Encryption key for sensitive data storage (cookies, sessions, credentials)
+# Auto-generated 64-character base64 string
+SECRET_ENCRYPTION_KEY = "${encryption_key}"

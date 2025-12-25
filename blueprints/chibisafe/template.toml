@@ -1,0 +1,70 @@
+# Chibisafe - File Upload and Sharing Platform
+# TypeScript-based file hosting with advanced features
+# https://github.com/chibisafe/chibisafe
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# User-provided domain
+domain = "${domain}"
+
+# Auto-generated admin password (CHANGE AFTER FIRST LOGIN!)
+admin_password = "${password:24}"
+
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+# Routes traffic through Caddy reverse proxy (merges frontend + backend)
+[[config.domains]]
+serviceName = "caddy"
+port = 80
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+CHIBISAFE_DOMAIN = "${domain}"
+
+# ===========================================
+# Admin User (Created on First Run)
+# IMPORTANT: Change password immediately after first login!
+# Default username: admin
+# ===========================================
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "${admin_password}"
+
+# ===========================================
+# Upload Configuration (OPTIONAL)
+# ===========================================
+# Maximum file size for uploads
+MAX_FILE_SIZE = "100MB"
+
+# ===========================================
+# External Storage - Cloudflare R2 (OPTIONAL)
+# Enable S3-compatible storage for scalable file uploads
+# Get credentials from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+# ===========================================
+# Set to "true" to enable R2 storage
+S3_ENABLED = "false"
+
+# R2 endpoint URL (leave blank if not using R2)
+S3_ENDPOINT = ""
+
+# R2 bucket name
+S3_BUCKET = ""
+
+# R2 access credentials
+S3_ACCESS_KEY_ID = ""
+S3_SECRET_ACCESS_KEY = ""
+
+# R2 region (always "auto" for Cloudflare R2)
+S3_REGION = "auto"
+
+# R2 path style (always "true" for Cloudflare R2)
+S3_PATH_STYLE = "true"

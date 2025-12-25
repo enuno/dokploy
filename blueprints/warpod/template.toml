@@ -1,0 +1,76 @@
+# Warpod - Cloudflare WARP Proxy Server
+# Routes container traffic through Cloudflare WARP network
+# https://github.com/deepwn/warpod
+
+# =============================================================================
+# Variables
+# =============================================================================
+# Note: No domain needed - Warpod is a proxy server, not a web application
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Operation Mode
+# ===========================================================================
+# Warpod supports three modes:
+#
+# 1. FREE MODE (default):
+#    - Leave all credentials empty
+#    - Registers a new free WARP account automatically
+#    - Limited features but no setup required
+#
+# 2. MDM / ZERO TRUST MODE:
+#    - Set WARP_ORG_ID, WARP_AUTH_CLIENT_ID, WARP_AUTH_CLIENT_SECRET
+#    - Connects to your Cloudflare Zero Trust organization
+#    - Access to private networks and Zero Trust policies
+#
+# 3. WARP+ MODE:
+#    - Set WARP_LICENSE with your WARP+ key
+#    - Premium features and faster speeds
+
+# ===========================================================================
+# Zero Trust Configuration (Optional)
+# ===========================================================================
+# Get these from: Zero Trust Dashboard → Access → Service Auth → Create Token
+#
+# WARP_ORG_ID = "your-org-name"
+# WARP_AUTH_CLIENT_ID = "your-client-id.access"
+# WARP_AUTH_CLIENT_SECRET = "your-client-secret"
+
+# ===========================================================================
+# WARP+ License (Optional)
+# ===========================================================================
+# WARP_LICENSE = "your-warp-plus-license-key"
+
+# ===========================================================================
+# Proxy Configuration
+# ===========================================================================
+# Default proxy ports (exposed to other containers)
+SOCK_PORT = "1080"
+HTTP_PORT = "1081"
+HTTPS_PORT = "1082"
+
+# Host port mappings (for external access)
+SOCKS_EXPOSE_PORT = "1080"
+HTTP_EXPOSE_PORT = "1081"
+HTTPS_EXPOSE_PORT = "1082"
+
+# ===========================================================================
+# Proxy Authentication (Optional)
+# ===========================================================================
+# Set to protect proxy access (format: username:password)
+# PROXY_AUTH = "user:password"
+
+# ===========================================================================
+# Using Warpod from Other Containers
+# ===========================================================================
+# Other containers on dokploy-network can use Warpod as their proxy:
+#
+# Environment variables for target container:
+#   HTTP_PROXY=http://warpod:1081
+#   HTTPS_PROXY=http://warpod:1081
+#   ALL_PROXY=socks5://warpod:1080
+#
+# Or configure per-application proxy settings to point to warpod:1080-1082

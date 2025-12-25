@@ -1,0 +1,55 @@
+# Beszel - Lightweight Server Monitoring Hub
+# Dashboard for viewing and managing connected systems
+# https://github.com/henrygd/beszel
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+beszel_domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "beszel"
+port = 8090
+host = "${beszel_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# Core Configuration (REQUIRED)
+# ===========================================================================
+BESZEL_DOMAIN = "${beszel_domain}"
+
+# ===========================================================================
+# First Admin User (Optional)
+# ===========================================================================
+# Leave empty to create admin via web UI on first visit
+# ADMIN_EMAIL = "admin@example.com"
+# ADMIN_PASSWORD = "your-secure-password"
+
+# ===========================================================================
+# Authentication Options
+# ===========================================================================
+# Disable password authentication (OAuth/OIDC only)
+DISABLE_PASSWORD_AUTH = "false"
+
+# Enable OTP/2FA for users
+MFA_OTP = "false"
+
+# Auto-create users from OAuth/OIDC providers
+USER_CREATION = "false"
+
+# ===========================================================================
+# Multi-User Settings
+# ===========================================================================
+# Allow all users to access all systems (vs per-user permissions)
+SHARE_ALL_SYSTEMS = "false"
+
+# Allow viewing Docker container details in web UI
+CONTAINER_DETAILS = "true"

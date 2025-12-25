@@ -1,0 +1,61 @@
+# OneDev - Git Server with CI/CD, Kanban, and Packages
+# https://github.com/theonedev/onedev
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+# Domain Configuration
+onedev_domain = "${domain}"
+
+# Admin Credentials
+admin_password = "${password:32}"
+
+# Database Credentials
+db_password = "${password:32}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "onedev"
+port = 6610
+host = "${onedev_domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ===========================================================================
+# OneDev Domain
+# ===========================================================================
+ONEDEV_DOMAIN = "${onedev_domain}"
+
+# ===========================================================================
+# Admin Setup (First Run Only)
+# ===========================================================================
+ONEDEV_ADMIN_USER = "admin"
+ONEDEV_ADMIN_PASSWORD = "${admin_password}"
+ONEDEV_ADMIN_EMAIL = "admin@example.com"
+
+# ===========================================================================
+# SSH Configuration
+# ===========================================================================
+# SSH port for git operations (exposed directly, not through Traefik)
+ONEDEV_SSH_PORT = "6611"
+
+# ===========================================================================
+# Database Configuration
+# ===========================================================================
+POSTGRES_DB = "onedev"
+POSTGRES_USER = "onedev"
+POSTGRES_PASSWORD = "${db_password}"
+
+# ===========================================================================
+# JVM Configuration (Home Lab Optimization)
+# ===========================================================================
+# Adjust based on available memory:
+# - 2GB RAM: -Xmx1g -Xms512m
+# - 4GB RAM: -Xmx2g -Xms1g
+# - 8GB RAM: -Xmx4g -Xms2g
+JAVA_TOOL_OPTIONS = "-Xmx1g -Xms512m"

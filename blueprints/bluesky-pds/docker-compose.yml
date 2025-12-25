@@ -1,0 +1,78 @@
+services:
+  pds:
+    image: ghcr.io/bluesky-social/pds:0.4
+    restart: always
+    volumes:
+      - pds-data:/pds
+    environment:
+      # ===========================================
+      # Domain Configuration (REQUIRED)
+      # ===========================================
+      PDS_HOSTNAME: ${PDS_DOMAIN:?Set your PDS domain (e.g., pds.example.com)}
+
+      # ===========================================
+      # Security Secrets (REQUIRED)
+      # ===========================================
+      PDS_JWT_SECRET: ${PDS_JWT_SECRET:?Set JWT signing secret}
+      PDS_ADMIN_PASSWORD: ${PDS_ADMIN_PASSWORD:?Set admin password}
+      PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX: ${PDS_PLC_ROTATION_KEY:?Set PLC rotation key (K256 private key in hex format)}
+
+      # ===========================================
+      # Storage Configuration (INTERNAL PATHS)
+      # ===========================================
+      PDS_DATA_DIRECTORY: /pds
+      PDS_BLOBSTORE_DISK_LOCATION: /pds/blocks
+
+      # ===========================================
+      # AT Protocol Services (CONSTANTS)
+      # These are official Bluesky infrastructure endpoints
+      # ===========================================
+      PDS_DID_PLC_URL: https://plc.directory
+      PDS_BSKY_APP_VIEW_URL: https://api.bsky.app
+      PDS_BSKY_APP_VIEW_DID: did:web:api.bsky.app
+      PDS_REPORT_SERVICE_URL: https://mod.bsky.app
+      PDS_REPORT_SERVICE_DID: did:plc:ar7c4by46qjdydhdevvrndac
+      PDS_CRAWLERS: https://bsky.network
+
+      # ===========================================
+      # Email Configuration (OPTIONAL)
+      # Required for password reset and notifications
+      # Format: smtp://username:password@smtp.example.com:587
+      # ===========================================
+      PDS_EMAIL_SMTP_URL: ${PDS_EMAIL_SMTP_URL:-}
+      PDS_EMAIL_FROM_ADDRESS: ${PDS_EMAIL_FROM_ADDRESS:-}
+
+      # ===========================================
+      # Application Settings (OPTIONAL)
+      # ===========================================
+      PDS_BLOB_UPLOAD_LIMIT: ${PDS_BLOB_UPLOAD_LIMIT:-52428800}
+      LOG_ENABLED: ${LOG_ENABLED:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    networks:
+      - bluesky-pds-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pds.rule=Host(`${PDS_DOMAIN}`) || Host(`*.${PDS_DOMAIN}`)"
+      - "traefik.http.routers.pds.entrypoints=websecure"
+      - "traefik.http.routers.pds.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pds.tls.domains[0].main=${PDS_DOMAIN}"
+      - "traefik.http.routers.pds.tls.domains[0].sans=*.${PDS_DOMAIN}"
+      - "traefik.http.services.pds.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/xrpc/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  pds-data:
+    driver: local
+
+networks:
+  bluesky-pds-net:
+    driver: bridge
+  dokploy-network:
+    external: true

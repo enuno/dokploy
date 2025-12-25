@@ -1,0 +1,114 @@
+services:
+  # =============================================================================
+  # Algo Relay - Nostr's First Algorithmic Relay
+  # Personalized feeds using weighted algorithms
+  # =============================================================================
+  algo-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: algo-relay:${ALGO_VERSION:-v0.2.0}
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - algo-data:/app/data
+    environment:
+      # =======================================================================
+      # Core Configuration
+      # =======================================================================
+      RELAY_NAME: ${RELAY_NAME:-Algo Relay}
+      RELAY_DESCRIPTION: ${RELAY_DESCRIPTION:-Personalized algorithmic Nostr relay}
+      RELAY_URL: wss://${ALGO_DOMAIN:?Set Algo Relay domain}
+      RELAY_PUBKEY: ${RELAY_PUBKEY:-}
+      RELAY_ICON: ${RELAY_ICON:-}
+      RELAY_CONTACT: ${RELAY_CONTACT:-}
+
+      # =======================================================================
+      # Database Configuration
+      # =======================================================================
+      DATABASE_URL: postgres://${POSTGRES_USER:-algo}:${POSTGRES_PASSWORD:?Set PostgreSQL password}@postgres:5432/${POSTGRES_DB:-algo_relay}?sslmode=disable
+
+      # =======================================================================
+      # Algorithm Weights (Higher = More Influence)
+      # =======================================================================
+      # Posts from authors you interact with frequently
+      WEIGHT_INTERACTIONS_WITH_AUTHOR: ${WEIGHT_INTERACTIONS_WITH_AUTHOR:-1.0}
+
+      # Global engagement metrics
+      WEIGHT_COMMENTS_GLOBAL: ${WEIGHT_COMMENTS_GLOBAL:-0.3}
+      WEIGHT_REACTIONS_GLOBAL: ${WEIGHT_REACTIONS_GLOBAL:-0.2}
+      WEIGHT_ZAPS_GLOBAL: ${WEIGHT_ZAPS_GLOBAL:-0.5}
+
+      # Time decay and recency
+      WEIGHT_RECENCY: ${WEIGHT_RECENCY:-1.0}
+      DECAY_RATE: ${DECAY_RATE:-0.1}
+
+      # Viral content handling
+      VIRAL_THRESHOLD: ${VIRAL_THRESHOLD:-100}
+      VIRAL_POST_DAMPENING: ${VIRAL_POST_DAMPENING:-0.5}
+
+    networks:
+      - algo-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.algo-relay.rule=Host(`${ALGO_DOMAIN}`)"
+      - "traefik.http.routers.algo-relay.entrypoints=websecure"
+      - "traefik.http.routers.algo-relay.tls.certresolver=letsencrypt"
+      - "traefik.http.services.algo-relay.loadbalancer.server.port=3334"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3334"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # =============================================================================
+  # PostgreSQL - Relay Data Storage
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-algo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set PostgreSQL password}
+      POSTGRES_DB: ${POSTGRES_DB:-algo_relay}
+    networks:
+      - algo-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-algo} -d ${POSTGRES_DB:-algo_relay}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  algo-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  algo-net:
+    driver: bridge
+  dokploy-network:
+    external: true

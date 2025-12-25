@@ -1,0 +1,54 @@
+services:
+  borgitory:
+    image: mlapaglia/borgitory:latest
+    restart: always
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    volumes:
+      - borgitory-data:/app/data
+    environment:
+      # ===========================================
+      # Domain Configuration (REQUIRED)
+      # ===========================================
+      BORGITORY_DOMAIN: ${BORGITORY_DOMAIN:?Set your Borgitory domain (e.g., backup.example.com)}
+
+      # ===========================================
+      # Application Settings (INTERNAL)
+      # ===========================================
+      BORGITORY_HOST: 0.0.0.0
+      BORGITORY_PORT: "8000"
+      BORGITORY_DATA_DIR: /app/data
+
+      # ===========================================
+      # Optional Settings
+      # ===========================================
+      BORGITORY_DEBUG: ${BORGITORY_DEBUG:-false}
+      TZ: ${TZ:-UTC}
+    networks:
+      - borgitory-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.borgitory.rule=Host(`${BORGITORY_DOMAIN}`)"
+      - "traefik.http.routers.borgitory.entrypoints=websecure"
+      - "traefik.http.routers.borgitory.tls.certresolver=letsencrypt"
+      - "traefik.http.services.borgitory.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  borgitory-data:
+    driver: local
+
+networks:
+  borgitory-net:
+    driver: bridge
+  dokploy-network:
+    external: true

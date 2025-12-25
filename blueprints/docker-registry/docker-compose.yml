@@ -1,0 +1,87 @@
+services:
+  # =============================================================================
+  # Docker Registry - OCI Distribution Specification Implementation
+  # =============================================================================
+  registry:
+    image: registry:3.0.0
+    restart: always
+    volumes:
+      # Local storage (used when S3/R2 not configured)
+      - registry-data:/var/lib/registry
+      # htpasswd authentication file
+      - /opt/dokploy-conf/docker-registry/htpasswd:/auth/htpasswd:ro
+    environment:
+      # =======================================================================
+      # Storage Configuration (Filesystem by default)
+      # =======================================================================
+      # For S3/R2 storage, see README.md - add S3 variables via Dokploy UI
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+
+      # Cache configuration
+      REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR: inmemory
+
+      # =======================================================================
+      # HTTP Configuration
+      # =======================================================================
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_HOST: https://${REGISTRY_DOMAIN:?Set registry domain}
+
+      # Headers
+      REGISTRY_HTTP_HEADERS_X-Content-Type-Options: "[nosniff]"
+
+      # =======================================================================
+      # Authentication (htpasswd basic auth)
+      # =======================================================================
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: ${REGISTRY_REALM:-Registry Realm}
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+
+      # =======================================================================
+      # Garbage Collection
+      # =======================================================================
+      REGISTRY_STORAGE_DELETE_ENABLED: ${DELETE_ENABLED:-true}
+
+      # =======================================================================
+      # Logging
+      # =======================================================================
+      REGISTRY_LOG_LEVEL: ${LOG_LEVEL:-info}
+      REGISTRY_LOG_FORMATTER: ${LOG_FORMATTER:-text}
+
+      # =======================================================================
+      # OpenTelemetry (disabled - no collector configured)
+      # =======================================================================
+      OTEL_TRACES_EXPORTER: none
+
+    networks:
+      - registry-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.registry.rule=Host(`${REGISTRY_DOMAIN}`)"
+      - "traefik.http.routers.registry.entrypoints=websecure"
+      - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
+      - "traefik.http.services.registry.loadbalancer.server.port=5000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      # Accept both 200 (no auth) and 401 (auth enabled) as healthy
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://localhost:5000/v2/ 2>&1 | grep -qE 'HTTP/[0-9.]+ (200|401)'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  registry-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  registry-net:
+    driver: bridge
+  dokploy-network:
+    external: true

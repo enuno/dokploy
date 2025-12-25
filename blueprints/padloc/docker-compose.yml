@@ -1,0 +1,145 @@
+services:
+  # =============================================================================
+  # Padloc Server - Backend API
+  # =============================================================================
+  padloc-server:
+    image: padloc/server:4.3.0
+    restart: always
+    volumes:
+      # LevelDB database storage
+      - server-data:/data
+
+      # Application logs
+      - server-logs:/logs
+
+      # File attachments storage
+      - server-attachments:/attach
+
+      # Documentation and templates
+      - server-docs:/docs
+    environment:
+      # =======================================================================
+      # Server Configuration
+      # =======================================================================
+      PL_TRANSPORT_HTTP_PORT: "3000"
+      PL_SERVER_CLIENT_URL: https://${PADLOC_DOMAIN:?Set your domain (e.g., padloc.example.com)}
+
+      # =======================================================================
+      # Data Backend (LevelDB - File-based storage)
+      # =======================================================================
+      PL_DATA_BACKEND: leveldb
+      PL_DATA_LEVELDB_DIR: /data
+
+      # =======================================================================
+      # Attachments Storage (Filesystem)
+      # =======================================================================
+      PL_DATA_ATTACHMENTS_BACKEND: fs
+      PL_DATA_ATTACHMENTS_DIR: /attach
+
+      # =======================================================================
+      # Email Configuration (SMTP - Required for password resets)
+      # Get credentials from your email provider (Gmail, SendGrid, etc.)
+      # =======================================================================
+      PL_EMAIL_BACKEND: smtp
+      PL_EMAIL_SERVER: ${PL_EMAIL_SERVER:?Set SMTP server hostname (e.g., smtp.gmail.com)}
+      PL_EMAIL_PORT: ${PL_EMAIL_PORT:-587}
+      PL_EMAIL_USER: ${PL_EMAIL_USER:?Set SMTP username/email}
+      PL_EMAIL_PASSWORD: ${PL_EMAIL_PASSWORD:?Set SMTP password}
+      PL_EMAIL_FROM: ${PL_EMAIL_FROM:?Set sender email address}
+
+      # =======================================================================
+      # Optional Settings
+      # =======================================================================
+      PL_REPORT_ERRORS: ${PL_REPORT_ERRORS:-false}
+      PL_MFA_TOTP_ENABLED: ${PL_MFA_TOTP_ENABLED:-true}
+    networks:
+      - padloc-net
+      - dokploy-network
+    labels:
+      # Traefik routing for API endpoints
+      - "traefik.enable=true"
+      - "traefik.http.routers.padloc-server.rule=Host(`${PADLOC_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.padloc-server.entrypoints=websecure"
+      - "traefik.http.routers.padloc-server.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.padloc-server.middlewares=padloc-server-stripprefix@docker"
+
+      # Strip /api prefix before forwarding to backend
+      - "traefik.http.middlewares.padloc-server-stripprefix.stripprefix.prefixes=/api"
+
+      # Service configuration
+      - "traefik.http.services.padloc-server.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # Padloc PWA - Web Client
+  # =============================================================================
+  padloc-pwa:
+    image: padloc/pwa:4.3.0
+    restart: always
+    volumes:
+      # PWA static assets
+      - pwa-assets:/assets
+    environment:
+      # =======================================================================
+      # PWA Configuration
+      # =======================================================================
+      PL_PWA_URL: https://${PADLOC_DOMAIN}
+      PL_SERVER_URL: https://${PADLOC_DOMAIN}/api
+      PL_ASSETS_DIR: /assets
+    networks:
+      - padloc-net
+      - dokploy-network
+    labels:
+      # Traefik routing for web interface (root path)
+      - "traefik.enable=true"
+      - "traefik.http.routers.padloc-pwa.rule=Host(`${PADLOC_DOMAIN}`)"
+      - "traefik.http.routers.padloc-pwa.entrypoints=websecure"
+      - "traefik.http.routers.padloc-pwa.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.padloc-pwa.middlewares=padloc-security@docker"
+
+      # Security headers middleware (defense-in-depth)
+      - "traefik.http.middlewares.padloc-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.padloc-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.padloc-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.padloc-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.padloc-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Service configuration
+      - "traefik.http.services.padloc-pwa.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  server-data:
+    driver: local
+  server-logs:
+    driver: local
+  server-attachments:
+    driver: local
+  server-docs:
+    driver: local
+  pwa-assets:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  padloc-net:
+    driver: bridge
+  dokploy-network:
+    external: true
