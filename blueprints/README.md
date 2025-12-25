@@ -10,32 +10,32 @@ This directory contains custom Dokploy templates for deploying applications in t
 
 | Template | Description | Services | Status |
 |----------|-------------|----------|--------|
-| [algo-relay](blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
-| [anon-relay](blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
-| [anonupload](blueprints/anonupload/) | Privacy-focused anonymous file sharing | 1 (php/apache) | Ready |
-| [beszel](blueprints/beszel/) | Lightweight server monitoring hub with agent architecture | 4 | Ready |
-| [bluesky-pds](blueprints/bluesky-pds/) | AT Protocol Personal Data Server for Bluesky federation | 1 (pds) | Ready |
-| [borgitory](blueprints/borgitory/) | Web UI for managing BorgBackup repositories with scheduling and cloud sync | 1 (borgitory) | Ready |
-| [chibisafe](blueprints/chibisafe/) | TypeScript file upload and sharing platform with albums and S3 support | 3 (backend, frontend, caddy) | Ready |
-| [cloudflared](blueprints/cloudflared/) | Cloudflare Tunnel client for secure ingress without public IPs | 3 | Ready |
-| [dashy](blueprints/dashy/) | Customizable personal dashboard for organizing homelab services | 1 (dashy) | Ready |
-| [docker-registry](blueprints/docker-registry/) | OCI Distribution implementation for private Docker image hosting | 4 | Ready |
-| [forgejo](blueprints/forgejo/) | Self-hosted Git forge (Gitea fork) | 2 (forgejo, postgres) | Ready |
-| [gitingest](blueprints/gitingest/) | Convert Git repositories into LLM-friendly text digests | 3 | Ready |
-| [grafana-observability](blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |
-| [haven](blueprints/haven/) | High Availability Vault for Events on Nostr with S3 backend | 5 | Ready |
-| [homarr](blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
-| [kestra](blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
-| [n8n](blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
-| [nostpy-relay](blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |
-| [onedev](blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
-| [opengist](blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
-| [paaster](blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
-| [padloc](blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
-| [paperless-ngx](blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
-| [warp-docker](blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
-| [warpod](blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
-| [wot-relay](blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |
+| [algo-relay](/blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
+| [anon-relay](/blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
+| [anonupload](/blueprints/anonupload/) | Privacy-focused anonymous file sharing | 1 (php/apache) | Ready |
+| [beszel](/blueprints/beszel/) | Lightweight server monitoring hub with agent architecture | 4 | Ready |
+| [bluesky-pds](/blueprints/bluesky-pds/) | AT Protocol Personal Data Server for Bluesky federation | 1 (pds) | Ready |
+| [borgitory](/blueprints/borgitory/) | Web UI for managing BorgBackup repositories with scheduling and cloud sync | 1 (borgitory) | Ready |
+| [chibisafe](/blueprints/chibisafe/) | TypeScript file upload and sharing platform with albums and S3 support | 3 (backend, frontend, caddy) | Ready |
+| [cloudflared](/blueprints/cloudflared/) | Cloudflare Tunnel client for secure ingress without public IPs | 3 | Ready |
+| [dashy](/blueprints/dashy/) | Customizable personal dashboard for organizing homelab services | 1 (dashy) | Ready |
+| [docker-registry](/blueprints/docker-registry/) | OCI Distribution implementation for private Docker image hosting | 4 | Ready |
+| [forgejo](/blueprints/forgejo/) | Self-hosted Git forge (Gitea fork) | 2 (forgejo, postgres) | Ready |
+| [gitingest](/blueprints/gitingest/) | Convert Git repositories into LLM-friendly text digests | 3 | Ready |
+| [grafana-observability](/blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |
+| [haven](/blueprints/haven/) | High Availability Vault for Events on Nostr with S3 backend | 5 | Ready |
+| [homarr](/blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
+| [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
+| [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
+| [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |
+| [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
+| [opengist](/blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
+| [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
+| [padloc](/blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
+| [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
+| [warp-docker](/blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
+| [warpod](/blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
+| [wot-relay](/blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |
 
 ## Directory Structure
 
