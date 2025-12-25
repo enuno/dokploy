@@ -1,0 +1,111 @@
+services:
+  # =============================================================================
+  # Blinko - AI-Powered Personal Note-Taking Tool
+  # Self-hosted note management with AI RAG for semantic search
+  # =============================================================================
+  blinko:
+    image: blinkospace/blinko:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Persist application data and configuration
+      - blinko-data:/app/.blinko
+    environment:
+      # =======================================================================
+      # Node Environment
+      # =======================================================================
+      NODE_ENV: production
+
+      # =======================================================================
+      # Domain Configuration
+      # =======================================================================
+      NEXTAUTH_URL: https://${BLINKO_DOMAIN}
+      NEXT_PUBLIC_BASE_URL: https://${BLINKO_DOMAIN}
+
+      # =======================================================================
+      # Authentication
+      # =======================================================================
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NextAuth secret (openssl rand -base64 32)}
+
+      # =======================================================================
+      # Database Connection
+      # =======================================================================
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blinko}
+
+      # =======================================================================
+      # Timezone
+      # =======================================================================
+      TZ: ${TZ:-UTC}
+
+    networks:
+      - blinko-net
+      - dokploy-network
+    labels:
+      # =======================================================================
+      # Traefik Routing Configuration
+      # =======================================================================
+      - "traefik.enable=true"
+      - "traefik.http.routers.blinko.rule=Host(`${BLINKO_DOMAIN}`)"
+      - "traefik.http.routers.blinko.entrypoints=websecure"
+      - "traefik.http.routers.blinko.tls.certresolver=letsencrypt"
+
+      # Security headers middleware
+      - "traefik.http.routers.blinko.middlewares=blinko-security-headers@docker"
+      - "traefik.http.middlewares.blinko-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.blinko-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.blinko-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.blinko-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.blinko-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.blinko-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Service configuration
+      - "traefik.http.services.blinko.loadbalancer.server.port=1111"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1111"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s  # Next.js compilation time
+
+  # =============================================================================
+  # PostgreSQL - Database
+  # Stores notes, metadata, and AI embeddings
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blinko}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - blinko-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-blinko}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  blinko-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  blinko-net:
+    driver: bridge
+  dokploy-network:
+    external: true

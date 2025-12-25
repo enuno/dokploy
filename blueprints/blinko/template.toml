@@ -1,0 +1,40 @@
+# Blinko - AI-Powered Personal Note-Taking Tool
+# Self-hosted note management with AI RAG for semantic search
+# https://github.com/blinkospace/blinko
+
+[variables]
+domain = "${domain}"
+nextauth_secret = "${base64:32}"
+postgres_password = "${password:32}"
+postgres_db = "blinko"
+postgres_user = "postgres"
+tz = "UTC"
+
+[[config.domains]]
+serviceName = "blinko"
+port = 1111
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+BLINKO_DOMAIN = "${domain}"
+
+# ===========================================
+# Authentication
+# Generate NextAuth secret: openssl rand -base64 32
+# ===========================================
+NEXTAUTH_SECRET = "${nextauth_secret}"
+
+# ===========================================
+# Database Configuration
+# ===========================================
+POSTGRES_DB = "${postgres_db}"
+POSTGRES_USER = "${postgres_user}"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+TZ = "${tz}"
