@@ -100,29 +100,42 @@ Generate comprehensive README.md for the template:
 
 ### Phase 6: Update Index
 
-**Load Skill:** `documentation-update` (if available) or manual update
+**No skills needed** - Direct README update
 
 **Actions:**
-1. Read current `dokploy/README.md`
-2. Determine appropriate category:
-   - **Nostr Protocol Relays**: Nostr/relay applications
-   - **Developer Tools**: Git forges, CI/CD, registries, dev utilities
-   - **Document & Content Management**: Document systems, pastebins, file sharing
-   - **Observability**: Monitoring, metrics, logging stacks
-   - Create new category if none fit
-3. Add template row to the appropriate category table
-4. Update template count in Overview section
-5. Update "Last Updated" date to current month/year
+1. **Read** current `blueprints/README.md`
+2. **Locate** the "Available Templates" table (starts after `## Available Templates` heading)
+3. **Insert** new template row in **alphabetical order** by template name
+4. **Format** the row exactly as:
+   ```markdown
+   | [app-name](blueprints/app-name/) | Brief description | Services count | Ready |
+   ```
+5. **Ensure** proper alignment with existing table columns
 
-**Template Row Format:**
+**Template Row Requirements:**
+- **Template column**: Link format `[app-name](blueprints/app-name/)`
+- **Description column**: Concise 1-sentence description (60-100 chars)
+- **Services column**:
+  - Single service: `1 (service-name)`
+  - Multiple services: Just the number (e.g., `3`, `5`, `17`)
+  - With details: `3 (app, postgres, redis)` (optional)
+- **Status column**: Always `Ready` for new templates
+
+**Example Insertion:**
+If adding "vaultwarden" between "paperless-ngx" and "warp-docker":
+
 ```markdown
-| [app-name](blueprints/app-name/) | Brief description | Services count | Ready |
+| [paperless-ngx](blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
+| [vaultwarden](blueprints/vaultwarden/) | Self-hosted Bitwarden password manager | 1 (vaultwarden) | Ready |
+| [warp-docker](blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
 ```
 
-**For Nostr relays, include database column:**
-```markdown
-| [app-name](blueprints/app-name/) | Description | Database type | Services | Ready |
-```
+**Update Process:**
+1. Count services from docker-compose.yml `services:` section
+2. Write clear, differentiated description (check it doesn't duplicate existing)
+3. Find correct alphabetical position in table
+4. Insert new row with proper markdown table formatting
+5. Verify table alignment
 
 ---
 
@@ -132,8 +145,8 @@ Creates/updates the following files:
 
 ```
 dokploy/
-├── README.md                     # Updated with new template entry
 └── blueprints/
+    ├── README.md                 # Updated: new template entry added
     └── [app-name]/
         ├── docker-compose.yml    # Service definitions
         ├── template.toml         # Dokploy configuration
@@ -202,10 +215,12 @@ Before completion, verify:
 - [ ] Post-deployment steps
 - [ ] Troubleshooting section
 
-### dokploy/README.md (index)
-- [ ] Template added to correct category table
-- [ ] Template count updated in Overview
-- [ ] Last Updated date is current
+### blueprints/README.md (index)
+- [ ] Template added in alphabetical order
+- [ ] Template row properly formatted (4 columns aligned)
+- [ ] Description is clear and unique (not duplicating existing)
+- [ ] Service count matches docker-compose.yml
+- [ ] Status is "Ready"
 
 ---
 
@@ -271,6 +286,20 @@ host = "${domain}"
 VAULTWARDEN_DOMAIN = "${domain}"
 ADMIN_TOKEN = "${admin_token}"
 SIGNUPS_ALLOWED = "false"
+```
+
+**blueprints/README.md update:**
+
+The "vaultwarden" template would be inserted alphabetically between "paperless-ngx" and "warp-docker":
+
+```diff
+ | [paaster](blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
+ | [padloc](blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
+ | [paperless-ngx](blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
++| [vaultwarden](blueprints/vaultwarden/) | Self-hosted Bitwarden password manager | 1 (vaultwarden) | Ready |
+ | [warp-docker](blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
+ | [warpod](blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
+ | [wot-relay](blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |
 ```
 
 ---
