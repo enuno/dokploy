@@ -9,9 +9,10 @@ services:
       # Configuration storage (apps, settings, widgets)
       - homarr-data:/appdata
 
-      # Optional: Docker integration for container management features
-      # Uncomment to enable container stats, controls, and automation
-      # - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Docker integration for container management features
+      # Enables: container stats, controls, and automation widgets
+      # Read-only mount for security (no container modifications)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       # =======================================================================
       # Security Configuration

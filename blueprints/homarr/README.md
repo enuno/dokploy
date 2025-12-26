@@ -6,7 +6,7 @@ Homarr is a modern, customizable dashboard for your homelab that integrates with
 
 - **Customizable Dashboard**: Drag-and-drop interface with customizable widgets and layouts
 - **30+ Integrations**: Built-in support for popular services (Plex, Jellyfin, Sonarr, Radarr, etc.)
-- **Docker Integration**: Optional Docker socket access for container stats and management
+- **Docker Integration**: Read-only Docker socket access for container stats and management (enabled by default)
 - **Real-time Monitoring**: Service status, resource usage, and health monitoring
 - **Widgets**: Weather, calendar, RSS feeds, service status, and custom widgets
 - **Themes**: Multiple themes with dark mode support
@@ -40,14 +40,12 @@ Homarr is a modern, customizable dashboard for your homelab that integrates with
 │  │  - Real-time monitoring widgets                                          ││
 │  │  - Optional Docker integration                                           ││
 │  │                                                                            ││
-│  │  Volume:                                                                  ││
+│  │  Volumes:                                                                 ││
 │  │  - homarr-data (/appdata)                                                 ││
 │  │    └── configs/ (dashboard configuration)                                 ││
 │  │    └── database.db (SQLite)                                               ││
 │  │    └── icons/ (custom service icons)                                      ││
-│  │                                                                            ││
-│  │  Optional:                                                                ││
-│  │  - /var/run/docker.sock (read-only, commented out by default)            ││
+│  │  - /var/run/docker.sock (read-only, for container stats/management)     ││
 │  │                                                                            ││
 │  └────────────────────────────────────────────────────────────────────────────┘│
 │                                                                                  │
@@ -66,7 +64,7 @@ Homarr is a modern, customizable dashboard for your homelab that integrates with
 
 - Dokploy installed and running
 - DNS record pointing to your Dokploy server
-- (Optional) Docker socket access for container management features
+- Docker socket access enabled (included by default for container stats and management)
 
 ## Configuration Variables
 
@@ -77,17 +75,23 @@ Homarr is a modern, customizable dashboard for your homelab that integrates with
 | `HOMARR_DOMAIN` | Domain for Homarr (e.g., `dashboard.example.com`) |
 | `SECRET_ENCRYPTION_KEY` | 64-character encryption key for sensitive data (auto-generated) |
 
-### Optional - Docker Integration
+### Docker Integration (Enabled by Default)
 
-To enable Docker container stats and management features, uncomment the docker.sock volume mount in docker-compose.yml:
+The template includes read-only Docker socket access for container stats and management features:
 
 ```yaml
 volumes:
-  # Uncomment to enable Docker integration
+  # Docker integration enabled by default (read-only)
   - /var/run/docker.sock:/var/run/docker.sock:ro
 ```
 
-**⚠️ Security Warning:** Mounting the Docker socket gives Homarr read-only access to your Docker daemon. This enables container stats, start/stop controls, and automation features. Only enable if you trust the application and understand the security implications.
+**Enabled Features:**
+- Real-time container stats (CPU, memory, network)
+- Container management (start, stop, restart)
+- Docker stats widget in dashboard
+- Container health monitoring
+
+**⚠️ Security Note:** The Docker socket is mounted in **read-only mode (`:ro`)** for security. This allows Homarr to view container information and stats but prevents container modifications. To disable Docker integration, comment out the volume mount line in docker-compose.yml.
 
 ## Deployment
 
@@ -310,7 +314,12 @@ Storage grows with:
    docker compose exec homarr test -r /var/run/docker.sock && echo "OK" || echo "FAIL"
    ```
 
-3. **Restart service after enabling:**
+3. **Enable Docker integration in Homarr UI:**
+   - Go to Settings → Integrations → Docker
+   - The integration should auto-detect when socket is available
+   - Click "Enable" if not already active
+
+4. **Restart service if needed:**
    ```bash
    docker compose restart homarr
    ```
@@ -507,7 +516,7 @@ docker compose restart homarr
 A: No, Homarr uses SQLite stored in the `/appdata` volume. No external database needed.
 
 **Q: Can I use Homarr without Docker socket access?**
-A: Yes! Docker integration is entirely optional. All other features work without it.
+A: Yes! Simply comment out the `/var/run/docker.sock` volume mount in docker-compose.yml. All other features work without it.
 
 **Q: How do I add my own service icons?**
 A: Go to Settings → Icons → Upload custom icon (PNG/SVG). Icons are stored in `/appdata/icons/`.
