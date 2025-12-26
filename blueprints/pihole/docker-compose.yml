@@ -1,0 +1,171 @@
+# ===========================================
+# Pi-hole Multi-Service DNS Stack
+# ===========================================
+# Architecture:
+# - Cloudflared: DoH upstream resolver for Pi-hole (internal)
+# - Tailscale: VPN sidecar for private Pi-hole access
+# - Pi-hole: DNS filtering (shares Tailscale network namespace)
+# - DNScrypt-proxy: DoH server for public clients (routed via host Traefik)
+#
+# NOTE: This stack uses Dokploy's host Traefik instance for public routing.
+# The dnscrypt-proxy service has Traefik labels for DoH endpoint routing.
+# ===========================================
+
+services:
+  # ===========================================
+  # Cloudflared - DNS-over-HTTPS Upstream Resolver
+  # Provides encrypted upstream DNS for Pi-hole
+  # ===========================================
+  cloudflared:
+    image: cloudflare/cloudflared:2025.10.0
+    restart: always
+    command:
+      - proxy-dns
+      - --address
+      - 0.0.0.0
+      - --port
+      - "5053"
+      - --upstream
+      - https://1.1.1.1/dns-query
+      - --upstream
+      - https://1.0.0.1/dns-query
+    networks:
+      - pihole-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 5053 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # Tailscale - VPN Sidecar for Pi-hole
+  # Provides private network access via Tailscale VPN
+  # ===========================================
+  tailscale-pihole:
+    image: tailscale/tailscale:stable
+    hostname: pihole
+    restart: always
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?Set Tailscale auth key (get from https://login.tailscale.com/admin/settings/keys)}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:---advertise-tags=tag:pihole --accept-dns=false}
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    networks:
+      - pihole-net
+    healthcheck:
+      test: ["CMD", "tailscale", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+  # ===========================================
+  # Pi-hole - DNS Filtering and Ad Blocking
+  # Web UI on port 80, DNS on port 53
+  # CRITICAL: Uses network_mode to share Tailscale's network namespace
+  # ===========================================
+  pihole:
+    image: pihole/pihole:2025.11.1
+    restart: always
+    network_mode: service:tailscale-pihole
+    depends_on:
+      cloudflared:
+        condition: service_healthy
+      tailscale-pihole:
+        condition: service_healthy
+    volumes:
+      - pihole-data:/etc/pihole
+      - pihole-dnsmasq:/etc/dnsmasq.d
+    environment:
+      # ===========================================
+      # Domain & Timezone
+      # ===========================================
+      TZ: ${TZ:-UTC}
+
+      # ===========================================
+      # Pi-hole FTL Configuration (v6+ syntax)
+      # https://docs.pi-hole.net/docker/configuration/
+      # ===========================================
+      FTLCONF_webserver_api_password: ${PIHOLE_WEBPASSWORD:?Set Pi-hole admin password}
+      FTLCONF_dns_upstreams: ${PIHOLE_DNS_UPSTREAM:-cloudflared#5053}
+      FTLCONF_dns_listeningMode: ${PIHOLE_DNS_LISTENING:-all}
+      FTLCONF_webserver_port: ${PIHOLE_WEB_PORT:-80}
+    healthcheck:
+      test: ["CMD-SHELL", "dig @127.0.0.1 pi.hole +short || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================
+  # DNScrypt-proxy - DNS-over-HTTPS Server
+  # Provides DoH endpoint for clients on port 3000
+  # Forwards queries to Pi-hole
+  # NOTE: This service is publicly accessible via Traefik for DoH
+  # ===========================================
+  dnscrypt-proxy:
+    image: klutchell/dnscrypt-proxy:v2.1.15
+    restart: always
+    depends_on:
+      pihole:
+        condition: service_healthy
+    volumes:
+      - dnscrypt-config:/config
+    networks:
+      - pihole-net
+      - dokploy-network
+    labels:
+      # ===========================================
+      # Traefik Routing - DNS-over-HTTPS Endpoint
+      # ===========================================
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole-doh.rule=Host(`${PIHOLE_DOMAIN}`) && Path(`/dns-query`)"
+      - "traefik.http.routers.pihole-doh.entrypoints=websecure"
+      - "traefik.http.routers.pihole-doh.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pihole-doh.middlewares=doh-security-headers@docker"
+      - "traefik.http.services.pihole-doh.loadbalancer.server.port=3000"
+
+      # ===========================================
+      # Security Headers Middleware for DoH
+      # ===========================================
+      - "traefik.http.middlewares.doh-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.doh-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.doh-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.doh-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.doh-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.doh-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--no-verbose", "http://localhost:3000/dns-query"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  pihole-data:
+    driver: local
+  pihole-dnsmasq:
+    driver: local
+  dnscrypt-config:
+    driver: local
+  tailscale-state:
+    driver: local
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  pihole-net:
+    driver: bridge
+  dokploy-network:
+    external: true

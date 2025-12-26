@@ -1,0 +1,116 @@
+# Pi-hole - Network-wide Ad Blocking with DNS-over-HTTPS
+# Complete DNS solution with Cloudflared upstream, DNScrypt DoH server, and Tailscale VPN
+# Public DoH access via Dokploy's host Traefik instance
+# https://pi-hole.net/
+
+[variables]
+# ===========================================
+# Domain Configuration
+# ===========================================
+pihole_domain = "${domain}"
+
+# ===========================================
+# Pi-hole Configuration
+# ===========================================
+pihole_webpassword = "${password:24}"
+
+# ===========================================
+# Tailscale VPN Configuration
+# Get auth key from: https://login.tailscale.com/admin/settings/keys
+# Recommended: Create a reusable key with tag:pihole
+# ===========================================
+ts_authkey = ""
+
+# ===========================================
+# Optional Configuration (with sensible defaults)
+# ===========================================
+tz = "UTC"
+ts_extra_args = "--advertise-tags=tag:pihole --accept-dns=false"
+pihole_dns_upstream = "cloudflared#5053"
+pihole_dns_listening = "all"
+pihole_web_port = "80"
+
+# ===========================================
+# Domain Configuration
+# DNScrypt-proxy provides public DoH endpoint
+# ===========================================
+[[config.domains]]
+serviceName = "dnscrypt-proxy"
+port = 3000
+host = "${domain}"
+
+# ===========================================
+# Environment Variables
+# ===========================================
+[config.env]
+# ===========================================
+# Domain
+# ===========================================
+PIHOLE_DOMAIN = "${pihole_domain}"
+
+# ===========================================
+# Pi-hole Configuration
+# ===========================================
+PIHOLE_WEBPASSWORD = "${pihole_webpassword}"
+PIHOLE_DNS_UPSTREAM = "${pihole_dns_upstream}"
+PIHOLE_DNS_LISTENING = "${pihole_dns_listening}"
+PIHOLE_WEB_PORT = "${pihole_web_port}"
+
+# ===========================================
+# Tailscale VPN Configuration
+# ===========================================
+TS_AUTHKEY = "${ts_authkey}"
+TS_EXTRA_ARGS = "${ts_extra_args}"
+
+# ===========================================
+# System Configuration
+# ===========================================
+TZ = "${tz}"
+
+# ===========================================
+# DNScrypt-proxy Configuration Files
+# ===========================================
+[[config.mounts]]
+serviceName = "dnscrypt-proxy"
+mountPath = "/config/dnscrypt-proxy.toml"
+content = """
+# DNScrypt-proxy configuration
+# Provides DNS-over-HTTPS server on port 3000
+# Forwards all queries to Pi-hole
+
+# ===========================================
+# Local DoH Server Configuration
+# ===========================================
+[local_doh]
+listen_addresses = ['0.0.0.0:3000']
+path = "/dns-query"
+cert_file = ""  # TLS terminated by Traefik
+cert_key_file = ""
+
+# ===========================================
+# DNS Resolution Configuration
+# ===========================================
+[sources]
+[sources.'public-resolvers']
+urls = []
+cache_file = '/config/public-resolvers.md'
+minisign_key = ''
+
+# ===========================================
+# Forwarding Rules
+# Forward all queries to Pi-hole via forwarding-rules.txt
+# ===========================================
+forwarding_rules = '/config/forwarding-rules.txt'
+"""
+
+[[config.mounts]]
+serviceName = "dnscrypt-proxy"
+mountPath = "/config/forwarding-rules.txt"
+content = """
+# Forwarding rules for DNScrypt-proxy
+# Forward all DNS queries to Pi-hole
+# Syntax: <pattern> <resolver>
+# Pattern '.' matches all domains
+
+. pihole
+"""
