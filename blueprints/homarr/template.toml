@@ -3,7 +3,11 @@
 
 [variables]
 domain = "${domain}"
-encryption_key = "${base64:64}"
+
+# Homarr requires a 64-character hex string for encryption
+# Generate with: openssl rand -hex 32
+# This MUST be hex (0-9,a-f) - base64 or alphanumeric will cause validation errors
+encryption_key = ""
 
 [[config.domains]]
 serviceName = "homarr"
@@ -20,5 +24,7 @@ HOMARR_DOMAIN = "${domain}"
 # Security Configuration
 # ===========================================
 # Encryption key for sensitive data storage (cookies, sessions, credentials)
-# Auto-generated 64-character base64 string
+# REQUIRED: 64-character hex string (0-9, a-f only)
+# Generate with: openssl rand -hex 32
+# ⚠️ CRITICAL: Must be hex format, NOT base64 or alphanumeric
 SECRET_ENCRYPTION_KEY = "${encryption_key}"
