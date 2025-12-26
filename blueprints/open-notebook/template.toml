@@ -1,0 +1,108 @@
+# Open Notebook - Private Multi-Model AI Knowledge Management Platform
+# Local alternative to NotebookLM with full privacy and control
+# https://github.com/lfnovo/open-notebook
+
+[variables]
+domain = "${domain}"
+surreal_password = "${password:32}"
+surreal_user = "root"
+surreal_namespace = "open_notebook"
+surreal_database = "production"
+
+# Optional security (recommended for public hosting)
+open_notebook_password = ""
+
+# AI Provider API Keys (at least one required)
+openai_api_key = ""
+anthropic_api_key = ""
+ollama_api_base = ""
+google_api_key = ""
+mistral_api_key = ""
+deepseek_api_key = ""
+
+# Optional Feature Keys
+elevenlabs_api_key = ""
+firecrawl_api_key = ""
+jina_api_key = ""
+voyage_api_key = ""
+
+# Application Tuning
+api_client_timeout = "300"
+esperanto_llm_timeout = "60"
+tts_batch_size = "5"
+
+# Container User
+uid = "1000"
+gid = "1000"
+
+[[config.domains]]
+serviceName = "open-notebook"
+port = 8502
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+OPEN_NOTEBOOK_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration (SurrealDB Embedded)
+# ===========================================
+SURREAL_USER = "${surreal_user}"
+SURREAL_PASSWORD = "${surreal_password}"
+SURREAL_NAMESPACE = "${surreal_namespace}"
+SURREAL_DATABASE = "${surreal_database}"
+
+# ===========================================
+# Security (Optional - Recommended for Public Hosting)
+# Set a password to protect your Open Notebook instance
+# ===========================================
+OPEN_NOTEBOOK_PASSWORD = "${open_notebook_password}"
+
+# ===========================================
+# AI Provider Configuration (At Least One Required)
+# Get API keys from your chosen provider(s):
+# - OpenAI: https://platform.openai.com/api-keys
+# - Anthropic: https://console.anthropic.com/settings/keys
+# - Google AI: https://makersuite.google.com/app/apikey
+# - Mistral: https://console.mistral.ai/api-keys
+# - DeepSeek: https://platform.deepseek.com/api_keys
+# - Ollama: Set to your local Ollama URL (e.g., http://host.docker.internal:11434)
+# ===========================================
+OPENAI_API_KEY = "${openai_api_key}"
+ANTHROPIC_API_KEY = "${anthropic_api_key}"
+OLLAMA_API_BASE = "${ollama_api_base}"
+GOOGLE_API_KEY = "${google_api_key}"
+MISTRAL_API_KEY = "${mistral_api_key}"
+DEEPSEEK_API_KEY = "${deepseek_api_key}"
+
+# ===========================================
+# Optional Features
+# ===========================================
+# ElevenLabs TTS (for podcast generation)
+# Get from: https://elevenlabs.io/app/settings/api-keys
+ELEVENLABS_API_KEY = "${elevenlabs_api_key}"
+
+# Web Crawling Services
+# Firecrawl: https://www.firecrawl.dev/app/api-keys
+# Jina AI: https://jina.ai/reader#api
+FIRECRAWL_API_KEY = "${firecrawl_api_key}"
+JINA_API_KEY = "${jina_api_key}"
+
+# Voyage AI Embeddings
+# Get from: https://dash.voyageai.com/api-keys
+VOYAGE_API_KEY = "${voyage_api_key}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+API_CLIENT_TIMEOUT = "${api_client_timeout}"
+ESPERANTO_LLM_TIMEOUT = "${esperanto_llm_timeout}"
+TTS_BATCH_SIZE = "${tts_batch_size}"
+
+# ===========================================
+# Container User (Optional)
+# ===========================================
+UID = "${uid}"
+GID = "${gid}"

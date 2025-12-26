@@ -1,0 +1,28 @@
+# Homer - A very simple static homepage for your server
+# https://github.com/bastienwirtz/homer
+
+[variables]
+domain = "${domain}"
+init_assets = "1"
+port = "8080"
+
+[[config.domains]]
+serviceName = "homer"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+HOMER_DOMAIN = "${domain}"
+
+# ===========================================
+# Initialization
+# ===========================================
+INIT_ASSETS = "${init_assets}"
+
+# ===========================================
+# Server Configuration
+# ===========================================
+PORT = "${port}"

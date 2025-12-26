@@ -1,0 +1,37 @@
+# Kestra - Event-Driven Orchestration Platform
+# https://github.com/kestra-io/kestra
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+postgres_db = "kestra"
+postgres_user = "kestra"
+kestra_basic_auth_enabled = "false"
+kestra_admin_user = ""
+kestra_admin_password = ""
+
+[[config.domains]]
+serviceName = "kestra"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+KESTRA_DOMAIN = "${domain}"
+
+# ===========================================
+# PostgreSQL Database Configuration
+# ===========================================
+POSTGRES_DB = "${postgres_db}"
+POSTGRES_USER = "${postgres_user}"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Basic Authentication (Optional)
+# Set kestra_basic_auth_enabled to "true" to enable
+# ===========================================
+KESTRA_BASIC_AUTH_ENABLED = "${kestra_basic_auth_enabled}"
+KESTRA_ADMIN_USER = "${kestra_admin_user}"
+KESTRA_ADMIN_PASSWORD = "${kestra_admin_password}"
