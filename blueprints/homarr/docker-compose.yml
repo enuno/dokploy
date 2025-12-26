@@ -3,7 +3,7 @@ services:
   # Homarr - Homelab Dashboard
   # =============================================================================
   homarr:
-    image: ghcr.io/homarr-labs/homarr:1.47.0
+    image: ghcr.io/homarr-labs/homarr:latest
     restart: always
     volumes:
       # Configuration storage (apps, settings, widgets)
