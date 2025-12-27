@@ -232,18 +232,30 @@ docker logs -f $(docker ps -qf "name=hyperbeam")
 **Symptom**: Container exits immediately or repeatedly restarts
 
 **Common Causes:**
-1. **Missing Wallet**
+1. **"No cookie is set or found" Error**
+   ```bash
+   # Check container logs
+   docker logs $(docker ps -aqf "name=hyperbeam")
+   ```
+   **Fix**: This error occurs when the Erlang release is missing the `foreground` command.
+   The docker-compose.yml includes `command: ["foreground"]` to resolve this.
+   If you see this error, ensure your docker-compose.yml has:
+   ```yaml
+   command: ["foreground"]
+   ```
+
+2. **Missing Wallet**
    ```bash
    # Check if wallet exists
    docker exec $(docker ps -qf "name=hyperbeam") ls -la /opt/config/wallet.json
    ```
    Fix: Upload wallet.json (see Step 2)
 
-2. **Invalid Wallet Format**
+3. **Invalid Wallet Format**
    - Ensure wallet is valid JWK JSON format
    - Verify file is not corrupted
 
-3. **Port Conflict**
+4. **Port Conflict**
    ```bash
    # Check if port 10000 is in use
    netstat -tlnp | grep 10000

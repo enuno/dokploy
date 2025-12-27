@@ -6,6 +6,7 @@ services:
   hyperbeam:
     image: ghcr.io/ar-io/hyperbeam:9a1f00a863a6515cfdc49d291b3e1fb42eed5278
     restart: always
+    command: ["foreground"]
     volumes:
       - hyperbeam-data:/opt/data
       - hyperbeam-config:/opt/config
