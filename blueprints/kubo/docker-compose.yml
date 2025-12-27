@@ -1,0 +1,106 @@
+services:
+  kubo:
+    image: ipfs/kubo:v0.39.0
+    restart: always
+    ports:
+      # Swarm port MUST be directly exposed for P2P connectivity
+      # Cannot use Traefik (requires UDP + direct peer connections)
+      - "${SWARM_PORT:-4001}:4001/tcp"
+      - "${SWARM_PORT:-4001}:4001/udp"
+    volumes:
+      - kubo-data:/data/ipfs
+      - kubo-export:/export
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      KUBO_DOMAIN: ${DOMAIN:?Set your domain for gateway access}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Set admin subdomain (e.g., admin.example.com)}
+
+      # ===========================================
+      # IPFS Profile
+      # Options: server, lowpower, test, default
+      # server: Optimized for dedicated nodes (recommended)
+      # lowpower: Reduced resource usage
+      # test: Minimal configuration for testing
+      # ===========================================
+      IPFS_PROFILE: ${IPFS_PROFILE:-server}
+
+      # ===========================================
+      # Resource Management
+      # GOMAXPROCS: Max OS threads (should match CPU limit)
+      # GOMEMLIMIT: Soft memory limit (set to ~93% of container limit)
+      # ===========================================
+      GOMAXPROCS: ${GOMAXPROCS:-4}
+      GOMEMLIMIT: ${GOMEMLIMIT:-7500MiB}
+
+      # ===========================================
+      # Private Network (Optional)
+      # Uncomment and set SWARM_KEY for private IPFS networks
+      # Leave blank for public IPFS network (default)
+      # ===========================================
+      # IPFS_SWARM_KEY: ${IPFS_SWARM_KEY:-}
+
+    networks:
+      - kubo-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+
+      # Gateway router (public HTTP access to IPFS content)
+      - "traefik.http.routers.kubo-gateway.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.kubo-gateway.entrypoints=websecure"
+      - "traefik.http.routers.kubo-gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.kubo-gateway.middlewares=kubo-security@docker"
+      - "traefik.http.services.kubo-gateway.loadbalancer.server.port=8080"
+
+      # Admin router (RPC API + WebUI - MUST be protected)
+      # Access at: https://admin.${DOMAIN}
+      - "traefik.http.routers.kubo-admin.rule=Host(`${ADMIN_DOMAIN}`)"
+      - "traefik.http.routers.kubo-admin.entrypoints=websecure"
+      - "traefik.http.routers.kubo-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.kubo-admin.middlewares=kubo-admin-security@docker"
+      - "traefik.http.services.kubo-admin.loadbalancer.server.port=5001"
+
+      # Security headers middleware (gateway)
+      - "traefik.http.middlewares.kubo-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.kubo-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.kubo-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.kubo-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.kubo-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Security headers middleware (admin - stricter)
+      - "traefik.http.middlewares.kubo-admin-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.kubo-admin-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.kubo-admin-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.kubo-admin-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.kubo-admin-security.headers.frameDeny=true"
+      - "traefik.http.middlewares.kubo-admin-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "ipfs id || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8192M
+        reservations:
+          cpus: "2.0"
+          memory: 6144M
+
+volumes:
+  kubo-data:
+    driver: local
+  kubo-export:
+    driver: local
+
+networks:
+  kubo-net:
+    driver: bridge
+  dokploy-network:
+    external: true

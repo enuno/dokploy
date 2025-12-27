@@ -1,0 +1,65 @@
+# Kubo - IPFS Implementation in Go
+# https://github.com/ipfs/kubo
+
+[variables]
+domain = "${domain}"
+admin_domain = "${domain}"
+
+[[config.domains]]
+serviceName = "kubo"
+port = 8080
+host = "${domain}"
+
+[[config.domains]]
+serviceName = "kubo"
+port = 5001
+host = "${admin_domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+ADMIN_DOMAIN = "${admin_domain}"
+
+# ===========================================
+# IPFS Profile Configuration
+# Options: server, lowpower, test, default
+# server: Optimized for dedicated nodes (recommended)
+# lowpower: Reduced resource usage for lightweight deployments
+# test: Minimal configuration for testing environments
+# default: Standard IPFS configuration
+# ===========================================
+IPFS_PROFILE = "server"
+
+# ===========================================
+# Resource Management
+# GOMAXPROCS: Maximum OS threads (should match CPU limit)
+# GOMEMLIMIT: Soft memory limit (set to ~93% of container memory limit)
+# Defaults: 4 CPU, 7500MiB (~93% of 8GB container limit)
+# ===========================================
+GOMAXPROCS = "4"
+GOMEMLIMIT = "7500MiB"
+
+# ===========================================
+# Network Configuration
+# SWARM_PORT: P2P swarm port (both TCP and UDP)
+# Must be directly exposed (cannot use Traefik due to UDP requirement)
+# Default: 4001
+# ===========================================
+SWARM_PORT = "4001"
+
+# ===========================================
+# Private Network (Optional)
+# Uncomment and set IPFS_SWARM_KEY for private IPFS networks
+# Generate swarm key: echo -e "/key/swarm/psk/1.0.0/\n/base16/\n`tr -dc 'a-f0-9' < /dev/urandom | head -c64`"
+# Leave blank for public IPFS network (default)
+# ===========================================
+# IPFS_SWARM_KEY = ""
+
+# ===========================================
+# Cloudflare Zero Trust Access (Optional)
+# Recommended for protecting admin panel (port 5001)
+# Setup guide in README.md
+# No credentials needed in template - configured in CF dashboard
+# ===========================================

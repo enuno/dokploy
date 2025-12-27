@@ -13,6 +13,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [algo-relay](/blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
 | [anon-relay](/blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
 | [ar-io-gateway](/blueprints/ar-io-gateway/) | Modular Arweave gateway with monitoring stack (Prometheus, Grafana, OpenTelemetry) and optional AO Compute Unit | 4-9 (base gateway + optional monitoring + AO) | Ready |
+| [ar-io-observer](/blueprints/ar-io-observer/) | AR.IO Network observer generating randomized observation reports for gateway nodes | 1 (observer) | Ready |
 | [anonupload](/blueprints/anonupload/) | Privacy-focused anonymous file sharing | 1 (php/apache) | Ready |
 | [beszel](/blueprints/beszel/) | Lightweight server monitoring hub with agent architecture | 4 | Ready |
 | [blinko](/blueprints/blinko/) | AI-powered personal note-taking tool with RAG for semantic search | 2 (blinko, postgres) | Ready |
@@ -29,7 +30,9 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [homarr](/blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
 | [homer](/blueprints/homer/) | Simple static homepage dashboard with YAML configuration | 1 (homer) | Ready |
 | [hyperbeam](/blueprints/hyperbeam/) | AO Protocol compute node with Actor-Oriented architecture for permaweb applications | 1 (hyperbeam) | Ready |
+| [ipfs-sw-gateway](/blueprints/ipfs-sw-gateway/) | Browser-based IPFS gateway using Service Workers with wildcard SSL for subdomain content addressing | 1 (gateway) | Ready |
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
+| [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |
 | [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
@@ -37,9 +40,11 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |
 | [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
 | [padloc](/blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
+| [someguy](/blueprints/someguy/) | HTTP Delegated Routing V1 server for IPFS with Amino DHT proxy | 1 (someguy) | Ready |
 | [pihole](/blueprints/pihole/) | Network-wide ad blocking with DNS-over-HTTPS, Cloudflared upstream, and Tailscale VPN | 4 (cloudflared, tailscale, pihole, dnscrypt-proxy) | Ready |
 | [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
+| [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
 | [warp-docker](/blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
 | [warpod](/blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
 | [wot-relay](/blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |
