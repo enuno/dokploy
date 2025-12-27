@@ -1,0 +1,110 @@
+services:
+  rainbow:
+    image: ghcr.io/ipfs/rainbow:v1.21.0
+    restart: always
+    volumes:
+      - rainbow-data:/data
+      - rainbow-identity:/libp2p-identity
+    environment:
+      # Data directory configuration
+      RAINBOW_DATADIR: /data
+
+      # Subdomain gateway configuration
+      RAINBOW_SUBDOMAIN_GATEWAY_DOMAINS: ipfs.${DOMAIN:?Set your domain}
+
+      # Automatic configuration
+      RAINBOW_AUTOCONF: ${RAINBOW_AUTOCONF:-true}
+      RAINBOW_AUTOCONF_URL: ${RAINBOW_AUTOCONF_URL:-https://conf.ipfs-mainnet.org/autoconf.json}
+      RAINBOW_AUTOCONF_REFRESH: ${RAINBOW_AUTOCONF_REFRESH:-24h}
+
+      # Garbage collection settings
+      RAINBOW_GC_INTERVAL: ${RAINBOW_GC_INTERVAL:-1h}
+      RAINBOW_GC_THRESHOLD: ${RAINBOW_GC_THRESHOLD:-90}
+
+      # Management API configuration
+      RAINBOW_CTL_LISTEN_ADDRESS: ${RAINBOW_CTL_LISTEN_ADDRESS:-0.0.0.0:8091}
+
+      # Gateway listen address
+      RAINBOW_GATEWAY_LISTEN_ADDRESS: ${RAINBOW_GATEWAY_LISTEN_ADDRESS:-0.0.0.0:8080}
+
+      # Libp2p configuration
+      RAINBOW_LIBP2p_LISTEN_ADDRS: ${RAINBOW_LIBP2P_LISTEN_ADDRS:-/ip4/0.0.0.0/tcp/4001}
+
+      # ===========================================
+      # Cloudflare DNS Challenge (REQUIRED for wildcard SSL)
+      # Required for IPFS subdomain gateway (*.ipfs.domain.com)
+      # Get from: Cloudflare Dashboard > Profile > API Tokens
+      # Permission needed: Zone:DNS:Edit
+      # ===========================================
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?Set Cloudflare DNS API token for SSL wildcard certificates}
+
+      # ===========================================
+      # Cloudflare Zero Trust (OPTIONAL - for admin protection)
+      # Protects /mgr/* management endpoints with authentication
+      # Get team name from: Cloudflare Dashboard > Zero Trust > Settings
+      # Leave empty to disable Zero Trust protection
+      # ===========================================
+      CF_TEAM_NAME: ${CF_TEAM_NAME:-}
+    networks:
+      - rainbow-net
+      - dokploy-network
+    labels:
+      # Main gateway route
+      - "traefik.enable=true"
+      - "traefik.http.routers.rainbow-gateway.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.rainbow-gateway.entrypoints=websecure"
+      - "traefik.http.routers.rainbow-gateway.tls.certresolver=cloudflare"
+      - "traefik.http.routers.rainbow-gateway.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.rainbow-gateway.tls.domains[0].sans=*.ipfs.${DOMAIN}"
+      - "traefik.http.routers.rainbow-gateway.middlewares=rainbow-security-headers@docker"
+      - "traefik.http.services.rainbow-gateway.loadbalancer.server.port=8080"
+
+      # Subdomain gateway route (*.ipfs.domain.com)
+      - "traefik.http.routers.rainbow-subdomain.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.ipfs.${DOMAIN}`)"
+      - "traefik.http.routers.rainbow-subdomain.entrypoints=websecure"
+      - "traefik.http.routers.rainbow-subdomain.tls.certresolver=cloudflare"
+      - "traefik.http.routers.rainbow-subdomain.middlewares=rainbow-security-headers@docker"
+      - "traefik.http.services.rainbow-subdomain.loadbalancer.server.port=8080"
+
+      # Management API route (protected with Cloudflare Zero Trust)
+      - "traefik.http.routers.rainbow-mgmt.rule=Host(`${DOMAIN}`) && PathPrefix(`/mgr`)"
+      - "traefik.http.routers.rainbow-mgmt.entrypoints=websecure"
+      - "traefik.http.routers.rainbow-mgmt.tls.certresolver=cloudflare"
+      - "traefik.http.routers.rainbow-mgmt.middlewares=rainbow-cf-access@docker"
+      - "traefik.http.services.rainbow-mgmt.loadbalancer.server.port=8091"
+
+      # Cloudflare Zero Trust Access Middleware (OPTIONAL - for admin protection)
+      # Protects /mgr/* endpoints with Cloudflare Access authentication
+      # Setup: Cloudflare Dashboard > Zero Trust > Access > Applications
+      # Create application for: ${DOMAIN}/mgr/*
+      - "traefik.http.middlewares.rainbow-cf-access.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      - "traefik.http.middlewares.rainbow-cf-access.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.rainbow-cf-access.forwardauth.authResponseHeaders=Cf-Access-Authenticated-User-Email"
+
+      # Security Headers Middleware (for public gateway routes)
+      - "traefik.http.middlewares.rainbow-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.rainbow-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.rainbow-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.rainbow-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.rainbow-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Docker network for Traefik
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8091/mgr/peers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  rainbow-data:
+    driver: local
+  rainbow-identity:
+    driver: local
+
+networks:
+  rainbow-net:
+    driver: bridge
+  dokploy-network:
+    external: true

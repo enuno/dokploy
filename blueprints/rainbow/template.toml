@@ -1,0 +1,78 @@
+# Rainbow - IPFS HTTP Gateway
+# https://github.com/ipfs/rainbow
+
+[variables]
+domain = "${domain}"
+
+# Cloudflare DNS API Token (REQUIRED for wildcard SSL)
+# Required for subdomain gateway: *.ipfs.domain.com
+# Get from: Cloudflare Dashboard > Profile > API Tokens
+# Create token with Zone:DNS:Edit permission for your domain
+cf_dns_api_token = ""
+
+# Cloudflare Zero Trust Team Name (OPTIONAL)
+# Required only if using Zero Trust to protect /mgr/* endpoints
+# Get from: Cloudflare Dashboard > Zero Trust > Settings
+# Leave empty to disable Zero Trust protection
+cf_team_name = ""
+
+[[config.domains]]
+serviceName = "rainbow"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Rainbow Configuration
+# ===========================================
+# Data directory
+RAINBOW_DATADIR = "/data"
+
+# Subdomain gateway configuration
+# Enables: https://<cid>.ipfs.domain.com/
+RAINBOW_SUBDOMAIN_GATEWAY_DOMAINS = "ipfs.${domain}"
+
+# Gateway listen address
+RAINBOW_GATEWAY_LISTEN_ADDRESS = "0.0.0.0:8080"
+
+# Management API listen address
+RAINBOW_CTL_LISTEN_ADDRESS = "0.0.0.0:8091"
+
+# ===========================================
+# Automatic Configuration (IPFS Mainnet)
+# ===========================================
+RAINBOW_AUTOCONF = "true"
+RAINBOW_AUTOCONF_URL = "https://conf.ipfs-mainnet.org/autoconf.json"
+RAINBOW_AUTOCONF_REFRESH = "24h"
+
+# ===========================================
+# Garbage Collection Settings
+# ===========================================
+RAINBOW_GC_INTERVAL = "1h"
+RAINBOW_GC_THRESHOLD = "90"
+
+# ===========================================
+# Libp2p Configuration
+# ===========================================
+RAINBOW_LIBP2P_LISTEN_ADDRS = "/ip4/0.0.0.0/tcp/4001"
+
+# ===========================================
+# Cloudflare DNS Challenge (REQUIRED)
+# Required for wildcard SSL certificate (*.ipfs.domain.com)
+# Get from: Cloudflare Dashboard > Profile > API Tokens
+# Create token with Zone:DNS:Edit permission
+# ===========================================
+CF_DNS_API_TOKEN = "${cf_dns_api_token}"
+
+# ===========================================
+# Cloudflare Zero Trust (OPTIONAL)
+# Protects /mgr/* management endpoints with authentication
+# Get team name from: Cloudflare Dashboard > Zero Trust > Settings
+# Leave empty to disable Zero Trust protection
+# ===========================================
+CF_TEAM_NAME = "${cf_team_name}"
