@@ -1,0 +1,50 @@
+# HyperBEAM - AO Protocol Node
+# Actor-Oriented supercomputer node for the permaweb
+# https://github.com/ar-io/HyperBEAM
+
+services:
+  hyperbeam:
+    image: ghcr.io/ar-io/hyperbeam:9a1f00a863a6515cfdc49d291b3e1fb42eed5278
+    restart: always
+    volumes:
+      - hyperbeam-data:/opt/data
+      - hyperbeam-config:/opt/config
+    environment:
+      # Port Configuration
+      HYPERBEAM_PORT: ${HYPERBEAM_PORT:-10000}
+
+      # Arweave Wallet Configuration
+      # Wallet should be mounted as a volume or provided via environment
+      PATH_TO_WALLET: ${PATH_TO_WALLET:-/opt/config/wallet.json}
+
+      # Optional: Node Configuration
+      # Additional environment variables for HyperBEAM configuration
+      # See: https://github.com/ar-io/HyperBEAM for full configuration options
+    networks:
+      - hyperbeam-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hyperbeam.rule=Host(`${HYPERBEAM_DOMAIN}`)"
+      - "traefik.http.routers.hyperbeam.entrypoints=websecure"
+      - "traefik.http.routers.hyperbeam.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hyperbeam.loadbalancer.server.port=10000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:10000/~meta@1.0/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  hyperbeam-data:
+    driver: local
+  hyperbeam-config:
+    driver: local
+
+networks:
+  hyperbeam-net:
+    driver: bridge
+  dokploy-network:
+    external: true

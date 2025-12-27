@@ -12,6 +12,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 |----------|-------------|----------|--------|
 | [algo-relay](/blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
 | [anon-relay](/blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
+| [ar-io-gateway](/blueprints/ar-io-gateway/) | Modular Arweave gateway with monitoring stack (Prometheus, Grafana, OpenTelemetry) and optional AO Compute Unit | 4-9 (base gateway + optional monitoring + AO) | Ready |
 | [anonupload](/blueprints/anonupload/) | Privacy-focused anonymous file sharing | 1 (php/apache) | Ready |
 | [beszel](/blueprints/beszel/) | Lightweight server monitoring hub with agent architecture | 4 | Ready |
 | [blinko](/blueprints/blinko/) | AI-powered personal note-taking tool with RAG for semantic search | 2 (blinko, postgres) | Ready |
@@ -27,6 +28,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [haven](/blueprints/haven/) | High Availability Vault for Events on Nostr with S3 backend | 5 | Ready |
 | [homarr](/blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
 | [homer](/blueprints/homer/) | Simple static homepage dashboard with YAML configuration | 1 (homer) | Ready |
+| [hyperbeam](/blueprints/hyperbeam/) | AO Protocol compute node with Actor-Oriented architecture for permaweb applications | 1 (hyperbeam) | Ready |
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |

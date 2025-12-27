@@ -1,0 +1,36 @@
+# HyperBEAM - AO Protocol Node
+# Actor-Oriented supercomputer node for the permaweb
+# https://github.com/ar-io/HyperBEAM
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "hyperbeam"
+port = 10000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+HYPERBEAM_DOMAIN = "${domain}"
+
+# ===========================================
+# Port Configuration
+# ===========================================
+HYPERBEAM_PORT = "10000"
+
+# ===========================================
+# Arweave Wallet Configuration
+# Upload your Arweave wallet.json file to the hyperbeam-config volume
+# Path: /opt/config/wallet.json
+# Get a wallet from: https://arweave.app/ or https://fwd.arweave.dev/
+# ===========================================
+PATH_TO_WALLET = "/opt/config/wallet.json"
+
+# ===========================================
+# Optional: Advanced Configuration
+# Refer to https://github.com/ar-io/HyperBEAM for additional config options
+# Configuration can be provided via config.flat file in hyperbeam-config volume
+# ===========================================
