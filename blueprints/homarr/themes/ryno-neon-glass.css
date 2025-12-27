@@ -1,0 +1,153 @@
+/* ============================================
+   RYNO NEON GLASS - Clean Version
+   Fixed: Removed line artifacts
+   ============================================ */
+
+:root {
+  --neon-primary: #00d4ff;
+  --neon-secondary: #7c3aed;
+  --neon-accent: #f472b6;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glow-primary: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* === GLOBAL BACKGROUND === */
+body {
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.mantine-AppShell-main {
+  background: transparent !important;
+}
+
+/* === CARD STYLING === */
+[class*="mantine-Card"],
+[class*="mantine-Paper"] {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--card-shadow) !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+[class*="mantine-Card"]:hover,
+[class*="mantine-Paper"]:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(0, 212, 255, 0.3) !important;
+  box-shadow: var(--card-shadow), var(--glow-primary) !important;
+}
+
+/* === TEXT === */
+[class*="mantine-Title"],
+[class*="mantine-Text"] {
+  color: #f1f5f9 !important;
+}
+
+/* === BUTTONS === */
+[class*="mantine-Button"] {
+  background: linear-gradient(135deg, var(--neon-primary) 0%, var(--neon-secondary) 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3) !important;
+}
+
+[class*="mantine-Button"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4) !important;
+  filter: brightness(1.1);
+}
+
+/* === INPUTS === */
+[class*="mantine-Input"] input,
+[class*="mantine-TextInput"] input,
+[class*="mantine-Select"] input {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 10px !important;
+  color: #f1f5f9 !important;
+  transition: all 0.3s ease !important;
+}
+
+[class*="mantine-Input"] input:focus,
+[class*="mantine-TextInput"] input:focus {
+  border-color: var(--neon-primary) !important;
+  box-shadow: var(--glow-primary) !important;
+}
+
+/* === LINKS === */
+a {
+  color: var(--neon-primary) !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+}
+
+a:hover {
+  color: #fff !important;
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-primary), var(--neon-secondary));
+  border-radius: 4px;
+}
+
+/* === MODALS === */
+[class*="mantine-Modal-content"],
+[class*="mantine-Drawer-content"] {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 20px !important;
+}
+
+/* === MENU === */
+[class*="mantine-Menu-dropdown"] {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+}
+
+[class*="mantine-Menu-item"]:hover {
+  background: rgba(0, 212, 255, 0.15) !important;
+}
+
+/* === PROGRESS BARS === */
+[class*="mantine-Progress"] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+[class*="mantine-Progress-bar"] {
+  background: linear-gradient(90deg, var(--neon-primary), var(--neon-secondary)) !important;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  [class*="mantine-Card"]:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

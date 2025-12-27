@@ -1,0 +1,159 @@
+# AR.IO Gateway Node - Scalable Arweave gateway for the permaweb
+# https://github.com/ar-io/ar-io-node
+
+[variables]
+domain = "${domain}"
+ar_io_wallet = ""
+observer_wallet = ""
+admin_api_key = "${base64:32}"
+
+# Monitoring Stack Variables
+grafana_admin_password = "${password:32}"
+
+# AO Compute Unit Variables (Optional - leave empty if not using AO CU)
+ao_wallet = ""
+
+[[config.domains]]
+serviceName = "envoy"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+AR_IO_DOMAIN = "${domain}"
+
+# ===========================================
+# AR.IO Wallet Configuration
+# Obtain from: Arweave wallet (required for network participation)
+# AR_IO_WALLET: Main gateway wallet address
+# OBSERVER_WALLET: Observer process wallet address
+# ===========================================
+AR_IO_WALLET = "${ar_io_wallet}"
+OBSERVER_WALLET = "${observer_wallet}"
+
+# ===========================================
+# Security
+# ===========================================
+ADMIN_API_KEY = "${admin_api_key}"
+
+# ===========================================
+# Node Configuration
+# ===========================================
+ARNS_ROOT_HOST = ""
+IO_PROCESS_ID = ""
+START_HEIGHT = ""
+STOP_HEIGHT = ""
+
+# ===========================================
+# Trusted Arweave Nodes
+# ===========================================
+TRUSTED_NODE_HOST = "arweave.net"
+TRUSTED_NODE_PORT = "443"
+FALLBACK_NODE_HOST = "peers.arweave.xyz"
+FALLBACK_NODE_PORT = "1984"
+
+# ===========================================
+# Logging
+# ===========================================
+ENVOY_LOG_LEVEL = "info"
+CORE_LOG_LEVEL = "info"
+CORE_LOG_FORMAT = "simple"
+OBSERVER_LOG_LEVEL = "info"
+
+# ===========================================
+# Redis Configuration
+# ===========================================
+REDIS_MAX_MEMORY = "256mb"
+
+# ===========================================
+# Rate Limiting (Redis-backed)
+# ===========================================
+ENABLE_RATE_LIMITER = "true"
+
+# ===========================================
+# Observer Settings
+# ===========================================
+SUBMIT_CONTRACT_INTERACTIONS = "true"
+NUM_ARNS_NAMES_TO_OBSERVE_PER_GROUP = "8"
+RUN_OBSERVER = "true"
+
+# ===========================================
+# Advanced Settings (Optional)
+# ===========================================
+ARWEAVE_POST_DRY_RUN = "false"
+
+# ===========================================
+# Monitoring Stack Configuration (Optional)
+# ===========================================
+# Set to 'true' to expose monitoring UIs via Traefik
+EXPOSE_PROMETHEUS = "false"
+EXPOSE_GRAFANA = "true"
+
+# Grafana Configuration
+GRAFANA_ADMIN_USER = "admin"
+GRAFANA_ADMIN_PASSWORD = "${grafana_admin_password}"
+GRAFANA_ROOT_URL = "https://${domain}/grafana"
+GF_AUTH_ANONYMOUS = "false"
+GF_AUTH_ANONYMOUS_ROLE = "Viewer"
+
+# Prometheus Configuration
+PROMETHEUS_RETENTION = "30d"
+
+# OpenTelemetry Configuration
+OTEL_EXPORTER_OTLP_ENDPOINT = "http://opentelemetry-collector:4318"
+OTEL_SERVICE_NAME = "ar-io-core"
+OTEL_LOG_LEVEL = "info"
+
+# OpenTelemetry Backend (Optional - for Jaeger/Tempo/Honeycomb)
+# OTEL_BACKEND_ENDPOINT = ""
+# OTEL_BACKEND_HEADERS = ""
+# OTEL_BACKEND_API_KEY = ""
+
+# ===========================================
+# AO Compute Unit Configuration (Optional)
+# Only enable if deploying AO CU sidecar
+# Requires 4-16GB RAM
+# ===========================================
+EXPOSE_AO_CU = "false"
+
+# AO Node Configuration
+AO_NODE_CONFIG_ENV = "production"
+AO_DEBUG = ""
+
+# AO Wallet Configuration
+AO_WALLET = "${ao_wallet}"
+AO_WALLET_FILE = ""
+
+# AO Access Control
+AO_ALLOW_PROCESSES = "*"
+AO_ALLOW_OWNERS = "*"
+
+# AO Checkpoint Configuration
+AO_CHECKPOINT_TRUSTED_OWNERS = ""
+AO_CHECKPOINT_PREFERRED_OWNERS = ""
+
+# AO Gateway & Messaging Unit
+AO_MU_URL = "https://mu.ao-testnet.xyz"
+AO_ARWEAVE_URL = "https://arweave.net"
+AO_GRAPHQL_URL = "https://arweave.net/graphql"
+
+# AO WASM Configuration
+AO_WASM_MEMORY_LIMIT = "17592186044416"
+AO_WASM_COMPUTE_LIMIT = "9000000000000"
+AO_WASM_FORMATS = "wasm64-unknown-emscripten-draft_2024_02_15"
+
+# AO Cache Configuration
+AO_CHECKPOINT_CACHE_SIZE = "100"
+AO_WASM_CACHE_SIZE = "100"
+AO_MODULE_CACHE_SIZE = "5"
+
+# AO Memory Management
+AO_MEMORY_CACHE_SIZE = "500"
+AO_MEMORY_CACHE_TTL = "1800000"
+
+# AO Resource Limits
+AO_CU_MEMORY_LIMIT = "16G"
+AO_CU_MEMORY_RESERVATION = "4G"
+AO_CU_PORT = "6363"

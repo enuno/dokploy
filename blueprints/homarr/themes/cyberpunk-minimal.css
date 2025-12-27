@@ -1,0 +1,96 @@
+/* ============================================
+   CYBERPUNK - Minimal Clean Version
+   ============================================ */
+
+:root {
+  --cyber-yellow: #fcee0a;
+  --cyber-pink: #ff2a6d;
+  --cyber-cyan: #05d9e8;
+  --cyber-dark: #0d0221;
+  --cyber-darker: #050208;
+}
+
+/* === BACKGROUND ONLY === */
+body {
+  background: linear-gradient(180deg, #050208 0%, #0d0221 50%, #1a0a2e 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* === PAGE TITLE === */
+h1, h2, h3 {
+  color: var(--cyber-yellow) !important;
+  text-shadow: 0 0 10px rgba(252, 238, 10, 0.4) !important;
+}
+
+/* === BUTTONS === */
+button[class*="mantine-Button-root"],
+[class*="mantine-Button-root"] {
+  background: transparent !important;
+  border: 2px solid var(--cyber-yellow) !important;
+  border-radius: 2px !important;
+  color: var(--cyber-yellow) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+button[class*="mantine-Button-root"]:hover,
+[class*="mantine-Button-root"]:hover {
+  background: var(--cyber-yellow) !important;
+  color: var(--cyber-dark) !important;
+}
+
+/* === TEXT INPUTS === */
+input[class*="mantine-Input-input"],
+input[class*="mantine-TextInput-input"],
+textarea[class*="mantine-Textarea-input"] {
+  background: rgba(5, 2, 8, 0.8) !important;
+  border: 1px solid rgba(252, 238, 10, 0.3) !important;
+  border-radius: 2px !important;
+  color: var(--cyber-cyan) !important;
+}
+
+input[class*="mantine-Input-input"]:focus,
+input[class*="mantine-TextInput-input"]:focus,
+textarea[class*="mantine-Textarea-input"]:focus {
+  border-color: var(--cyber-cyan) !important;
+  box-shadow: 0 0 10px rgba(5, 217, 232, 0.3) !important;
+}
+
+/* === LINKS === */
+a {
+  color: var(--cyber-cyan) !important;
+}
+
+a:hover {
+  color: var(--cyber-pink) !important;
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050208;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cyber-yellow);
+}
+
+/* === DROPDOWN MENUS === */
+[class*="mantine-Menu-dropdown"] {
+  background: rgba(13, 2, 33, 0.95) !important;
+  border: 1px solid rgba(252, 238, 10, 0.3) !important;
+}
+
+[class*="mantine-Menu-item"]:hover {
+  background: rgba(252, 238, 10, 0.1) !important;
+}
+
+/* === MODAL CONTENT === */
+[class*="mantine-Modal-content"] {
+  background: rgba(13, 2, 33, 0.95) !important;
+  border: 1px solid rgba(252, 238, 10, 0.3) !important;
+}

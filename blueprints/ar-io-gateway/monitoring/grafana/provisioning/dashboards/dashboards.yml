@@ -1,0 +1,29 @@
+# Grafana Dashboard Provisioning
+#
+# Automatically loads dashboards from the specified directory
+# Documentation: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+
+apiVersion: 1
+
+providers:
+  - name: 'AR.IO Gateway Dashboards'
+    orgId: 1
+    folder: 'AR.IO'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+
+  - name: 'System Monitoring'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/system
+      foldersFromFilesStructure: false

@@ -1,0 +1,123 @@
+# Prometheus Configuration for AR.IO Gateway + AO Compute Unit Monitoring
+#
+# This configuration scrapes metrics from:
+# - AR.IO Core service (application metrics)
+# - Node Exporter (system metrics)
+# - Prometheus itself (self-monitoring)
+# - AO Compute Unit (if enabled)
+
+global:
+  scrape_interval: 15s      # How frequently to scrape targets
+  evaluation_interval: 15s  # How frequently to evaluate rules
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    cluster: 'ar-io-gateway'
+    environment: '${ENVIRONMENT:-production}'
+
+# Scrape configurations
+scrape_configs:
+  # ============================================================================
+  # Prometheus Self-Monitoring
+  # ============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # ============================================================================
+  # AR.IO Core Application Metrics
+  # ============================================================================
+  - job_name: 'ar-io-core'
+    static_configs:
+      - targets: ['core:4000']
+        labels:
+          service: 'ar-io-core'
+          component: 'gateway'
+
+    # Scrape core metrics endpoint
+    metrics_path: '/metrics'
+
+    # Increase timeout for slow metrics endpoints
+    scrape_timeout: 10s
+
+  # ============================================================================
+  # AR.IO Envoy Proxy Metrics
+  # ============================================================================
+  - job_name: 'ar-io-envoy'
+    static_configs:
+      - targets: ['envoy:9901']
+        labels:
+          service: 'envoy'
+          component: 'proxy'
+
+    metrics_path: '/stats/prometheus'
+
+  # ============================================================================
+  # Redis Metrics (if exposed)
+  # ============================================================================
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'redis'
+          component: 'cache'
+
+    # Note: Requires redis_exporter sidecar for metrics
+    # This is a placeholder - implement redis_exporter if needed
+
+  # ============================================================================
+  # Node Exporter - System Metrics
+  # ============================================================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+          component: 'system'
+
+    # Node exporter provides system-level metrics:
+    # - CPU, memory, disk usage
+    # - Network statistics
+    # - Filesystem metrics
+
+  # ============================================================================
+  # AO Compute Unit Metrics (Optional)
+  # ============================================================================
+  - job_name: 'ao-cu'
+    static_configs:
+      - targets: ['ao-cu:6363']
+        labels:
+          service: 'ao-cu'
+          component: 'compute'
+
+    # AO CU metrics endpoint (if exposed)
+    metrics_path: '/metrics'
+
+    # Only scrape if AO CU is enabled
+    # This assumes AO CU exposes Prometheus metrics
+    scrape_timeout: 15s
+
+# Remote write configuration (optional - for long-term storage)
+# Uncomment and configure if using remote storage like Thanos, Cortex, or Mimir
+# remote_write:
+#   - url: "http://remote-storage:9090/api/v1/write"
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 5
+#       min_shards: 1
+#       max_samples_per_send: 5000
+#       batch_send_deadline: 5s
+
+# Alerting configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'alertmanager:9093'
+
+# Rule files (optional - for recording/alerting rules)
+# rule_files:
+#   - "/etc/prometheus/rules/*.yml"

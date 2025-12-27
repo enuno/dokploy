@@ -1,0 +1,376 @@
+# AR.IO Gateway Node + Monitoring Stack + AO Compute Unit
+# Modular deployment supporting:
+# - Base Gateway (envoy, core, redis, observer)
+# - Monitoring Stack (prometheus, grafana, node-exporter, opentelemetry)
+# - AO Compute Unit (optional)
+#
+# To disable optional services, simply remove or comment out the sections below
+
+# =============================================================================
+# BASE GATEWAY SERVICES (REQUIRED)
+# =============================================================================
+
+services:
+  envoy:
+    image: ghcr.io/ar-io/ar-io-envoy:4755fa0a2deb258bfaeaa91ba3154f1f7ef41fda
+    restart: always
+    depends_on:
+      core:
+        condition: service_healthy
+      observer:
+        condition: service_healthy
+    environment:
+      - LOG_LEVEL=${ENVOY_LOG_LEVEL:-info}
+      - TVAL_AR_IO_HOST=core
+      - TVAL_AR_IO_PORT=4000
+      - TVAL_OBSERVER_HOST=observer
+      - TVAL_OBSERVER_PORT=5050
+      - TVAL_TRUSTED_NODE_HOST=${TRUSTED_NODE_HOST:-arweave.net}
+      - TVAL_TRUSTED_NODE_PORT=${TRUSTED_NODE_PORT:-443}
+      - TVAL_FALLBACK_NODE_HOST=${FALLBACK_NODE_HOST:-peers.arweave.xyz}
+      - TVAL_FALLBACK_NODE_PORT=${FALLBACK_NODE_PORT:-1984}
+      - TVAL_GRAPHQL_HOST=core
+      - TVAL_GRAPHQL_PORT=4000
+      - TVAL_DATASETS_HOST=core
+      - TVAL_DATASETS_PORT=4000
+      - TVAL_ARNS_ROOT_HOST=${ARNS_ROOT_HOST:-}
+      - TVAL_ARWEAVE_POST_DRY_RUN=${ARWEAVE_POST_DRY_RUN:-false}
+    networks:
+      - ar-io-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ar-io-gateway.rule=Host(`${AR_IO_DOMAIN}`)"
+      - "traefik.http.routers.ar-io-gateway.entrypoints=websecure"
+      - "traefik.http.routers.ar-io-gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ar-io-gateway.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  core:
+    image: ghcr.io/ar-io/ar-io-core:11f7b981c02a2d3ac27ee80dda7b06dff2ad904b
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - chunks-data:/app/data/chunks
+      - contiguous-data:/app/data/contiguous
+      - headers-data:/app/data/headers
+      - sqlite-data:/app/data/sqlite
+      - duckdb-data:/app/data/duckdb
+      - temp-data:/app/data/tmp
+      - lmdb-data:/app/data/lmdb
+      - parquet-data:/app/data/parquet
+      - datasets-data:/app/data/datasets
+      - cdb64-root-tx-index-data:/app/data/cdb64-root-tx-index
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=${CORE_LOG_LEVEL:-info}
+      - LOG_FORMAT=${CORE_LOG_FORMAT:-simple}
+      - TRUSTED_NODE_URL=http://envoy:3000
+      - START_HEIGHT=${START_HEIGHT:-}
+      - STOP_HEIGHT=${STOP_HEIGHT:-}
+      - AR_IO_WALLET=${AR_IO_WALLET:?Set AR.IO wallet address}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:?Set admin API key for security}
+      - ARNS_ROOT_HOST=${ARNS_ROOT_HOST:-}
+      - CHAIN_CACHE_TYPE=redis
+      - REDIS_CACHE_URL=redis://redis:6379
+      - ENABLE_RATE_LIMITER=${ENABLE_RATE_LIMITER:-true}
+      - RATE_LIMITER_TYPE=redis
+      - RATE_LIMITER_REDIS_ENDPOINT=redis://redis:6379
+      - IO_PROCESS_ID=${IO_PROCESS_ID:-}
+      - AR_IO_NODE_RELEASE=63
+      - ARNS_CACHE_TYPE=redis
+      - ARNS_CACHE_MAX_KEYS=10000
+      # OpenTelemetry (if monitoring stack enabled)
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://opentelemetry-collector:4318}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-ar-io-core}
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --maxmemory ${REDIS_MAX_MEMORY:-256mb} --maxmemory-policy allkeys-lru --save "" --appendonly no
+    volumes:
+      - redis-data:/data
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  observer:
+    image: ghcr.io/ar-io/ar-io-observer:0380592e095cd7bf645f6d132b97301d2dad8101
+    restart: always
+    volumes:
+      - temp-data:/app/data/tmp
+      - reports-data:/app/data/reports
+    environment:
+      - LOG_LEVEL=${OBSERVER_LOG_LEVEL:-info}
+      - OBSERVER_WALLET=${OBSERVER_WALLET:?Set observer wallet address}
+      - IO_PROCESS_ID=${IO_PROCESS_ID:-}
+      - SUBMIT_CONTRACT_INTERACTIONS=${SUBMIT_CONTRACT_INTERACTIONS:-true}
+      - NUM_ARNS_NAMES_TO_OBSERVE_PER_GROUP=${NUM_ARNS_NAMES_TO_OBSERVE_PER_GROUP:-8}
+      - RUN_OBSERVER=${RUN_OBSERVER:-true}
+      - MIN_RELEASE_NUMBER=0
+      - AR_IO_NODE_RELEASE=63
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5050/ar-io/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # MONITORING STACK (OPTIONAL - Comment out if not needed)
+  # =============================================================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - ar-io-net
+      - dokploy-network
+    labels:
+      # Expose Prometheus UI (optional, can be disabled for security)
+      - "traefik.enable=${EXPOSE_PROMETHEUS:-false}"
+      - "traefik.http.routers.prometheus.rule=Host(`${AR_IO_DOMAIN}`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: always
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:1024/grafana}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SERVER_HTTP_PORT=1024
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-polystat-panel
+      - GF_AUTH_ANONYMOUS_ENABLED=${GF_AUTH_ANONYMOUS:-false}
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=${GF_AUTH_ANONYMOUS_ROLE:-Viewer}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set Grafana admin password}
+    volumes:
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - ar-io-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${AR_IO_DOMAIN}`) && PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=1024"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:1024/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  opentelemetry-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./monitoring/opentelemetry/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    environment:
+      # Backend configuration (choose one or configure custom)
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_BACKEND_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_BACKEND_HEADERS:-}
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # AO COMPUTE UNIT (OPTIONAL - Comment out if not needed)
+  # Requires at least 4GB RAM (16GB recommended)
+  # =============================================================================
+
+  ao-cu:
+    image: ghcr.io/permaweb/ao-cu:latest
+    restart: unless-stopped
+    depends_on:
+      - envoy
+    volumes:
+      - ao-cu-data:/usr/app/tmp
+    environment:
+      # Node Configuration
+      - NODE_CONFIG_ENV=${AO_NODE_CONFIG_ENV:-production}
+      - DEBUG=${AO_DEBUG:-}
+
+      # Wallet Configuration
+      - WALLET=${AO_WALLET:-}
+      - WALLET_FILE=${AO_WALLET_FILE:-}
+
+      # Access Control
+      - ALLOW_PROCESSES=${AO_ALLOW_PROCESSES:-*}
+      - ALLOW_OWNERS=${AO_ALLOW_OWNERS:-*}
+
+      # Checkpoint Configuration
+      - CHECKPOINT_TRUSTED_OWNERS=${AO_CHECKPOINT_TRUSTED_OWNERS:-}
+      - CHECKPOINT_PREFERRED_OWNERS=${AO_CHECKPOINT_PREFERRED_OWNERS:-}
+
+      # Gateway & Bundler
+      - GATEWAY_URL=http://envoy:3000
+      - MU_URL=${AO_MU_URL:-https://mu.ao-testnet.xyz}
+      - ARWEAVE_URL=${AO_ARWEAVE_URL:-https://arweave.net}
+      - GRAPHQL_URL=${AO_GRAPHQL_URL:-https://arweave.net/graphql}
+
+      # WASM Configuration
+      - WASM_MEMORY_MAX_LIMIT=${AO_WASM_MEMORY_LIMIT:-17592186044416}
+      - WASM_COMPUTE_MAX_LIMIT=${AO_WASM_COMPUTE_LIMIT:-9000000000000}
+      - WASM_SUPPORTED_FORMATS=${AO_WASM_FORMATS:-wasm64-unknown-emscripten-draft_2024_02_15}
+
+      # Cache Configuration
+      - PROCESS_CHECKPOINT_CACHE_SIZE=${AO_CHECKPOINT_CACHE_SIZE:-100}
+      - WASM_BINARY_CACHE_SIZE=${AO_WASM_CACHE_SIZE:-100}
+      - WASM_MODULE_CACHE_SIZE=${AO_MODULE_CACHE_SIZE:-5}
+
+      # Memory Management
+      - PROCESS_MEMORY_CACHE_MAX_SIZE=${AO_MEMORY_CACHE_SIZE:-500}
+      - PROCESS_MEMORY_CACHE_TTL=${AO_MEMORY_CACHE_TTL:-1800000}
+      - PROCESS_MEMORY_CACHE_FILE_DIR=/usr/app/tmp/memory-cache
+    ports:
+      - "${AO_CU_PORT:-6363}:6363"
+    networks:
+      - ar-io-net
+      - dokploy-network
+    labels:
+      # Expose AO CU API (optional)
+      - "traefik.enable=${EXPOSE_AO_CU:-false}"
+      - "traefik.http.routers.ao-cu.rule=Host(`${AR_IO_DOMAIN}`) && PathPrefix(`/ao-cu`)"
+      - "traefik.http.routers.ao-cu.entrypoints=websecure"
+      - "traefik.http.routers.ao-cu.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ao-cu.loadbalancer.server.port=6363"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6363/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${AO_CU_MEMORY_LIMIT:-16G}
+        reservations:
+          memory: ${AO_CU_MEMORY_RESERVATION:-4G}
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+
+volumes:
+  # Base Gateway Volumes
+  chunks-data:
+    driver: local
+  contiguous-data:
+    driver: local
+  headers-data:
+    driver: local
+  sqlite-data:
+    driver: local
+  duckdb-data:
+    driver: local
+  temp-data:
+    driver: local
+  lmdb-data:
+    driver: local
+  parquet-data:
+    driver: local
+  datasets-data:
+    driver: local
+  cdb64-root-tx-index-data:
+    driver: local
+  redis-data:
+    driver: local
+  reports-data:
+    driver: local
+
+  # Monitoring Stack Volumes
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+  # AO Compute Unit Volumes
+  ao-cu-data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+
+networks:
+  ar-io-net:
+    driver: bridge
+  dokploy-network:
+    external: true
