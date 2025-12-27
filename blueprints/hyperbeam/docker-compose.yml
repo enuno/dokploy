@@ -32,7 +32,7 @@ services:
       - "traefik.http.services.hyperbeam.loadbalancer.server.port=10000"
       - "traefik.docker.network=dokploy-network"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:10000/~meta@1.0/info"]
+      test: ["CMD", "curl", "-f", "http://localhost:10000/"]
       interval: 30s
       timeout: 10s
       retries: 3
