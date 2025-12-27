@@ -1,0 +1,83 @@
+# AR.IO Observer - Network Observation Reports
+# https://github.com/ar-io/ar-io-observer
+
+[variables]
+domain = "${domain}"
+
+# Cloudflare Zero Trust Team Name (OPTIONAL)
+# Required only if using Zero Trust to protect /ar-io/observer/* endpoints
+# Get from: Cloudflare Dashboard > Zero Trust > Settings
+# Leave empty to disable Zero Trust protection
+cf_team_name = ""
+
+[[config.domains]]
+serviceName = "observer"
+port = 5050
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Observer Configuration
+# ===========================================
+# Enable/disable observer functionality
+RUN_OBSERVER = "true"
+
+# ===========================================
+# Wallet Configuration
+# Hot wallet public address for signing observation reports
+# AR.IO wallet public address for network participation
+# Note: Private keyfile should be mounted separately (not via env var)
+# ===========================================
+OBSERVER_WALLET = ""
+AR_IO_WALLET = ""
+
+# ===========================================
+# Arweave GraphQL Configuration
+# Default: arweave.net GraphQL endpoint (public Arweave gateway)
+# Can be customized to use different gateway
+# ===========================================
+GRAPHQL_HOST = "arweave.net"
+GRAPHQL_PORT = "443"
+
+# ===========================================
+# Indexing Configuration
+# Block height to start indexing from (0 = genesis block)
+# ===========================================
+START_HEIGHT = "0"
+
+# ===========================================
+# Report Upload Configuration
+# Options:
+#   - Empty string (default): Uses Turbo Credits
+#     - Free for reports <100KB
+#     - Fails for larger reports without credits
+#   - "arweave": Uses AR tokens from observer wallet
+#     - No size limit
+#     - Requires AR balance in observer wallet
+# ===========================================
+REPORT_DATA_SINK = ""
+
+# ===========================================
+# Cloudflare Zero Trust (OPTIONAL)
+# Protects /ar-io/observer/* API endpoints with authentication
+#
+# Setup Instructions:
+# 1. Go to: Cloudflare Dashboard > Zero Trust > Access > Applications
+# 2. Click "Add an Application" > "Self-hosted"
+# 3. Configure:
+#    - Application name: AR.IO Observer API
+#    - Application domain: ${domain}
+#    - Path: /ar-io/observer/*
+# 4. Set access policy (email domain, groups, etc.)
+# 5. Get team name from: Zero Trust > Settings > Custom Pages
+#    - Team name appears in URL: https://<TEAM-NAME>.cloudflareaccess.com
+# 6. Enter team name below
+#
+# Leave empty to disable Zero Trust protection
+# ===========================================
+CF_TEAM_NAME = ""

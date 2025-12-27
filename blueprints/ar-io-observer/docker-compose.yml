@@ -1,0 +1,94 @@
+services:
+  observer:
+    image: ghcr.io/ar-io/ar-io-observer:e34a7f01768d505360a4e0877fe40d55230e864a
+    restart: always
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      ARNS_ROOT_HOST: ${DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Observer Configuration
+      # ===========================================
+      RUN_OBSERVER: ${RUN_OBSERVER:-true}
+
+      # ===========================================
+      # Wallet Configuration
+      # OBSERVER_WALLET: Hot wallet public address for signing reports
+      # AR_IO_WALLET: Your public wallet address
+      # Note: Wallet keyfile should be mounted as secret (not env var)
+      # ===========================================
+      OBSERVER_WALLET: ${OBSERVER_WALLET:?Set observer hot wallet public address}
+      AR_IO_WALLET: ${AR_IO_WALLET:?Set your AR.IO wallet public address}
+
+      # ===========================================
+      # Arweave GraphQL Configuration
+      # ===========================================
+      GRAPHQL_HOST: ${GRAPHQL_HOST:-arweave.net}
+      GRAPHQL_PORT: ${GRAPHQL_PORT:-443}
+
+      # ===========================================
+      # Indexing Configuration
+      # ===========================================
+      START_HEIGHT: ${START_HEIGHT:-0}
+
+      # ===========================================
+      # Report Upload Configuration
+      # Options: (empty = Turbo Credits), "arweave" = AR tokens
+      # Turbo Credits: Free for reports <100KB, fails for larger reports without credits
+      # Arweave: Uses AR tokens from observer wallet, no size limit
+      # ===========================================
+      REPORT_DATA_SINK: ${REPORT_DATA_SINK:-}
+
+      # ===========================================
+      # Cloudflare Zero Trust (OPTIONAL)
+      # Protects API endpoints with Cloudflare Access authentication
+      # Get team name from: Cloudflare Dashboard > Zero Trust > Settings
+      # Leave empty to disable Zero Trust protection
+      # ===========================================
+      CF_TEAM_NAME: ${CF_TEAM_NAME:-}
+    networks:
+      - observer-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.observer.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.observer.entrypoints=websecure"
+      - "traefik.http.routers.observer.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.observer.middlewares=observer-cf-access@docker,observer-security-headers@docker"
+      - "traefik.http.services.observer.loadbalancer.server.port=5050"
+
+      # ===========================================
+      # Cloudflare Zero Trust Access Middleware (OPTIONAL)
+      # Protects all API endpoints with Cloudflare Access authentication
+      # Setup: Cloudflare Dashboard > Zero Trust > Access > Applications
+      # Create application for: ${DOMAIN}/ar-io/observer/*
+      # If CF_TEAM_NAME is empty, this middleware is bypassed
+      # ===========================================
+      - "traefik.http.middlewares.observer-cf-access.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      - "traefik.http.middlewares.observer-cf-access.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.observer-cf-access.forwardauth.authResponseHeaders=Cf-Access-Authenticated-User-Email"
+
+      # ===========================================
+      # Security Headers Middleware
+      # ===========================================
+      - "traefik.http.middlewares.observer-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.observer-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.observer-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.observer-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.observer-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["/bin/sh", "healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  observer-net:
+    driver: bridge
+  dokploy-network:
+    external: true

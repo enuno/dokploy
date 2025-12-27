@@ -1,0 +1,112 @@
+# Swarm Bee - Decentralized storage node for Ethereum Swarm network
+# https://github.com/ethersphere/bee
+
+[variables]
+domain = "${domain}"
+bee_password = "${password:32}"
+
+[[config.domains]]
+serviceName = "bee"
+port = 1633
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+BEE_DOMAIN = "${domain}"
+
+# ===========================================
+# Authentication (REQUIRED)
+# Password required for all Bee node operations
+# Used for wallet/key protection and API access
+# ===========================================
+BEE_PASSWORD = "${bee_password}"
+
+# ===========================================
+# Blockchain Connectivity (REQUIRED)
+# Bee requires Gnosis Chain RPC for operation
+# Recommended: Use archival node to prevent storage errors
+#
+# Options:
+#   - Free: https://xdai.fairdatasociety.org (FairDataSociety)
+#   - Paid: GetBlock, Infura, Alchemy (Gnosis Chain)
+#   - Self-hosted: Run your own Gnosis Chain node
+#
+# Enter your Gnosis Chain RPC endpoint below:
+# ===========================================
+BEE_BLOCKCHAIN_RPC_ENDPOINT = ""
+
+# ===========================================
+# Swap Endpoint (REQUIRED for BZZ settlements)
+# Gnosis Chain endpoint for BZZ token operations
+# Leave blank to use same endpoint as blockchain RPC
+# ===========================================
+BEE_SWAP_ENDPOINT = ""
+
+# ===========================================
+# API Configuration
+# Default: 0.0.0.0:1633 (accessible via Traefik)
+# Change only if you need custom binding
+# ===========================================
+BEE_API_ADDR = "0.0.0.0:1633"
+
+# ===========================================
+# P2P Configuration
+# Default: :1634 (listens on all interfaces)
+# Port must match the exposed port mapping (1634)
+# ===========================================
+BEE_P2P_ADDR = ":1634"
+P2P_PORT = "1634"
+
+# ===========================================
+# NAT Configuration
+# Public IP/domain for peer connectivity
+# Format: domain.com:1634 or IP:1634
+# Leave blank for auto-detection
+# ===========================================
+BEE_NAT_ADDR = ""
+
+# ===========================================
+# Storage Configuration
+# Cache capacity: Number of chunks to cache
+# Default: 1000000 chunks (~4GB)
+# Adjust based on available disk space (30GB minimum recommended)
+# ===========================================
+BEE_CACHE_CAPACITY = "1000000"
+
+# ===========================================
+# Network Configuration
+# Network ID for Swarm
+#   1 = mainnet (production)
+#  10 = testnet (testing)
+# ===========================================
+BEE_NETWORK_ID = "1"
+
+# ===========================================
+# Payment Configuration
+# Payment threshold in BZZ (default: 13500000)
+# Tolerance and early payment percentages
+# ===========================================
+BEE_PAYMENT_THRESHOLD = "13500000"
+BEE_PAYMENT_TOLERANCE = "25"
+BEE_PAYMENT_EARLY = "50"
+
+# ===========================================
+# Logging
+# Verbosity levels:
+#   0 = silent
+#   1 = error
+#   2 = warn
+#   3 = info (default)
+#   4 = debug
+#   5 = trace
+# ===========================================
+BEE_VERBOSITY = "3"
+
+# ===========================================
+# Warmup Time
+# Time in minutes to warmup before accepting requests
+# ===========================================
+BEE_WARMUP_TIME = "5"

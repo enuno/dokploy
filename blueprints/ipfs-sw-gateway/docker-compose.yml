@@ -1,0 +1,76 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # IPFS subdomain gateway requires wildcard DNS
+      # Expects: *.ipfs.${DOMAIN} and *.ipns.${DOMAIN}
+      # ===========================================
+      GATEWAY_DOMAIN: ${DOMAIN:?Set your gateway domain}
+
+      # ===========================================
+      # Cloudflare DNS Challenge (REQUIRED)
+      # Required for wildcard SSL certificates
+      # Certificates needed:
+      #   - ${DOMAIN} (main gateway)
+      #   - *.ipfs.${DOMAIN} (IPFS content addressing)
+      #   - *.ipns.${DOMAIN} (IPNS mutable addressing)
+      # Get from: Cloudflare Dashboard > Profile > API Tokens
+      # Permission needed: Zone:DNS:Edit
+      # ===========================================
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?Set Cloudflare DNS API token for wildcard SSL}
+    networks:
+      - ipfs-sw-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+
+      # Main gateway route
+      - "traefik.http.routers.ipfs-sw-main.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.ipfs-sw-main.entrypoints=websecure"
+      - "traefik.http.routers.ipfs-sw-main.tls.certresolver=cloudflare"
+      - "traefik.http.routers.ipfs-sw-main.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.ipfs-sw-main.tls.domains[0].sans=*.ipfs.${DOMAIN},*.ipns.${DOMAIN}"
+      - "traefik.http.services.ipfs-sw-main.loadbalancer.server.port=3000"
+
+      # IPFS subdomain gateway (*.ipfs.domain.com)
+      - "traefik.http.routers.ipfs-sw-ipfs.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.ipfs.${DOMAIN}`)"
+      - "traefik.http.routers.ipfs-sw-ipfs.entrypoints=websecure"
+      - "traefik.http.routers.ipfs-sw-ipfs.tls.certresolver=cloudflare"
+      - "traefik.http.services.ipfs-sw-ipfs.loadbalancer.server.port=3000"
+
+      # IPNS subdomain gateway (*.ipns.domain.com)
+      - "traefik.http.routers.ipfs-sw-ipns.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.ipns.${DOMAIN}`)"
+      - "traefik.http.routers.ipfs-sw-ipns.entrypoints=websecure"
+      - "traefik.http.routers.ipfs-sw-ipns.tls.certresolver=cloudflare"
+      - "traefik.http.services.ipfs-sw-ipns.loadbalancer.server.port=3000"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.ipfs-sw-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.ipfs-sw-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.ipfs-sw-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.ipfs-sw-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.ipfs-sw-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # Apply security headers to all routers
+      - "traefik.http.routers.ipfs-sw-main.middlewares=ipfs-sw-security-headers@docker"
+      - "traefik.http.routers.ipfs-sw-ipfs.middlewares=ipfs-sw-security-headers@docker"
+      - "traefik.http.routers.ipfs-sw-ipns.middlewares=ipfs-sw-security-headers@docker"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  ipfs-sw-net:
+    driver: bridge
+  dokploy-network:
+    external: true

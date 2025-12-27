@@ -1,0 +1,116 @@
+services:
+  someguy:
+    image: ghcr.io/ipfs/someguy:v0.11.0
+    restart: always
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      SOMEGUY_DOMAIN: ${DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Listen Address (REQUIRED for Traefik)
+      # Default: 127.0.0.1:8190 (localhost only)
+      # Dokploy: Must use 0.0.0.0:8190 for Traefik routing
+      # ===========================================
+      SOMEGUY_LISTEN_ADDRESS: ${SOMEGUY_LISTEN_ADDRESS:-0.0.0.0:8190}
+
+      # ===========================================
+      # DHT Configuration
+      # Options: accelerated, standard, off
+      # accelerated: Faster but more resource-intensive
+      # ===========================================
+      SOMEGUY_DHT: ${SOMEGUY_DHT:-accelerated}
+
+      # ===========================================
+      # Caching
+      # ===========================================
+      SOMEGUY_CACHED_ADDR_BOOK: ${SOMEGUY_CACHED_ADDR_BOOK:-true}
+
+      # ===========================================
+      # Delegated Routing Endpoints
+      # auto: Use AutoConf for automatic configuration
+      # or comma-separated URLs (e.g., https://example.com/routing/v1)
+      # ===========================================
+      SOMEGUY_PROVIDER_ENDPOINTS: ${SOMEGUY_PROVIDER_ENDPOINTS:-auto}
+      SOMEGUY_PEER_ENDPOINTS: ${SOMEGUY_PEER_ENDPOINTS:-auto}
+      SOMEGUY_IPNS_ENDPOINTS: ${SOMEGUY_IPNS_ENDPOINTS:-auto}
+
+      # ===========================================
+      # AutoConf (Automatic Configuration)
+      # Fetches bootstrap peers and routing endpoints
+      # ===========================================
+      SOMEGUY_AUTOCONF: ${SOMEGUY_AUTOCONF:-true}
+      SOMEGUY_AUTOCONF_URL: ${SOMEGUY_AUTOCONF_URL:-https://conf.ipfs-mainnet.org/autoconf.json}
+      SOMEGUY_AUTOCONF_REFRESH: ${SOMEGUY_AUTOCONF_REFRESH:-24h}
+
+      # ===========================================
+      # Logging
+      # Levels: error, warn, info, debug
+      # ===========================================
+      GOLOG_LOG_LEVEL: ${GOLOG_LOG_LEVEL:-error}
+
+      # ===========================================
+      # LibP2P Connection Manager
+      # Low: Minimum connections to maintain
+      # High: Maximum connections before pruning
+      # ===========================================
+      SOMEGUY_LIBP2P_CONNMGR_LOW: ${SOMEGUY_LIBP2P_CONNMGR_LOW:-100}
+      SOMEGUY_LIBP2P_CONNMGR_HIGH: ${SOMEGUY_LIBP2P_CONNMGR_HIGH:-3000}
+
+      # ===========================================
+      # LibP2P Listen Addresses (Optional)
+      # Comma-separated multiaddrs
+      # Example: /ip4/0.0.0.0/tcp/4001,/ip4/0.0.0.0/udp/4001/quic
+      # ===========================================
+      SOMEGUY_LIBP2P_LISTEN_ADDRS: ${SOMEGUY_LIBP2P_LISTEN_ADDRS:-}
+
+      # ===========================================
+      # LibP2P Announce Addresses (Optional)
+      # Comma-separated multiaddrs
+      # ===========================================
+      SOMEGUY_LIBP2P_ANNOUNCE_ADDRS: ${SOMEGUY_LIBP2P_ANNOUNCE_ADDRS:-}
+
+      # ===========================================
+      # LibP2P No Announce Addresses (Optional)
+      # Comma-separated multiaddrs to NOT announce
+      # ===========================================
+      SOMEGUY_LIBP2P_NO_ANNOUNCE_ADDRS: ${SOMEGUY_LIBP2P_NO_ANNOUNCE_ADDRS:-}
+
+      # ===========================================
+      # Metrics & Tracing (Optional)
+      # ===========================================
+      SOMEGUY_METRICS_ADDR: ${SOMEGUY_METRICS_ADDR:-}
+      SOMEGUY_TRACING: ${SOMEGUY_TRACING:-false}
+      SOMEGUY_TRACING_AUTH: ${SOMEGUY_TRACING_AUTH:-}
+    networks:
+      - someguy-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.someguy.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.someguy.entrypoints=websecure"
+      - "traefik.http.routers.someguy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.someguy.middlewares=someguy-security@docker"
+      - "traefik.http.services.someguy.loadbalancer.server.port=8190"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.someguy-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.someguy-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.someguy-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.someguy-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.someguy-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8190/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  someguy-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -1,0 +1,116 @@
+# someguy - HTTP Delegated Routing V1 server for IPFS
+# https://github.com/ipfs/someguy
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "someguy"
+port = 8190
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+SOMEGUY_DOMAIN = "${domain}"
+
+# ===========================================
+# Listen Address (REQUIRED for Traefik)
+# Default: 127.0.0.1:8190 (localhost only)
+# Dokploy: Must use 0.0.0.0:8190 for Traefik routing
+# ===========================================
+SOMEGUY_LISTEN_ADDRESS = "0.0.0.0:8190"
+
+# ===========================================
+# DHT Configuration
+# Options: accelerated, standard, off
+# accelerated: Faster but more resource-intensive
+# standard: Balanced performance
+# off: Disable DHT functionality
+# ===========================================
+SOMEGUY_DHT = "accelerated"
+
+# ===========================================
+# Caching
+# Enable/disable address book caching
+# ===========================================
+SOMEGUY_CACHED_ADDR_BOOK = "true"
+
+# ===========================================
+# Delegated Routing Endpoints
+# auto: Use AutoConf for automatic configuration
+# or provide comma-separated URLs (e.g., https://example.com/routing/v1)
+#
+# Provider endpoints: Content routing (CID lookups)
+# Peer endpoints: Peer routing (peer discovery)
+# IPNS endpoints: IPNS name resolution
+# ===========================================
+SOMEGUY_PROVIDER_ENDPOINTS = "auto"
+SOMEGUY_PEER_ENDPOINTS = "auto"
+SOMEGUY_IPNS_ENDPOINTS = "auto"
+
+# ===========================================
+# AutoConf (Automatic Configuration)
+# Fetches bootstrap peers and routing endpoints from IPFS mainnet
+# Recommended: Keep enabled for automatic optimal configuration
+# ===========================================
+SOMEGUY_AUTOCONF = "true"
+SOMEGUY_AUTOCONF_URL = "https://conf.ipfs-mainnet.org/autoconf.json"
+SOMEGUY_AUTOCONF_REFRESH = "24h"
+
+# ===========================================
+# Logging
+# Levels: error, warn, info, debug
+# Default: error (minimal logging)
+# ===========================================
+GOLOG_LOG_LEVEL = "error"
+
+# ===========================================
+# LibP2P Connection Manager
+# Low: Minimum connections to maintain
+# High: Maximum connections before pruning
+# Adjust based on expected traffic and resources
+# ===========================================
+SOMEGUY_LIBP2P_CONNMGR_LOW = "100"
+SOMEGUY_LIBP2P_CONNMGR_HIGH = "3000"
+
+# ===========================================
+# LibP2P Listen Addresses (Optional)
+# Comma-separated multiaddrs for LibP2P networking
+# Example: /ip4/0.0.0.0/tcp/4001,/ip4/0.0.0.0/udp/4001/quic
+# Leave blank to use defaults
+# ===========================================
+SOMEGUY_LIBP2P_LISTEN_ADDRS = ""
+
+# ===========================================
+# LibP2P Announce Addresses (Optional)
+# Comma-separated multiaddrs to announce to the network
+# Useful for NAT traversal or custom routing
+# Leave blank for auto-detection
+# ===========================================
+SOMEGUY_LIBP2P_ANNOUNCE_ADDRS = ""
+
+# ===========================================
+# LibP2P No Announce Addresses (Optional)
+# Comma-separated multiaddrs to NOT announce
+# Useful for internal/private addresses
+# Leave blank to announce all detected addresses
+# ===========================================
+SOMEGUY_LIBP2P_NO_ANNOUNCE_ADDRS = ""
+
+# ===========================================
+# Metrics & Tracing (Optional)
+# Metrics: Prometheus-compatible metrics endpoint
+# Example: 0.0.0.0:9090
+#
+# Tracing: Enable OpenTelemetry tracing
+# Tracing Auth: Authentication token for tracing endpoint
+#
+# Note: Consider protecting metrics endpoint with
+# Cloudflare Zero Trust Access (see README)
+# ===========================================
+SOMEGUY_METRICS_ADDR = ""
+SOMEGUY_TRACING = "false"
+SOMEGUY_TRACING_AUTH = ""

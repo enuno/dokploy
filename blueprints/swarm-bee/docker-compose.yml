@@ -1,0 +1,132 @@
+services:
+  bee:
+    image: ethersphere/bee:2.6.0
+    restart: always
+    ports:
+      # P2P networking port (must be publicly accessible for peer connectivity)
+      - "${P2P_PORT:-1634}:1634"
+    volumes:
+      - bee-data:/home/bee/.bee
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      BEE_DOMAIN: ${DOMAIN:?Set your domain for API access}
+
+      # ===========================================
+      # Authentication (REQUIRED)
+      # Password required for all Bee node operations
+      # Used for wallet/key protection and API access
+      # ===========================================
+      BEE_PASSWORD: ${BEE_PASSWORD:?Set a secure password for Bee node}
+
+      # ===========================================
+      # Blockchain Connectivity (REQUIRED)
+      # Bee requires Gnosis Chain RPC for operation
+      # Recommended: Use archival node to prevent storage errors
+      # Options:
+      #   - Free: https://xdai.fairdatasociety.org (FairDataSociety)
+      #   - Paid: GetBlock, Infura, Alchemy (Gnosis Chain)
+      #   - Self-hosted: Run your own Gnosis Chain node
+      # ===========================================
+      BEE_BLOCKCHAIN_RPC_ENDPOINT: ${BEE_BLOCKCHAIN_RPC_ENDPOINT:?Set Gnosis Chain RPC endpoint}
+
+      # ===========================================
+      # Swap Endpoint (REQUIRED for BZZ settlements)
+      # Gnosis Chain endpoint for BZZ token operations
+      # Should match blockchain RPC endpoint in most cases
+      # ===========================================
+      BEE_SWAP_ENDPOINT: ${BEE_SWAP_ENDPOINT:-${BEE_BLOCKCHAIN_RPC_ENDPOINT}}
+
+      # ===========================================
+      # API Configuration
+      # Default: 127.0.0.1:1633 (localhost only)
+      # Dokploy: Change to 0.0.0.0:1633 for Traefik routing
+      # ===========================================
+      BEE_API_ADDR: ${BEE_API_ADDR:-0.0.0.0:1633}
+
+      # ===========================================
+      # P2P Configuration
+      # Default: :1634 (listens on all interfaces)
+      # Port must match the exposed port mapping above
+      # ===========================================
+      BEE_P2P_ADDR: ${BEE_P2P_ADDR:-:1634}
+
+      # ===========================================
+      # NAT Configuration
+      # Public IP/domain for peer connectivity
+      # Format: domain.com:1634 or IP:1634
+      # Leave blank for auto-detection
+      # ===========================================
+      BEE_NAT_ADDR: ${BEE_NAT_ADDR:-}
+
+      # ===========================================
+      # Storage Configuration
+      # Cache capacity: Number of chunks to cache
+      # Default: 1000000 chunks (~4GB)
+      # Adjust based on available disk space
+      # ===========================================
+      BEE_CACHE_CAPACITY: ${BEE_CACHE_CAPACITY:-1000000}
+
+      # ===========================================
+      # Network Configuration
+      # Network ID for Swarm (1 = mainnet, 10 = testnet)
+      # ===========================================
+      BEE_NETWORK_ID: ${BEE_NETWORK_ID:-1}
+
+      # ===========================================
+      # Payment Configuration
+      # Payment threshold in BZZ (default: 13500000)
+      # ===========================================
+      BEE_PAYMENT_THRESHOLD: ${BEE_PAYMENT_THRESHOLD:-13500000}
+      BEE_PAYMENT_TOLERANCE: ${BEE_PAYMENT_TOLERANCE:-25}
+      BEE_PAYMENT_EARLY: ${BEE_PAYMENT_EARLY:-50}
+
+      # ===========================================
+      # Logging
+      # Verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=trace
+      # ===========================================
+      BEE_VERBOSITY: ${BEE_VERBOSITY:-3}
+
+      # ===========================================
+      # Warmup Time
+      # Time in minutes to warmup before accepting requests
+      # ===========================================
+      BEE_WARMUP_TIME: ${BEE_WARMUP_TIME:-5}
+    networks:
+      - bee-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+
+      # Main API route
+      - "traefik.http.routers.swarm-bee.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.swarm-bee.entrypoints=websecure"
+      - "traefik.http.routers.swarm-bee.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.swarm-bee.middlewares=swarm-bee-security@docker"
+      - "traefik.http.services.swarm-bee.loadbalancer.server.port=1633"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.swarm-bee-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.swarm-bee-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.swarm-bee-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.swarm-bee-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.swarm-bee-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:1633/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  bee-data:
+    driver: local
+
+networks:
+  bee-net:
+    driver: bridge
+  dokploy-network:
+    external: true

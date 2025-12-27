@@ -1,0 +1,42 @@
+# IPFS Service Worker Gateway - Browser-based IPFS gateway
+# https://github.com/ipfs/service-worker-gateway
+
+[variables]
+domain = "${domain}"
+
+# Cloudflare DNS API Token (REQUIRED for wildcard SSL)
+# Required for IPFS subdomain gateway: *.ipfs.domain.com, *.ipns.domain.com
+# Get from: Cloudflare Dashboard > Profile > API Tokens
+# Create token with Zone:DNS:Edit permission for your domain
+cf_dns_api_token = ""
+
+[[config.domains]]
+serviceName = "gateway"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Cloudflare DNS Challenge (REQUIRED)
+# Required for wildcard SSL certificates
+# Certificates issued for:
+#   - ${domain} (main gateway)
+#   - *.ipfs.${domain} (IPFS content addressing)
+#   - *.ipns.${domain} (IPNS mutable addressing)
+#
+# Setup Instructions:
+# 1. Go to: Cloudflare Dashboard > Profile > API Tokens
+# 2. Click "Create Token"
+# 3. Use template: "Edit zone DNS"
+# 4. Configure permissions:
+#    - Permissions: Zone → DNS → Edit
+#    - Zone Resources: Include → Specific zone → [your domain]
+# 5. Click "Continue to summary" → "Create Token"
+# 6. Copy the token and enter below
+# ===========================================
+CF_DNS_API_TOKEN = ""
