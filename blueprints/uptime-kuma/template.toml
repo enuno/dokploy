@@ -1,0 +1,48 @@
+# Uptime Kuma - Self-hosted monitoring tool
+# https://github.com/louislam/uptime-kuma
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "uptime-kuma"
+port = 3001
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Server Configuration
+# Port: Internal HTTP server port (default: 3001)
+# Host: Binding address (default: ::, all interfaces)
+# ===========================================
+UPTIME_KUMA_PORT = "3001"
+
+# ===========================================
+# Timezone Configuration
+# Sets timezone for monitoring schedules and logs
+# Examples: UTC, America/New_York, Europe/London, Asia/Tokyo
+# ===========================================
+TZ = "UTC"
+
+# ===========================================
+# Cloudflare Tunnel (Optional)
+# Alternative to Traefik for exposing dashboard
+#
+# Setup:
+# 1. Create tunnel: cloudflared tunnel create uptime-kuma
+# 2. Get token from Cloudflare Dashboard > Zero Trust > Networks > Tunnels
+# 3. Paste token below and uncomment
+# 4. Comment out Traefik labels in docker-compose.yml
+# ===========================================
+# UPTIME_KUMA_CLOUDFLARED_TOKEN = ""
+
+# ===========================================
+# Security Configuration (Optional)
+# ===========================================
+# UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN = "false"
+# UPTIME_KUMA_WS_ORIGIN_CHECK = "cors-like"
