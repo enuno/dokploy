@@ -1,12 +1,12 @@
 ---
-description: "Create production-ready Dokploy template using skills-first approach with Cloudflare-first defaults"
+description: "Create production-ready Dokploy template using skills-first approach with Cloudflare-first defaults and custom container builds"
 allowed-tools: ["Read", "Search", "Edit", "Write", "Bash", "WebSearch", "WebFetch", "Skill"]
 author: "Home Lab Infrastructure Team"
-version: "2.1.0"
+version: "2.2.0"
 complexity: "complex"
 category: "infrastructure"
-tags: ["dokploy", "docker-compose", "cloudflare", "template-generation"]
-token_budget: "30000-45000"
+tags: ["dokploy", "docker-compose", "cloudflare", "template-generation", "custom-builds"]
+token_budget: "30000-50000"
 status: "active"
 ---
 
@@ -40,8 +40,25 @@ Create a complete, production-ready Dokploy template for `$ARGUMENTS` using prog
 │  Phase 1: Discovery (No Skills)                         │
 │  • Research application (WebSearch, WebFetch)           │
 │  • Identify dependencies, storage needs, ports          │
+│  • DETECT: Custom build needed?                         │
 │  • Output: Requirements document                        │
 └───────────────────────┬─────────────────────────────────┘
+                        │
+                        ├──[Custom Build Needed?]──┐
+                        │                           │
+                   [No] │                       [Yes│
+                        │                           │
+                        │                           ▼
+                        │        ┌─────────────────────────────────────────┐
+                        │        │  Phase 1.5: Custom Build (Conditional)  │
+                        │        │  • Check Dockerfiles/[app]/ exists      │
+                        │        │  • Create Dockerfile (if needed)        │
+                        │        │  • INVOKE: /create-container            │
+                        │        │  • Build → Push → Index Update          │
+                        │        │  • Output: registry.hashgrid.net/app:tag│
+                        │        └───────────────────┬─────────────────────┘
+                        │                           │
+                        └───────────────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -49,6 +66,7 @@ Create a complete, production-ready Dokploy template for `$ARGUMENTS` using prog
 │  • Design service dependency graph                      │
 │  • Plan network topology                                │
 │  • SELECT CLOUDFLARE SERVICES (R2, Workers, D1, etc.)   │
+│  • Use custom image if built in Phase 1.5               │
 │  • Output: Architecture design document                 │
 └───────────────────────┬─────────────────────────────────┘
                         │
@@ -56,6 +74,7 @@ Create a complete, production-ready Dokploy template for `$ARGUMENTS` using prog
 ┌─────────────────────────────────────────────────────────┐
 │  Phase 3: Generation (Load 6 Skills Progressively)      │
 │  1. dokploy-compose-structure → Base YAML               │
+│     → Use registry.hashgrid.net/app:tag if custom       │
 │  2. dokploy-traefik-routing → Routing labels            │
 │  3. dokploy-health-patterns → Health checks             │
 │  4. dokploy-cloudflare-integration → CF SERVICES ⭐     │
@@ -78,6 +97,7 @@ Create a complete, production-ready Dokploy template for `$ARGUMENTS` using prog
 │  Phase 5: Documentation (No Skills)                     │
 │  • Generate comprehensive README.md                     │
 │  • Include Cloudflare setup guide (if applicable)       │
+│  • Note custom build if used from registry              │
 │  • Output: Complete documentation                       │
 └───────────────────────┬─────────────────────────────────┘
                         │
@@ -92,6 +112,7 @@ Create a complete, production-ready Dokploy template for `$ARGUMENTS` using prog
 Feedback Loops:
 • Phase 3 ↔ Phase 4: Iterative refinement if validation fails
 • Phase 2 → Phase 3: Architecture adjustments if needed
+• Phase 1 → Phase 1.5: Trigger custom build if no official image
 ```
 
 ---
@@ -190,6 +211,7 @@ labels:
 
 2. **Identify Requirements:**
    - [ ] Docker image (official source, version)
+   - [ ] **Custom build needed?** (no official image or needs modification)
    - [ ] Dependencies (PostgreSQL, MongoDB, Redis, etc.)
    - [ ] Storage needs (volumes, object storage)
    - [ ] Ports (web UI, API, other protocols)
@@ -202,8 +224,9 @@ labels:
 
    ## Application
    - Name: [name]
-   - Docker Image: [registry/image:version]
-   - Official Source: [URL]
+   - Docker Image: [registry/image:version OR "Custom Build Required"]
+   - Official Source: [URL OR GitHub repository for custom build]
+   - **Custom Build:** [Yes/No] - [Reason if yes]
 
    ## Dependencies
    - Database: [PostgreSQL 16 | MongoDB 7 | MySQL 8 | None]
@@ -227,12 +250,135 @@ labels:
    ```
 
 **Success Criteria:**
-- [ ] Docker image identified with specific version
+- [ ] Docker image identified with specific version OR custom build flagged
 - [ ] All dependencies listed
 - [ ] Cloudflare services evaluated for each integration point
 - [ ] Storage strategy defined (volumes + R2 if applicable)
+- [ ] Custom build decision documented with rationale
 
 **Phase 1 Output:** Requirements document
+
+---
+
+### Phase 1.5: Custom Container Build (Conditional)
+
+**⚠️ Only execute this phase if Phase 1 determined custom build is required**
+
+**Trigger Conditions:**
+- No official Docker image exists for the application
+- Official image needs security patches or modifications
+- Application requires custom compilation/build process
+- Specific version not available in public registries
+
+**Purpose:** Build custom Docker image and publish to registry.hashgrid.net
+
+**Actions:**
+
+1. **Check for Existing Dockerfile:**
+   ```bash
+   # Check if Dockerfile already exists in Dockerfiles/ directory
+   ls Dockerfiles/[app-name]/Dockerfile
+   ```
+
+   - **If exists:** Use existing Dockerfile, proceed to step 3
+   - **If not exists:** Need to create Dockerfile, proceed to step 2
+
+2. **Create Dockerfile (if needed):**
+   ```markdown
+   Create `Dockerfiles/[app-name]/Dockerfile` with:
+
+   - Base image selection (Alpine, Debian, Ubuntu)
+   - Security best practices:
+     - Multi-stage builds
+     - Non-root user
+     - Minimal dependencies
+     - GPG signature verification (if applicable)
+     - SHA256 checksum validation
+   - Application installation
+   - Health check endpoint
+   - Proper ENTRYPOINT/CMD
+
+   Example structure:
+   ```dockerfile
+   FROM debian:bookworm-slim AS builder
+
+   # Install dependencies
+   RUN apt update && apt install -y ...
+
+   # Download and verify
+   RUN wget [source-url] \
+       && sha256sum -c checksums.txt \
+       && tar -xzf ...
+
+   FROM debian:bookworm-slim
+
+   # Copy artifacts from builder
+   COPY --from=builder /app /app
+
+   # Create non-root user
+   RUN useradd -r -s /bin/false appuser
+   USER appuser
+
+   HEALTHCHECK --interval=30s --timeout=10s \
+     CMD curl -f http://localhost:8080/health || exit 1
+
+   ENTRYPOINT ["/app/start.sh"]
+   ```
+   ```
+
+3. **Invoke /create-container Command:**
+   ```
+   IMPORTANT: Use the /create-container command (NOT the Bash tool directly)
+
+   Invoke with:
+   /create-container Dockerfiles/[app-name]/Dockerfile [app-name]:[version]
+
+   This will:
+   - Build the Docker image
+   - Push to registry.hashgrid.net
+   - Update Dockerfiles/README.md with the new image
+
+   Wait for command completion before proceeding.
+   ```
+
+4. **Capture Registry Image Reference:**
+   ```
+   After /create-container completes, record:
+
+   Custom Image URL: registry.hashgrid.net/[app-name]:[version]
+   Build Timestamp: [from Dockerfiles/README.md]
+   Image Digest: [from docker push output]
+   ```
+
+5. **Update Requirements Document:**
+   ```markdown
+   ## Application
+   - Name: [name]
+   - Docker Image: registry.hashgrid.net/[app-name]:[version]
+   - Custom Build: Yes - [reason]
+   - Build Date: [timestamp]
+   - Source: [GitHub/URL used for build]
+   ```
+
+**Success Criteria:**
+- [ ] Dockerfile created (if needed) following security best practices
+- [ ] /create-container command completed successfully
+- [ ] Image pushed to registry.hashgrid.net/[app-name]:[version]
+- [ ] Dockerfiles/README.md updated with new entry
+- [ ] Requirements document updated with custom image reference
+
+**Error Handling:**
+
+If /create-container fails:
+```
+1. Review Dockerfile syntax errors
+2. Check Docker build output for issues
+3. Verify registry authentication
+4. Fix issues and retry /create-container
+5. If persistent failure, ask user for guidance
+```
+
+**Phase 1.5 Output:** Custom Docker image at registry.hashgrid.net/[app-name]:[version]
 
 ---
 
@@ -311,7 +457,8 @@ labels:
 ```yaml
 services:
   app:
-    image: [app-image:version]
+    # Use custom image from Phase 1.5 if built, otherwise official image
+    image: [registry.hashgrid.net/app-name:version OR official-image:version]
     restart: always
     depends_on: [...]
     volumes: [...]
@@ -818,6 +965,7 @@ Recovery: Verify with markdown preview
 
 ### docker-compose.yml
 - [ ] All images have pinned versions (no `:latest`)
+- [ ] **Custom images use registry.hashgrid.net/app:version format**
 - [ ] All services have `restart: always`
 - [ ] All services have health checks (except helpers)
 - [ ] Two networks: `[app]-net` (bridge) + `dokploy-network` (external)
@@ -848,10 +996,12 @@ Recovery: Verify with markdown preview
 - [ ] Overview and features
 - [ ] Architecture diagram shows Cloudflare services
 - [ ] **Cloudflare setup guide** (step-by-step)
+- [ ] **Custom build note** (if using registry.hashgrid.net image)
 - [ ] Configuration table with all variables
 - [ ] Post-deployment steps
 - [ ] Troubleshooting section (includes CF issues)
 - [ ] Resource requirements documented
+- [ ] Link to Dockerfiles/README.md if custom image used
 
 ### blueprints/README.md (index)
 - [ ] Template added in alphabetical order
@@ -1086,9 +1236,90 @@ cat .claude/skills/registry.json | grep cloudflare
 
 **Token Usage:** ~38,000 tokens (complex with Cloudflare DNS)
 
+### Example 4: Custom Build Required (Bitcoin Core)
+
+**Input:** `/dokploy-create bitcoind`
+
+**Phase 1:** Discover Bitcoin Core node software
+- No official maintained Docker image with security verification
+- **Decision:** Custom build required for GPG signature verification
+
+**Phase 1.5:** Custom Container Build (TRIGGERED)
+1. Check `Dockerfiles/bitcoind/` - Found existing Dockerfile
+2. Invoke `/create-container Dockerfiles/bitcoind/Dockerfile bitcoind:30.0`
+3. Build process:
+   - Multi-stage build with security verification
+   - GPG signature validation from Bitcoin Core maintainers
+   - SHA256 checksum verification
+   - Debian slim base for minimal footprint
+4. Push to `registry.hashgrid.net/bitcoind:30.0`
+5. Update `Dockerfiles/README.md` with entry
+6. **Result:** Custom image available at registry
+
+**Phase 2:** Architecture - single service using custom image
+- Service: bitcoind (using registry.hashgrid.net/bitcoind:30.0)
+- Storage: Named volume for blockchain data
+- Network: Internal only (no external access needed)
+
+**Phase 3:** Generate compose with custom registry image
+```yaml
+services:
+  bitcoind:
+    image: registry.hashgrid.net/bitcoind:30.0  # Custom built
+    restart: always
+    volumes:
+      - bitcoin-data:/data
+    networks:
+      - bitcoin-net
+```
+
+**Phase 4:** Validate - all checks pass
+- Custom image version pinned (not :latest)
+- Security verification in Dockerfile confirmed
+
+**Phase 5:** Document with custom build notes
+- README includes note about custom image
+- Links to Dockerfiles/README.md for build details
+- Documents security verification process
+
+**Custom Build Integration:**
+- Dockerfile: Pre-existing in `Dockerfiles/bitcoind/`
+- Build Trigger: No official maintained image
+- Security Features: GPG + SHA256 verification
+- Registry: Private (registry.hashgrid.net)
+
+**Token Usage:** ~35,000 tokens (includes custom build phase)
+
+**Key Benefit:** Eliminates dependency on unmaintained third-party images while ensuring cryptographic verification of binaries.
+
 ---
 
 ## Version History
+
+### 2.2.0 (2025-12-29)
+
+**Major Enhancements:**
+- **Custom Container Build Integration:** Added Phase 1.5 for automatic custom Docker image builds
+  - Detects when no official image exists or custom build needed
+  - Automatically invokes `/create-container` command
+  - Seamlessly integrates custom images from registry.hashgrid.net
+  - Updates Dockerfiles/README.md index
+- Added Example 4 demonstrating Bitcoin Core custom build workflow
+- Updated workflow diagram with conditional custom build path
+- Enhanced Quality Checklist with custom image requirements
+- Documented custom build in Phase 1 requirements detection
+
+**Custom Build Features:**
+- Automatic Dockerfile detection in `Dockerfiles/[app-name]/`
+- Security-first Dockerfile generation (GPG, SHA256, multi-stage)
+- Integration with private registry (registry.hashgrid.net)
+- Complete build → push → index → template workflow
+- Zero manual intervention required
+
+**Token Impact:**
+- Custom build adds ~5,000-7,000 tokens to workflow
+- Total range now: 30,000-50,000 tokens per template
+- Still 30%+ reduction vs multi-agent approach
 
 ### 2.1.0 (2025-12-26)
 
