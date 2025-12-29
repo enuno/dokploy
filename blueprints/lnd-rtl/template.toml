@@ -1,0 +1,52 @@
+# LND + Ride The Lightning - Lightning Network node with web UI
+# https://github.com/lightningnetwork/lnd
+# https://github.com/Ride-The-Lightning/RTL
+
+[variables]
+domain = "${domain}"
+bitcoin_rpc_password = "${password:32}"
+
+[[config.domains]]
+serviceName = "rtl"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+RTL_DOMAIN = "${domain}"
+
+# ===========================================
+# Lightning Network Configuration
+# ===========================================
+LND_NETWORK = "mainnet"
+LND_ALIAS = "MyLNDNode"
+LND_COLOR = "#3399FF"
+
+# ===========================================
+# Bitcoin RPC Backend Configuration
+# ===========================================
+BITCOIN_RPC_USER = "bitcoin"
+BITCOIN_RPC_PASSWORD = "${bitcoin_rpc_password}"
+
+# ===========================================
+# Bitcoin Core Configuration
+# Pruning: Set to 0 for full node (600+ GB), or prune amount in MB
+# Recommended: 10000 (10 GB) for pruned node
+# ===========================================
+BITCOIN_PRUNE = "10000"
+
+# ===========================================
+# Lightning P2P Port
+# Default: 9735 (mainnet Lightning Network)
+# ===========================================
+LND_P2P_PORT = "9735"
+
+# ===========================================
+# RTL Authentication
+# SSO: 0 = disabled, 1 = enabled
+# Default password on first login: password
+# IMPORTANT: Change password immediately after first login!
+# ===========================================
+RTL_SSO = "0"

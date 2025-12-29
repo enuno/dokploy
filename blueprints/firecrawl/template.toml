@@ -1,0 +1,97 @@
+# Firecrawl - Web Scraping and Data Extraction API
+# https://github.com/mendableai/firecrawl
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+rabbitmq_password = "${password:32}"
+api_key = "${base64:48}"
+bull_auth_key = "${password:24}"
+
+# Optional: AI Integration
+openai_api_key = ""
+ollama_base_url = ""
+
+# Optional: Web Search
+searxng_endpoint = ""
+
+# Optional: Proxy Configuration
+proxy_server = ""
+proxy_username = ""
+proxy_password = ""
+
+[[config.domains]]
+serviceName = "api"
+port = 3002
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+FIRECRAWL_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration (PostgreSQL)
+# ===========================================
+POSTGRES_DB = "firecrawl"
+POSTGRES_USER = "firecrawl"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# RabbitMQ Configuration
+# ===========================================
+RABBITMQ_PASSWORD = "${rabbitmq_password}"
+
+# ===========================================
+# API Authentication
+# Secure your Firecrawl API with this key
+# Use in requests: Authorization: Bearer {api_key}
+# ===========================================
+FIRECRAWL_API_KEY = "${api_key}"
+
+# ===========================================
+# Bull Queue Admin Panel Password
+# Access at: https://{domain}/admin/queues
+# ===========================================
+BULL_AUTH_KEY = "${bull_auth_key}"
+
+# ===========================================
+# Worker Configuration
+# ===========================================
+NUM_WORKERS_PER_QUEUE = "8"
+
+# ===========================================
+# Playwright Browser Configuration
+# ===========================================
+BLOCK_MEDIA = "false"
+MAX_CONCURRENT_PAGES = "10"
+
+# ===========================================
+# Optional: OpenAI Integration
+# Get from: https://platform.openai.com/api-keys
+# Used for AI-powered data extraction
+# ===========================================
+OPENAI_API_KEY = "${openai_api_key}"
+
+# ===========================================
+# Optional: Ollama (Local LLM)
+# Endpoint: http://localhost:11434 (if running locally)
+# Used for AI extraction without external API
+# ===========================================
+OLLAMA_BASE_URL = "${ollama_base_url}"
+
+# ===========================================
+# Optional: Web Search (SearXNG)
+# Endpoint format: http://searxng:8080
+# Enables web search functionality
+# ===========================================
+SEARXNG_ENDPOINT = "${searxng_endpoint}"
+
+# ===========================================
+# Optional: Proxy Configuration
+# Use if scraping requires proxy rotation
+# ===========================================
+PROXY_SERVER = "${proxy_server}"
+PROXY_USERNAME = "${proxy_username}"
+PROXY_PASSWORD = "${proxy_password}"

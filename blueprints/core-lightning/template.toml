@@ -1,0 +1,44 @@
+# Core Lightning - Lightning Network implementation focusing on spec compliance and performance
+# https://github.com/ElementsProject/lightning
+
+[variables]
+domain = "${domain}"
+bitcoin_rpc_password = "${password:32}"
+
+[[config.domains]]
+serviceName = "lightningd"
+port = 9835
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+CLN_DOMAIN = "${domain}"
+
+# ===========================================
+# Lightning Network Configuration
+# ===========================================
+LIGHTNINGD_NETWORK = "bitcoin"
+LIGHTNINGD_ALIAS = "MyCoreLightningNode"
+LIGHTNINGD_RGB = "02F3E5"
+
+# ===========================================
+# Bitcoin RPC Backend Configuration
+# ===========================================
+BITCOIN_RPC_USER = "bitcoin"
+BITCOIN_RPC_PASSWORD = "${bitcoin_rpc_password}"
+BITCOIN_RPC_PORT = "8332"
+
+# ===========================================
+# Bitcoin Core Configuration
+# Pruning: Set to 0 for full node (600+ GB), or prune amount in MB
+# Recommended: 10000 (10 GB) for pruned node
+# ===========================================
+BITCOIN_PRUNE = "10000"
+
+# ===========================================
+# Lightning P2P Port
+# Default: 9735 (mainnet Lightning Network)
+# ===========================================
+LIGHTNING_P2P_PORT = "9735"

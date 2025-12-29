@@ -1,0 +1,31 @@
+services:
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef:10.19.4
+    restart: always
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      CYBERCHEF_DOMAIN: ${CYBERCHEF_DOMAIN:?Set your domain}
+    networks:
+      - cyberchef-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cyberchef.rule=Host(`${CYBERCHEF_DOMAIN}`)"
+      - "traefik.http.routers.cyberchef.entrypoints=websecure"
+      - "traefik.http.routers.cyberchef.tls.certresolver=letsencrypt"
+      - "traefik.http.services.cyberchef.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  cyberchef-net:
+    driver: bridge
+  dokploy-network:
+    external: true

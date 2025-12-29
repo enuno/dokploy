@@ -1,0 +1,63 @@
+# MCP Context Forge - Model Context Protocol Gateway & Registry
+# https://github.com/IBM/mcp-context-forge
+
+[variables]
+domain = "${domain}"
+mysql_password = "${password:32}"
+mysql_root_password = "${password:32}"
+jwt_secret = "${base64:64}"
+basic_auth_password = "${password:24}"
+admin_email = "${email}"
+admin_password = "${password:16}"
+
+[[config.domains]]
+serviceName = "mcpgateway"
+port = 4444
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+MCPGATEWAY_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration (MariaDB)
+# ===========================================
+MYSQL_DATABASE = "mcpgateway"
+MYSQL_USER = "mcpgateway"
+MYSQL_PASSWORD = "${mysql_password}"
+MYSQL_ROOT_PASSWORD = "${mysql_root_password}"
+
+# ===========================================
+# Security & Authentication
+# ===========================================
+JWT_SECRET_KEY = "${jwt_secret}"
+BASIC_AUTH_PASSWORD = "${basic_auth_password}"
+
+# ===========================================
+# Admin Configuration
+# Default admin credentials - change after first login!
+# ===========================================
+PLATFORM_ADMIN_EMAIL = "${admin_email}"
+PLATFORM_ADMIN_PASSWORD = "${admin_password}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+LOG_LEVEL = "info"
+
+# ===========================================
+# Database Pool Configuration
+# Adjust based on expected load
+# ===========================================
+DB_POOL_SIZE = "200"
+DB_MAX_OVERFLOW = "10"
+DB_POOL_TIMEOUT = "30"
+DB_POOL_RECYCLE = "3600"
+
+# ===========================================
+# Federation Settings
+# Enable for multi-cluster deployments
+# ===========================================
+FEDERATION_ENABLED = "false"

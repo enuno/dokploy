@@ -1,0 +1,16 @@
+# CyberChef - The Cyber Swiss Army Knife
+# https://github.com/gchq/CyberChef
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "cyberchef"
+port = 80
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+CYBERCHEF_DOMAIN = "${domain}"

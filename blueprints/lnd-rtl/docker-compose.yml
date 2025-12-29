@@ -1,0 +1,147 @@
+services:
+  rtl:
+    image: shahanafarooqui/rtl:0.15.1
+    restart: always
+    depends_on:
+      lnd:
+        condition: service_healthy
+    volumes:
+      - rtl-data:/RTL/database
+      - lnd-data:/LNDMacaroon:ro
+    environment:
+      # ===========================================
+      # RTL Configuration
+      # ===========================================
+      RTL_CONFIG_PATH: /RTL
+      LN_IMPLEMENTATION: LND
+
+      # ===========================================
+      # LND Connection
+      # ===========================================
+      LN_SERVER_URL: http://lnd:8080
+      MACAROON_PATH: /LNDMacaroon
+
+      # ===========================================
+      # Authentication
+      # Default password on first login: password
+      # Change immediately after first login!
+      # ===========================================
+      RTL_SSO: ${RTL_SSO:-0}
+      RTL_COOKIE_PATH: /RTL/database
+    networks:
+      - lnd-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rtl.rule=Host(`${RTL_DOMAIN}`)"
+      - "traefik.http.routers.rtl.entrypoints=websecure"
+      - "traefik.http.routers.rtl.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.rtl.middlewares=rtl-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.rtl-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.rtl-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.rtl-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.rtl-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.rtl-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.rtl.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  lnd:
+    image: lightninglabs/lnd:v0.20.0-beta
+    restart: always
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    volumes:
+      - lnd-data:/root/.lnd
+    environment:
+      # ===========================================
+      # Network Configuration
+      # ===========================================
+      LND_NETWORK: ${LND_NETWORK:-mainnet}
+
+      # ===========================================
+      # Bitcoin Backend Configuration
+      # ===========================================
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
+    command:
+      - --bitcoin.active
+      - --bitcoin.${LND_NETWORK:-mainnet}
+      - --bitcoin.node=bitcoind
+      - --bitcoind.rpchost=bitcoind:8332
+      - --bitcoind.rpcuser=${BITCOIN_RPC_USER:-bitcoin}
+      - --bitcoind.rpcpass=${BITCOIN_RPC_PASSWORD}
+      - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+      - --alias=${LND_ALIAS:-MyLNDNode}
+      - --color=${LND_COLOR:-#3399FF}
+      - --listen=0.0.0.0:9735
+      - --rpclisten=0.0.0.0:10009
+      - --restlisten=0.0.0.0:8080
+      - --tlsextradomain=${RTL_DOMAIN}
+    networks:
+      - lnd-net
+      - dokploy-network
+    ports:
+      - "${LND_P2P_PORT:-9735}:9735"  # P2P Lightning Network
+    healthcheck:
+      test: ["CMD-SHELL", "lncli --network=${LND_NETWORK:-mainnet} getinfo > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  bitcoind:
+    image: ruimarinho/bitcoin-core:27.0
+    restart: always
+    command:
+      - -printtoconsole
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -server=1
+      - -txindex=0
+      - -prune=${BITCOIN_PRUNE:-10000}
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+    volumes:
+      - bitcoin-data:/home/bitcoin/.bitcoin
+    environment:
+      # ===========================================
+      # Bitcoin Core Configuration
+      # ===========================================
+      BITCOIN_DATA: /home/bitcoin/.bitcoin
+
+      # ===========================================
+      # RPC Configuration (for LND backend)
+      # ===========================================
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
+    networks:
+      - lnd-net
+    healthcheck:
+      test: ["CMD-SHELL", "bitcoin-cli -rpcuser=${BITCOIN_RPC_USER:-bitcoin} -rpcpassword=${BITCOIN_RPC_PASSWORD} getblockchaininfo > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  rtl-data:
+    driver: local
+  lnd-data:
+    driver: local
+  bitcoin-data:
+    driver: local
+
+networks:
+  lnd-net:
+    driver: bridge
+  dokploy-network:
+    external: true

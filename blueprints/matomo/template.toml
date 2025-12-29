@@ -1,0 +1,34 @@
+# Matomo - Open-source web analytics platform
+# https://github.com/matomo-org/matomo
+
+[variables]
+domain = "${domain}"
+db_password = "${password:32}"
+root_password = "${password:32}"
+
+[[config.domains]]
+serviceName = "nginx"
+port = 80
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+MATOMO_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration
+# ===========================================
+MATOMO_DB_NAME = "matomo"
+MATOMO_DB_USER = "matomo"
+MATOMO_DB_PASSWORD = "${db_password}"
+
+# MariaDB credentials
+MYSQL_ROOT_PASSWORD = "${root_password}"
+
+# ===========================================
+# PHP Performance Tuning
+# Increase for high-traffic sites
+# ===========================================
+PHP_MEMORY_LIMIT = "512M"

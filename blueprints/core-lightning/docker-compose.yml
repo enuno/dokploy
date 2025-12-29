@@ -1,0 +1,97 @@
+services:
+  lightningd:
+    image: elementsproject/lightningd:v24.11.1
+    restart: always
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    volumes:
+      - lightning-data:/root/.lightning
+    environment:
+      # ===========================================
+      # Network Configuration
+      # ===========================================
+      LIGHTNINGD_NETWORK: ${LIGHTNINGD_NETWORK:-bitcoin}
+
+      # ===========================================
+      # Bitcoin Backend Configuration
+      # ===========================================
+      LIGHTNINGD_BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
+      LIGHTNINGD_BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
+      LIGHTNINGD_BITCOIN_RPC_HOST: bitcoind
+      LIGHTNINGD_BITCOIN_RPC_PORT: ${BITCOIN_RPC_PORT:-8332}
+
+      # ===========================================
+      # Lightning Node Configuration
+      # ===========================================
+      LIGHTNINGD_ALIAS: ${LIGHTNINGD_ALIAS:-MyCoreLightningNode}
+      LIGHTNINGD_RGB: ${LIGHTNINGD_RGB:-02F3E5}
+    networks:
+      - corelightning-net
+      - dokploy-network
+    ports:
+      - "${LIGHTNING_P2P_PORT:-9735}:9735"  # P2P Lightning Network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lightningd.rule=Host(`${CLN_DOMAIN}`)"
+      - "traefik.http.routers.lightningd.entrypoints=websecure"
+      - "traefik.http.routers.lightningd.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lightningd.middlewares=lightningd-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.lightningd-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.lightningd-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.lightningd-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.lightningd-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.lightningd-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.lightningd.loadbalancer.server.port=9835"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "lightning-cli getinfo > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  bitcoind:
+    image: ruimarinho/bitcoin-core:27.0
+    restart: always
+    command:
+      - -printtoconsole
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -server=1
+      - -txindex=0
+      - -prune=${BITCOIN_PRUNE:-10000}
+    volumes:
+      - bitcoin-data:/home/bitcoin/.bitcoin
+    environment:
+      # ===========================================
+      # Bitcoin Core Configuration
+      # ===========================================
+      BITCOIN_DATA: /home/bitcoin/.bitcoin
+
+      # ===========================================
+      # RPC Configuration (for Lightning backend)
+      # ===========================================
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
+    networks:
+      - corelightning-net
+    healthcheck:
+      test: ["CMD-SHELL", "bitcoin-cli -rpcuser=${BITCOIN_RPC_USER:-bitcoin} -rpcpassword=${BITCOIN_RPC_PASSWORD} getblockchaininfo > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  lightning-data:
+    driver: local
+  bitcoin-data:
+    driver: local
+
+networks:
+  corelightning-net:
+    driver: bridge
+  dokploy-network:
+    external: true

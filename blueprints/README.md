@@ -19,10 +19,14 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [blinko](/blueprints/blinko/) | AI-powered personal note-taking tool with RAG for semantic search | 2 (blinko, postgres) | Ready |
 | [bluesky-pds](/blueprints/bluesky-pds/) | AT Protocol Personal Data Server for Bluesky federation | 1 (pds) | Ready |
 | [borgitory](/blueprints/borgitory/) | Web UI for managing BorgBackup repositories with scheduling and cloud sync | 1 (borgitory) | Ready |
+| [btcpayserver](/blueprints/btcpayserver/) | Full-stack Bitcoin payment processor with Lightning Network (LND/CLN/Eclair), optional Bitcoin node (pruned/full), multiple access methods (Traefik/Tor/Tunnel), and R2 encrypted backups | 3-13 (base + optional Bitcoin node, Lightning, Tor, Tunnel, R2 backup) | Ready |
 | [chibisafe](/blueprints/chibisafe/) | TypeScript file upload and sharing platform with albums and S3 support | 3 (backend, frontend, caddy) | Ready |
+| [cyberchef](/blueprints/cyberchef/) | The Cyber Swiss Army Knife for encryption, encoding, compression, and data analysis | 1 (cyberchef) | Ready |
 | [cloudflared](/blueprints/cloudflared/) | Cloudflare Tunnel client for secure ingress without public IPs | 3 | Ready |
+| [core-lightning](/blueprints/core-lightning/) | Lightning Network implementation with integrated Bitcoin Core backend | 2 (lightningd, bitcoind) | Ready |
 | [dashy](/blueprints/dashy/) | Customizable personal dashboard for organizing homelab services | 1 (dashy) | Ready |
 | [docker-registry](/blueprints/docker-registry/) | OCI Distribution implementation for private Docker image hosting | 4 | Ready |
+| [firecrawl](/blueprints/firecrawl/) | Web scraping and data extraction API that converts websites into LLM-friendly markdown and structured data | 6 (api, worker, playwright, postgres, redis, rabbitmq) | Ready |
 | [forgejo](/blueprints/forgejo/) | Self-hosted Git forge (Gitea fork) | 2 (forgejo, postgres) | Ready |
 | [gitingest](/blueprints/gitingest/) | Convert Git repositories into LLM-friendly text digests | 3 | Ready |
 | [grafana-observability](/blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |
@@ -32,6 +36,9 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [hyperbeam](/blueprints/hyperbeam/) | AO Protocol compute node with Actor-Oriented architecture for permaweb applications | 1 (hyperbeam) | Ready |
 | [ipfs-sw-gateway](/blueprints/ipfs-sw-gateway/) | Browser-based IPFS gateway using Service Workers with wildcard SSL for subdomain content addressing | 1 (gateway) | Ready |
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
+| [lnd-rtl](/blueprints/lnd-rtl/) | Lightning Network Daemon with Ride The Lightning web UI and Bitcoin Core backend | 3 (rtl, lnd, bitcoind) | Ready |
+| [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
+| [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay implementation | 8 | Ready |

@@ -1,0 +1,247 @@
+services:
+  api:
+    image: ghcr.io/mendableai/firecrawl:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      playwright-service:
+        condition: service_started
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      FIRECRAWL_DOMAIN: ${FIRECRAWL_DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Server Configuration
+      # ===========================================
+      PORT: "3002"
+      HOST: "0.0.0.0"
+      NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE:-8}
+
+      # ===========================================
+      # Database Configuration (PostgreSQL)
+      # ===========================================
+      DATABASE_URL: postgresql://${POSTGRES_USER:-firecrawl}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-firecrawl}
+      USE_DB_AUTHENTICATION: "true"
+
+      # ===========================================
+      # Redis Configuration (Queue + Rate Limiting)
+      # ===========================================
+      REDIS_URL: redis://redis:6379
+      REDIS_RATE_LIMIT_URL: redis://redis:6379
+
+      # ===========================================
+      # RabbitMQ Configuration
+      # ===========================================
+      RABBITMQ_URL: amqp://user:${RABBITMQ_PASSWORD}@rabbitmq:5672
+
+      # ===========================================
+      # Playwright Service
+      # ===========================================
+      PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000
+      BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
+
+      # ===========================================
+      # API Authentication
+      # ===========================================
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?Set API key for authentication}
+
+      # ===========================================
+      # Bull Queue Admin Panel
+      # ===========================================
+      BULL_AUTH_KEY: ${BULL_AUTH_KEY:?Set Bull admin panel password}
+
+      # ===========================================
+      # Optional: AI Integration
+      # ===========================================
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+
+      # ===========================================
+      # Optional: Web Search
+      # ===========================================
+      SEARXNG_ENDPOINT: ${SEARXNG_ENDPOINT:-}
+
+      # ===========================================
+      # Optional: Proxy Configuration
+      # ===========================================
+      PROXY_SERVER: ${PROXY_SERVER:-}
+      PROXY_USERNAME: ${PROXY_USERNAME:-}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
+
+      # ===========================================
+      # System Resources
+      # ===========================================
+      MAX_CPU: ${MAX_CPU:-}
+      MAX_RAM: ${MAX_RAM:-}
+    networks:
+      - firecrawl-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.firecrawl.rule=Host(`${FIRECRAWL_DOMAIN}`)"
+      - "traefik.http.routers.firecrawl.entrypoints=websecure"
+      - "traefik.http.routers.firecrawl.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.firecrawl.middlewares=firecrawl-security-headers@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.firecrawl-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.firecrawl.loadbalancer.server.port=3002"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  worker:
+    image: ghcr.io/mendableai/firecrawl:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      playwright-service:
+        condition: service_started
+    environment:
+      # ===========================================
+      # Worker Configuration
+      # ===========================================
+      NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE:-8}
+
+      # ===========================================
+      # Database Configuration
+      # ===========================================
+      DATABASE_URL: postgresql://${POSTGRES_USER:-firecrawl}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-firecrawl}
+      USE_DB_AUTHENTICATION: "true"
+
+      # ===========================================
+      # Redis Configuration
+      # ===========================================
+      REDIS_URL: redis://redis:6379
+      REDIS_RATE_LIMIT_URL: redis://redis:6379
+
+      # ===========================================
+      # RabbitMQ Configuration
+      # ===========================================
+      RABBITMQ_URL: amqp://user:${RABBITMQ_PASSWORD}@rabbitmq:5672
+
+      # ===========================================
+      # Playwright Service
+      # ===========================================
+      PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000
+      BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
+
+      # ===========================================
+      # Optional: AI Integration
+      # ===========================================
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+
+      # ===========================================
+      # Optional: Web Search
+      # ===========================================
+      SEARXNG_ENDPOINT: ${SEARXNG_ENDPOINT:-}
+
+      # ===========================================
+      # Optional: Proxy Configuration
+      # ===========================================
+      PROXY_SERVER: ${PROXY_SERVER:-}
+      PROXY_USERNAME: ${PROXY_USERNAME:-}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
+    networks:
+      - firecrawl-net
+    # No health check for worker (background processor)
+
+  playwright-service:
+    image: ghcr.io/mendableai/firecrawl-playwright:latest
+    restart: always
+    environment:
+      PORT: "3000"
+      PROXY_SERVER: ${PROXY_SERVER:-}
+      PROXY_USERNAME: ${PROXY_USERNAME:-}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
+      BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
+      MAX_CONCURRENT_PAGES: ${MAX_CONCURRENT_PAGES:-10}
+    networks:
+      - firecrawl-net
+    tmpfs:
+      - /tmp/.cache:size=1G,noexec,nosuid
+    # No health check - on-demand browser service
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-firecrawl}
+      POSTGRES_USER: ${POSTGRES_USER:-firecrawl}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - firecrawl-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-firecrawl} -d ${POSTGRES_DB:-firecrawl}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - firecrawl-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: always
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RabbitMQ password}
+    networks:
+      - firecrawl-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+networks:
+  firecrawl-net:
+    driver: bridge
+  dokploy-network:
+    external: true

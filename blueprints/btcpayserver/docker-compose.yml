@@ -1,0 +1,561 @@
+services:
+  btcpayserver:
+    image: btcpayserver/btcpayserver:2.2.1
+    restart: always
+    depends_on:
+      nbxplorer:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - btcpay-data:/datadir
+      - btcpay-storage:/var/lib/btcpayserver/plugins
+      # Tor volumes (uncomment when using --profile tor)
+      # - tor_servicesdir:/var/lib/tor/hidden_services
+      # - tor_torrcdir:/usr/local/etc/tor
+    environment:
+      # ===========================================
+      # PostgreSQL Connection
+      # ===========================================
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DATABASE: ${POSTGRES_DB:-btcpay}
+      POSTGRES_USER: ${POSTGRES_USER:-btcpay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set PostgreSQL password}
+
+      # ===========================================
+      # NBXplorer Connection (Internal)
+      # ===========================================
+      BTCPAY_BTCEXPLORERURL: http://nbxplorer:24444/
+
+      # ===========================================
+      # BTCPay Server Configuration
+      # ===========================================
+      BTCPAY_HOST: ${BTCPAY_DOMAIN:?Set your domain}
+      BTCPAY_ROOTPATH: /
+      BTCPAY_CHAINS: btc
+      BTCPAY_NETWORK: mainnet
+
+      # ===========================================
+      # OPTIONAL: Lightning Network Integration
+      # Uncomment ONE of the following based on your Lightning profile:
+      # - For LND (--profile lnd):
+      #   BTCPAY_BTCLIGHTNING: type=lnd-rest;server=http://lnd:8080/;allowinsecure=true
+      # - For Core Lightning (--profile cln):
+      #   BTCPAY_BTCLIGHTNING: type=clightning;server=tcp://cln:9835/
+      # - For Eclair (--profile eclair, requires --profile bitcoin-full):
+      #   BTCPAY_BTCLIGHTNING: type=eclair;server=http://eclair:8080;password=eclairpass
+      # ===========================================
+      # BTCPAY_BTCLIGHTNING: ${BTCPAY_BTCLIGHTNING:-}
+
+      # ===========================================
+      # OPTIONAL: Tor Hidden Service Integration
+      # Expose BTCPay Server as .onion address (--profile tor)
+      # WARNING: This does NOT provide full anonymity against targeted attacks
+      # Get .onion address: docker compose exec tor cat /var/lib/tor/hidden_services/BTCPayServer/hostname
+      # ===========================================
+      # BTCPAY_SOCKSENDPOINT: tor:9050
+      # BTCPAY_TORRCFILE: /usr/local/etc/tor/torrc
+      # BTCPAY_TORSERVICES: btcpayserver:49392
+
+      # ===========================================
+      # External Bitcoin Core RPC (Optional)
+      # Connect to existing Bitcoin Core node
+      # Leave blank to use NBXplorer without a full node
+      # Default: localhost via Docker host network
+      # ===========================================
+      NBXPLORER_BTCRPCURL: ${BTC_RPC_URL:-http://host.docker.internal:8332/}
+      NBXPLORER_BTCRPCUSER: ${BTC_RPC_USER:-}
+      NBXPLORER_BTCRPCPASSWORD: ${BTC_RPC_PASSWORD:-}
+
+      # ===========================================
+      # OPTIONAL: Cloudflare R2 Backup Storage
+      # For automated backups to Cloudflare R2
+      # Uncomment if you want off-server backup storage
+      # Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+      # ===========================================
+      # S3_ENDPOINT: ${S3_ENDPOINT}
+      # S3_BUCKET: ${S3_BUCKET}
+      # S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      # S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # S3_REGION: auto
+    networks:
+      - btcpay-net
+      - dokploy-network
+    labels:
+      # Traefik routing
+      - "traefik.enable=true"
+      - "traefik.http.routers.btcpayserver.rule=Host(`${BTCPAY_DOMAIN}`)"
+      - "traefik.http.routers.btcpayserver.entrypoints=websecure"
+      - "traefik.http.routers.btcpayserver.tls.certresolver=letsencrypt"
+      - "traefik.http.services.btcpayserver.loadbalancer.server.port=49392"
+      - "traefik.docker.network=dokploy-network"
+      # Security headers middleware
+      - "traefik.http.routers.btcpayserver.middlewares=btcpay-security@docker"
+      - "traefik.http.middlewares.btcpay-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.btcpay-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.btcpay-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.btcpay-security.headers.frameDeny=true"
+      - "traefik.http.middlewares.btcpay-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.btcpay-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+      # ===========================================
+      # OPTIONAL: Cloudflare DNS-01 Challenge for SSL
+      # Uncomment these and comment out the letsencrypt certresolver above
+      # Use when: self-hosted behind NAT, need wildcard cert, or HTTP challenge not possible
+      # Requires: CF_DNS_API_TOKEN environment variable in Traefik
+      # ===========================================
+      # - "traefik.http.routers.btcpayserver.tls.certresolver=cloudflare"
+      # - "traefik.http.routers.btcpayserver.tls.domains[0].main=${BTCPAY_DOMAIN}"
+      # - "traefik.http.routers.btcpayserver.tls.domains[0].sans=*.${BTCPAY_DOMAIN}"
+
+      # ===========================================
+      # OPTIONAL: Cloudflare Zero Trust Access Protection
+      # Uncomment to protect admin paths with Cloudflare Access (SSO/2FA)
+      # HIGHLY RECOMMENDED for production deployments
+      # Setup: Cloudflare Dashboard > Zero Trust > Access > Applications
+      # ===========================================
+      # Admin panel protection (requires Cloudflare Access application setup)
+      # - "traefik.http.routers.btcpay-admin.rule=Host(`${BTCPAY_DOMAIN}`) && PathPrefix(`/server`)"
+      # - "traefik.http.routers.btcpay-admin.entrypoints=websecure"
+      # - "traefik.http.routers.btcpay-admin.tls.certresolver=letsencrypt"
+      # - "traefik.http.routers.btcpay-admin.middlewares=cf-access@docker,btcpay-security@docker"
+      # - "traefik.http.middlewares.cf-access.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      # - "traefik.http.middlewares.cf-access.forwardauth.trustForwardHeader=true"
+      # - "traefik.http.services.btcpay-admin.loadbalancer.server.port=49392"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:49392/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  nbxplorer:
+    image: nicolasdorier/nbxplorer:2.5.22
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - nbxplorer-data:/datadir
+    environment:
+      # PostgreSQL connection
+      NBXPLORER_POSTGRES: User ID=${POSTGRES_USER:-btcpay};Password=${POSTGRES_PASSWORD};Host=postgres;Port=5432;Database=${POSTGRES_DB:-btcpay}
+
+      # NBXplorer configuration
+      NBXPLORER_NETWORK: mainnet
+      NBXPLORER_CHAINS: btc
+
+      # ===========================================
+      # Bitcoin Core RPC Configuration
+      # Conditional based on Bitcoin node selection:
+      # - External: host.docker.internal:8332 (default)
+      # - Pruned:  bitcoin-pruned:8332 (set BTC_RPC_HOST when using --profile bitcoin-pruned)
+      # - Full:    bitcoin-full:8332 (set BTC_RPC_HOST when using --profile bitcoin-full)
+      # ===========================================
+      NBXPLORER_BTCNODEENDPOINT: ${BTC_RPC_HOST:-host.docker.internal:8332}
+      NBXPLORER_BTCRPCURL: http://${BTC_RPC_HOST:-host.docker.internal:8332}/
+
+      # RPC credentials (use external OR internal depending on node selection)
+      NBXPLORER_BTCRPCUSER: ${BTC_RPC_USER:-${BTC_RPC_USER_INTERNAL:-btcpay}}
+      NBXPLORER_BTCRPCPASSWORD: ${BTC_RPC_PASSWORD:-${BTC_RPC_PASSWORD_INTERNAL}}
+
+      # ZMQ connections (only used with internal Bitcoin nodes)
+      NBXPLORER_BTCZMQRAWBLOCK: tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28332
+      NBXPLORER_BTCZMQRAWTX: tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28333
+
+      # Bind settings
+      NBXPLORER_BIND: 0.0.0.0:24444
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:24444/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-btcpay}
+      POSTGRES_USER: ${POSTGRES_USER:-btcpay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set PostgreSQL password}
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-btcpay} -d ${POSTGRES_DB:-btcpay}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # BITCOIN NODE OPTIONS (Choose ONE via Docker profiles)
+  # Use with: docker compose --profile bitcoin-pruned up -d
+  #       or: docker compose --profile bitcoin-full up -d
+  # External node: Leave profiles unset, configure RPC credentials only
+  # =============================================================================
+
+  bitcoin-pruned:
+    image: blockstream/bitcoind:30.0
+    restart: always
+    profiles: [bitcoin-pruned]
+    volumes:
+      - bitcoin-data:/root/.bitcoin
+    command:
+      - "bitcoind"
+      - "-server=1"
+      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcbind=0.0.0.0"
+      - "-rpcuser=${BTC_RPC_USER_INTERNAL:-btcpay}"
+      - "-rpcpassword=${BTC_RPC_PASSWORD_INTERNAL:?Set internal Bitcoin RPC password}"
+      - "-prune=550"
+      - "-txindex=0"
+      - "-zmqpubrawblock=tcp://0.0.0.0:28332"
+      - "-zmqpubrawtx=tcp://0.0.0.0:28333"
+      - "-deprecatedrpc=create_bdb"
+    environment:
+      BITCOIN_NETWORK: ${BITCOIN_NETWORK:-mainnet}
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-rpcuser=${BTC_RPC_USER_INTERNAL:-btcpay}", "-rpcpassword=${BTC_RPC_PASSWORD_INTERNAL}", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+
+  bitcoin-full:
+    image: blockstream/bitcoind:30.0
+    restart: always
+    profiles: [bitcoin-full]
+    volumes:
+      - bitcoin-data-full:/root/.bitcoin
+    command:
+      - "bitcoind"
+      - "-server=1"
+      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcbind=0.0.0.0"
+      - "-rpcuser=${BTC_RPC_USER_INTERNAL:-btcpay}"
+      - "-rpcpassword=${BTC_RPC_PASSWORD_INTERNAL:?Set internal Bitcoin RPC password}"
+      - "-prune=0"
+      - "-txindex=1"
+      - "-zmqpubrawblock=tcp://0.0.0.0:28332"
+      - "-zmqpubrawtx=tcp://0.0.0.0:28333"
+      - "-deprecatedrpc=create_bdb"
+    environment:
+      BITCOIN_NETWORK: ${BITCOIN_NETWORK:-mainnet}
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-rpcuser=${BTC_RPC_USER_INTERNAL:-btcpay}", "-rpcpassword=${BTC_RPC_PASSWORD_INTERNAL}", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+
+  # =============================================================================
+  # LIGHTNING NETWORK OPTIONS (Choose ONE via Docker profiles)
+  # Use with: docker compose --profile lnd up -d
+  #       or: docker compose --profile cln up -d
+  #       or: docker compose --profile eclair up -d
+  # Note: Lightning can work with any Bitcoin mode (external, pruned, or full)
+  # =============================================================================
+
+  lnd:
+    image: lightninglabs/lnd:v0.18.4-beta
+    restart: always
+    profiles: [lnd]
+    volumes:
+      - lnd-data:/root/.lnd
+    command:
+      # Bitcoin network configuration
+      - "--bitcoin.active"
+      - "--bitcoin.mainnet"
+      - "--bitcoin.node=bitcoind"
+
+      # Bitcoin Core RPC connection
+      - "--bitcoind.rpchost=${BTC_RPC_HOST:-host.docker.internal:8332}"
+      - "--bitcoind.rpcuser=${BTC_RPC_USER:-${BTC_RPC_USER_INTERNAL:-btcpay}}"
+      - "--bitcoind.rpcpass=${BTC_RPC_PASSWORD:-${BTC_RPC_PASSWORD_INTERNAL}}"
+
+      # ZeroMQ connections for real-time blockchain events
+      - "--bitcoind.zmqpubrawblock=tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28332"
+      - "--bitcoind.zmqpubrawtx=tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28333"
+
+      # API endpoints (internal network only)
+      - "--rpclisten=0.0.0.0:10009"
+      - "--restlisten=0.0.0.0:8080"
+
+      # TLS configuration
+      - "--tlsextradomain=lnd"
+      - "--tlsextraip=0.0.0.0"
+    environment:
+      LND_NETWORK: mainnet
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "lncli", "getinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  cln:
+    image: elementsproject/lightningd:v24.11.1
+    restart: always
+    profiles: [cln]
+    volumes:
+      - cln-data:/root/.lightning
+    command:
+      # Bitcoin network
+      - "--network=bitcoin"
+
+      # Bitcoin Core RPC connection (no ZMQ needed!)
+      - "--bitcoin-rpcconnect=${BTC_ZMQ_HOST:-host.docker.internal}"
+      - "--bitcoin-rpcport=8332"
+      - "--bitcoin-rpcuser=${BTC_RPC_USER:-${BTC_RPC_USER_INTERNAL:-btcpay}}"
+      - "--bitcoin-rpcpassword=${BTC_RPC_PASSWORD:-${BTC_RPC_PASSWORD_INTERNAL}}"
+
+      # CLNRest API (REST interface for CLN)
+      - "--clnrest-port=9835"
+      - "--clnrest-host=0.0.0.0"
+
+      # Lightning P2P
+      - "--bind-addr=0.0.0.0:9735"
+      - "--announce-addr=cln:9735"
+    environment:
+      LIGHTNINGD_NETWORK: bitcoin
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "lightning-cli", "getinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  eclair:
+    image: acinq/eclair:release-0.11.0
+    restart: always
+    profiles: [eclair]
+    # IMPORTANT: Eclair ONLY works with bitcoin-full profile!
+    # Eclair requires: txindex=1 + non-pruning Bitcoin Core
+    # Incompatible with: bitcoin-pruned, external nodes without txindex
+    volumes:
+      - eclair-data:/data
+    environment:
+      # Bitcoin RPC connection
+      ECLAIR_CHAIN: mainnet
+      ECLAIR_BITCOIND_HOST: ${BTC_ZMQ_HOST:-host.docker.internal}
+      ECLAIR_BITCOIND_RPCPORT: 8332
+      ECLAIR_BITCOIND_RPCUSER: ${BTC_RPC_USER:-${BTC_RPC_USER_INTERNAL:-btcpay}}
+      ECLAIR_BITCOIND_RPCPASSWORD: ${BTC_RPC_PASSWORD:-${BTC_RPC_PASSWORD_INTERNAL}}
+
+      # ZMQ connections (required)
+      ECLAIR_BITCOIND_ZMQBLOCK: tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28332
+      ECLAIR_BITCOIND_ZMQTX: tcp://${BTC_ZMQ_HOST:-host.docker.internal}:28333
+
+      # API configuration
+      ECLAIR_API_ENABLED: "true"
+      ECLAIR_API_PORT: 8080
+      ECLAIR_API_BINDING_IP: 0.0.0.0
+
+      # Server configuration
+      ECLAIR_SERVER_PORT: 9735
+      ECLAIR_SERVER_BINDING_IP: 0.0.0.0
+
+      # Java options for memory management
+      JAVA_OPTS: -Xmx512m
+    networks:
+      - btcpay-net
+    healthcheck:
+      test: ["CMD", "eclair-cli", "-p", "eclair", "getinfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # =============================================================================
+  # ACCESS METHODS - Tor Hidden Service
+  # =============================================================================
+
+  tor:
+    image: btcpayserver/tor:0.4.8.10
+    restart: always
+    profiles: [tor]
+    # Tor provides anonymous access via .onion addresses
+    # Does NOT protect against targeted deanonymization attacks
+    # All outbound traffic is NOT channeled through Tor SOCKS proxy
+    volumes:
+      - tor_datadir:/home/tor/.tor
+      - tor_servicesdir:/var/lib/tor/hidden_services
+      - tor_torrcdir:/usr/local/etc/tor
+    environment:
+      # Tor daemon configuration
+      TOR_EXTRA_ARGS: |
+        CookieAuthentication 1
+        CookieAuthFileGroupReadable 1
+        CookieAuthFile /home/tor/.tor/control_auth_cookie
+        ControlPort 9051
+
+      # Hidden service for BTCPay Server
+      HIDDENSERVICE_NAME: BTCPayServer
+      HIDDENSERVICE_REVERSEPROXY: btcpayserver
+
+      # Tor password for control port
+      TOR_PASSWORD: btcpayserver
+    networks:
+      - btcpay-net
+    healthcheck:
+      # Check if Tor daemon is running and SOCKS proxy is accessible
+      test: ["CMD-SHELL", "echo 'GETINFO status/circuit-established' | nc -q 1 localhost 9051 | grep -q '250' || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+
+  # =============================================================================
+  # ACCESS METHODS - Cloudflare Tunnel
+  # =============================================================================
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.11.1
+    restart: always
+    profiles: [cloudflared]
+    # Cloudflare Tunnel exposes services without opening ports
+    # Provides DDoS protection, SSL termination, and global CDN
+    # Get tunnel token: Cloudflare Dashboard > Zero Trust > Access > Tunnels
+    command: tunnel run
+    environment:
+      # Cloudflare Tunnel authentication token
+      # Create tunnel: https://one.dash.cloudflare.com/ > Networks > Tunnels
+      # Service type: HTTP, URL: http://btcpayserver:49392
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set Cloudflare Tunnel token}
+    networks:
+      - btcpay-net
+    depends_on:
+      btcpayserver:
+        condition: service_healthy
+    # No healthcheck needed - cloudflared handles connection monitoring
+
+  # =============================================================================
+  # BACKUP & STORAGE
+  # Optional Cloudflare R2 automated backup service (--profile r2-backup)
+  # =============================================================================
+
+  r2-backup:
+    image: alpine:3.19
+    restart: always
+    profiles: [r2-backup]
+    # Automated encrypted backups to Cloudflare R2
+    # Backs up: PostgreSQL database, BTCPay data, Lightning channel data
+    # Excludes: Blockchain data (reproducible from network)
+    volumes:
+      # Read-only mounts for backup (safety measure)
+      - btcpay-data:/backup/btcpay:ro
+      - postgres-data:/backup/postgres:ro
+      - lnd-data:/backup/lnd:ro
+      - cln-data:/backup/cln:ro
+      - eclair-data:/backup/eclair:ro
+      # Backup script is mounted via config.mounts in template.toml
+    environment:
+      # ===========================================
+      # Cloudflare R2 Configuration
+      # ===========================================
+      S3_ENDPOINT: ${S3_ENDPOINT:?Set Cloudflare R2 endpoint}
+      S3_BUCKET: ${S3_BUCKET:?Set R2 bucket name}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set R2 access key ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set R2 secret access key}
+      S3_REGION: ${S3_REGION:-auto}
+
+      # PostgreSQL connection for dumps
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-btcpay}
+      POSTGRES_USER: ${POSTGRES_USER:-btcpay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # ===========================================
+      # Backup Encryption
+      # GPG passphrase for backup encryption
+      # CRITICAL: Store this securely! Without it, backups are unrecoverable
+      # ===========================================
+      GPG_PASSPHRASE: ${GPG_PASSPHRASE:?Set GPG passphrase for backup encryption}
+
+      # Backup schedule (cron format)
+      # Default: Daily at 2 AM UTC
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+
+      # Backup retention (days)
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    networks:
+      - btcpay-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c '
+        # Install required tools
+        apk add --no-cache postgresql-client aws-cli gnupg cronie &&
+
+        # Configure AWS CLI for Cloudflare R2
+        aws configure set aws_access_key_id $$S3_ACCESS_KEY_ID &&
+        aws configure set aws_secret_access_key $$S3_SECRET_ACCESS_KEY &&
+        aws configure set region $$S3_REGION &&
+
+        # Make backup script executable
+        chmod +x /usr/local/bin/backup.sh &&
+
+        # Add cron job
+        echo "$$BACKUP_SCHEDULE /usr/local/bin/backup.sh" > /etc/crontabs/root &&
+
+        # Run initial backup
+        /usr/local/bin/backup.sh &&
+
+        # Start cron daemon in foreground
+        crond -f -l 2
+      '
+    healthcheck:
+      # Check if cron is running
+      test: ["CMD", "pgrep", "crond"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  btcpay-data:
+    driver: local
+  btcpay-storage:
+    driver: local
+  nbxplorer-data:
+    driver: local
+  postgres-data:
+    driver: local
+  bitcoin-data:
+    driver: local
+  bitcoin-data-full:
+    driver: local
+  lnd-data:
+    driver: local
+  cln-data:
+    driver: local
+  eclair-data:
+    driver: local
+  tor_datadir:
+    driver: local
+  tor_servicesdir:
+    driver: local
+  tor_torrcdir:
+    driver: local
+
+networks:
+  btcpay-net:
+    driver: bridge
+  dokploy-network:
+    external: true

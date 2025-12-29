@@ -1,0 +1,336 @@
+# BTCPay Server - Self-hosted Bitcoin payment processor
+# https://github.com/btcpayserver/btcpayserver
+#
+# A free and open-source Bitcoin payment processor which allows you to accept
+# bitcoin without fees or intermediaries. Run your own payment processor with
+# full control over your Bitcoin keys.
+
+[variables]
+# User-provided domain
+domain = "${domain}"
+
+# Auto-generated PostgreSQL password
+postgres_password = "${password:32}"
+
+# PostgreSQL database configuration (with defaults)
+postgres_db = "btcpay"
+postgres_user = "btcpay"
+
+# ===========================================
+# Bitcoin Node Configuration
+# Choose ONE mode per deployment:
+# - "external": Connect to existing Bitcoin Core node (default)
+# - "pruned":   Deploy blockstream/bitcoind:30.0 with prune=550 (80GB storage)
+# - "full":     Deploy blockstream/bitcoind:30.0 full archival (600GB+ storage)
+# ===========================================
+bitcoin_mode = "external"
+bitcoin_network = "mainnet"
+
+# Internal Bitcoin node credentials (used when bitcoin_mode = pruned or full)
+btc_rpc_user_internal = "${username}"
+btc_rpc_password_internal = "${password:32}"
+
+# External Bitcoin Core RPC (used when bitcoin_mode = external)
+btc_rpc_host = "host.docker.internal:8332"
+btc_zmq_host = "host.docker.internal"
+btc_rpc_user = ""
+btc_rpc_password = ""
+
+# ===========================================
+# OPTIONAL: Cloudflare R2 Backup Storage
+# For automated backups to Cloudflare R2
+# Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+# ===========================================
+s3_endpoint = ""
+s3_bucket = ""
+s3_access_key_id = ""
+s3_secret_access_key = ""
+
+# Backup encryption passphrase (required for R2 backups)
+# CRITICAL: Store securely! Without this, encrypted backups are unrecoverable
+gpg_passphrase = "${password:32}"
+
+# Backup schedule (cron format, default: daily at 2 AM UTC)
+backup_schedule = "0 2 * * *"
+
+# Backup retention period in days
+backup_retention_days = "30"
+
+# ===========================================
+# OPTIONAL: Cloudflare Zero Trust
+# For admin panel protection with SSO/2FA
+# Get from: Cloudflare Dashboard > Zero Trust
+# ===========================================
+cf_team_name = ""
+
+# ===========================================
+# OPTIONAL: Cloudflare Tunnel
+# For exposing BTCPay without port forwarding
+# Get from: Cloudflare Dashboard > Zero Trust > Networks > Tunnels
+# Create tunnel > Docker > Copy token
+# Service type: HTTP, URL: http://btcpayserver:49392
+# ===========================================
+cloudflare_tunnel_token = ""
+
+[[config.domains]]
+serviceName = "btcpayserver"
+port = 49392
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# PostgreSQL Connection
+# ===========================================
+POSTGRES_HOST = "postgres"
+POSTGRES_PORT = "5432"
+POSTGRES_DATABASE = "${postgres_db}"
+POSTGRES_USER = "${postgres_user}"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+POSTGRES_DB = "${postgres_db}"
+POSTGRES_USER = "${postgres_user}"
+
+# ===========================================
+# BTCPay Server Configuration
+# ===========================================
+BTCPAY_DOMAIN = "${domain}"
+BTCPAY_HOST = "${domain}"
+BTCPAY_ROOTPATH = "/"
+BTCPAY_CHAINS = "btc"
+BTCPAY_NETWORK = "mainnet"
+
+# ===========================================
+# NBXplorer Connection (Internal)
+# ===========================================
+BTCPAY_BTCEXPLORERURL = "http://nbxplorer:24444/"
+
+# ===========================================
+# NBXplorer PostgreSQL Connection
+# NBXplorer uses separate schema in same database
+# ===========================================
+NBXPLORER_POSTGRES = "User ID=${postgres_user};Password=${postgres_password};Host=postgres;Port=5432;Database=${postgres_db}"
+NBXPLORER_NETWORK = "mainnet"
+NBXPLORER_CHAINS = "btc"
+NBXPLORER_BIND = "0.0.0.0:24444"
+
+# ===========================================
+# Bitcoin Node Configuration
+# ===========================================
+BITCOIN_NETWORK = "${bitcoin_network}"
+
+# Internal Bitcoin node credentials (used with bitcoin-pruned or bitcoin-full profiles)
+BTC_RPC_USER_INTERNAL = "${btc_rpc_user_internal}"
+BTC_RPC_PASSWORD_INTERNAL = "${btc_rpc_password_internal}"
+
+# Bitcoin RPC host (set based on bitcoin_mode)
+# - external: host.docker.internal:8332
+# - pruned:   bitcoin-pruned:8332
+# - full:     bitcoin-full:8332
+BTC_RPC_HOST = "${btc_rpc_host}"
+
+# Bitcoin ZMQ host (hostname only, for ZeroMQ connections)
+# - external: host.docker.internal
+# - pruned:   bitcoin-pruned
+# - full:     bitcoin-full
+BTC_ZMQ_HOST = "${btc_zmq_host}"
+
+# External Bitcoin Core RPC credentials (only used when bitcoin_mode = external)
+BTC_RPC_USER = "${btc_rpc_user}"
+BTC_RPC_PASSWORD = "${btc_rpc_password}"
+
+# ===========================================
+# OPTIONAL: Cloudflare R2 Backup Storage
+# Uncomment in docker-compose.yml to enable
+# ===========================================
+S3_ENDPOINT = "${s3_endpoint}"
+S3_BUCKET = "${s3_bucket}"
+S3_ACCESS_KEY_ID = "${s3_access_key_id}"
+S3_SECRET_ACCESS_KEY = "${s3_secret_access_key}"
+S3_REGION = "auto"
+
+# R2 Backup Configuration (use --profile r2-backup to enable)
+GPG_PASSPHRASE = "${gpg_passphrase}"
+BACKUP_SCHEDULE = "${backup_schedule}"
+BACKUP_RETENTION_DAYS = "${backup_retention_days}"
+
+# ===========================================
+# OPTIONAL: Cloudflare Zero Trust
+# For admin panel protection
+# Uncomment in docker-compose.yml to enable
+# ===========================================
+CF_TEAM_NAME = "${cf_team_name}"
+
+# ===========================================
+# OPTIONAL: Cloudflare Tunnel
+# For exposing BTCPay without port forwarding
+# Use --profile cloudflared to enable
+# Create tunnel: Cloudflare Dashboard > Zero Trust > Networks > Tunnels
+# Service type: HTTP, URL: http://btcpayserver:49392
+# ===========================================
+CLOUDFLARE_TUNNEL_TOKEN = "${cloudflare_tunnel_token}"
+
+# ===========================================
+# R2 Backup Script Configuration
+# Automated backup script mounted to r2-backup service
+# ===========================================
+[[config.mounts]]
+serviceName = "r2-backup"
+mountPath = "/usr/local/bin/backup.sh"
+content = """#!/bin/sh
+# BTCPay Server Automated Backup Script
+# Backs up PostgreSQL database, BTCPay data, and Lightning channel data to Cloudflare R2
+
+set -e  # Exit on error
+
+# Configuration
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/tmp/backups"
+LOG_FILE="/var/log/backup.log"
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "=== Starting BTCPay Server Backup ==="
+
+# ===========================================
+# 1. PostgreSQL Database Backup
+# ===========================================
+log "Backing up PostgreSQL database..."
+PGPASSWORD="$POSTGRES_PASSWORD" pg_dump \
+    -h "$POSTGRES_HOST" \
+    -p "$POSTGRES_PORT" \
+    -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" \
+    -F c \
+    -f "$BACKUP_DIR/postgres_${TIMESTAMP}.dump"
+
+if [ $? -eq 0 ]; then
+    log "PostgreSQL backup completed: postgres_${TIMESTAMP}.dump"
+else
+    log "ERROR: PostgreSQL backup failed!"
+    exit 1
+fi
+
+# ===========================================
+# 2. BTCPay Server Data Backup
+# ===========================================
+log "Backing up BTCPay Server data..."
+tar -czf "$BACKUP_DIR/btcpay-data_${TIMESTAMP}.tar.gz" \
+    -C /backup/btcpay . 2>/dev/null || true
+
+log "BTCPay data backup completed: btcpay-data_${TIMESTAMP}.tar.gz"
+
+# ===========================================
+# 3. Lightning Network Channel Backups
+# ===========================================
+
+# LND Static Channel Backup (SCB)
+if [ -f /backup/lnd/data/chain/bitcoin/mainnet/channel.backup ]; then
+    log "Backing up LND channel backup (SCB)..."
+    cp /backup/lnd/data/chain/bitcoin/mainnet/channel.backup \
+        "$BACKUP_DIR/lnd-channel_${TIMESTAMP}.backup"
+    log "LND SCB backup completed"
+fi
+
+# Core Lightning hsm_secret (CRITICAL - seed for wallet recovery)
+if [ -f /backup/cln/bitcoin/hsm_secret ]; then
+    log "Backing up Core Lightning hsm_secret..."
+    cp /backup/cln/bitcoin/hsm_secret \
+        "$BACKUP_DIR/cln-hsm_secret_${TIMESTAMP}"
+    log "CLN hsm_secret backup completed"
+fi
+
+# Eclair channel database
+if [ -d /backup/eclair ]; then
+    log "Backing up Eclair channel data..."
+    tar -czf "$BACKUP_DIR/eclair-data_${TIMESTAMP}.tar.gz" \
+        -C /backup/eclair . 2>/dev/null || true
+    log "Eclair data backup completed"
+fi
+
+# ===========================================
+# 4. GPG Encryption
+# ===========================================
+log "Encrypting backups with GPG..."
+
+for file in "$BACKUP_DIR"/*; do
+    if [ -f "$file" ]; then
+        echo "$GPG_PASSPHRASE" | gpg \
+            --batch \
+            --yes \
+            --passphrase-fd 0 \
+            --symmetric \
+            --cipher-algo AES256 \
+            --output "${file}.gpg" \
+            "$file"
+
+        # Remove unencrypted file
+        rm -f "$file"
+        log "Encrypted: $(basename ${file}).gpg"
+    fi
+done
+
+# ===========================================
+# 5. Upload to Cloudflare R2
+# ===========================================
+log "Uploading backups to Cloudflare R2..."
+
+for file in "$BACKUP_DIR"/*.gpg; do
+    if [ -f "$file" ]; then
+        filename=$(basename "$file")
+        aws s3 cp "$file" \
+            "s3://$S3_BUCKET/btcpay-backups/$filename" \
+            --endpoint-url "$S3_ENDPOINT" \
+            --region "$S3_REGION"
+
+        if [ $? -eq 0 ]; then
+            log "Uploaded: $filename"
+            # Remove local encrypted file after successful upload
+            rm -f "$file"
+        else
+            log "ERROR: Failed to upload $filename"
+        fi
+    fi
+done
+
+# ===========================================
+# 6. Cleanup Old Backups (Retention Policy)
+# ===========================================
+log "Cleaning up old backups (retention: ${BACKUP_RETENTION_DAYS} days)..."
+
+# List all backups and delete files older than retention period
+aws s3 ls "s3://$S3_BUCKET/btcpay-backups/" \
+    --endpoint-url "$S3_ENDPOINT" \
+    --region "$S3_REGION" | while read -r line; do
+
+    # Extract date and filename
+    backup_date=$(echo "$line" | awk '{print $1}')
+    backup_file=$(echo "$line" | awk '{print $4}')
+
+    # Calculate age in days
+    backup_epoch=$(date -d "$backup_date" +%s 2>/dev/null || echo 0)
+    current_epoch=$(date +%s)
+    age_days=$(( (current_epoch - backup_epoch) / 86400 ))
+
+    # Delete if older than retention period
+    if [ "$age_days" -gt "$BACKUP_RETENTION_DAYS" ]; then
+        log "Deleting old backup: $backup_file (age: ${age_days} days)"
+        aws s3 rm "s3://$S3_BUCKET/btcpay-backups/$backup_file" \
+            --endpoint-url "$S3_ENDPOINT" \
+            --region "$S3_REGION"
+    fi
+done
+
+# Cleanup local backup directory
+rm -rf "$BACKUP_DIR"
+
+log "=== Backup Completed Successfully ==="
+log "Backup timestamp: $TIMESTAMP"
+log "Next backup scheduled: $BACKUP_SCHEDULE"
+"""

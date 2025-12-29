@@ -1,0 +1,134 @@
+services:
+  mcpgateway:
+    image: ghcr.io/ibm/mcp-context-forge:1.0.0-BETA-1
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - mcpgateway-data:/app/data
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      MCPGATEWAY_DOMAIN: ${MCPGATEWAY_DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Database Configuration (MariaDB)
+      # ===========================================
+      DATABASE_URL: mysql://${MYSQL_USER:-mcpgateway}:${MYSQL_PASSWORD}@mariadb:3306/${MYSQL_DATABASE:-mcpgateway}
+
+      # ===========================================
+      # Redis Cache Configuration
+      # ===========================================
+      REDIS_URL: redis://redis:6379/0
+      CACHE_TYPE: redis
+      CACHE_PREFIX: "mcpgw:"
+
+      # ===========================================
+      # Security & Authentication
+      # ===========================================
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT secret key}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:?Set basic auth password}
+
+      # ===========================================
+      # Admin Configuration
+      # ===========================================
+      MCPGATEWAY_UI_ENABLED: "true"
+      MCPGATEWAY_ADMIN_API_ENABLED: "true"
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:?Set admin email}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:?Set admin password}
+
+      # ===========================================
+      # Application Settings
+      # ===========================================
+      HOST: 0.0.0.0
+      PORT: "4444"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # ===========================================
+      # Database Pool Configuration
+      # ===========================================
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-200}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-30}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-3600}
+
+      # ===========================================
+      # Federation (for multi-cluster deployments)
+      # ===========================================
+      FEDERATION_ENABLED: ${FEDERATION_ENABLED:-false}
+    networks:
+      - mcpgateway-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcpgateway.rule=Host(`${MCPGATEWAY_DOMAIN}`)"
+      - "traefik.http.routers.mcpgateway.entrypoints=websecure"
+      - "traefik.http.routers.mcpgateway.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.mcpgateway.middlewares=mcpgateway-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.mcpgateway-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.mcpgateway-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.mcpgateway-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.mcpgateway-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.mcpgateway-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.mcpgateway.loadbalancer.server.port=4444"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  mariadb:
+    image: mariadb:10.6
+    restart: always
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mcpgateway}
+      MYSQL_USER: ${MYSQL_USER:-mcpgateway}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set database password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set database root password}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    networks:
+      - mcpgateway-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - mcpgateway-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mcpgateway-data:
+    driver: local
+  mariadb-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  mcpgateway-net:
+    driver: bridge
+  dokploy-network:
+    external: true

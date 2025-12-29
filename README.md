@@ -100,6 +100,116 @@ This repository contains **production-ready Dokploy application templates** with
 
 ---
 
+## 🐳 Custom Container Workflow
+
+This repository supports building custom Docker images for your local registry that can be seamlessly integrated into Dokploy templates.
+
+### Workflow Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. Build Custom Container (/create-container)          │
+│     • Build from Dockerfiles/ directory                 │
+│     • Push to registry.hashgrid.net                     │
+│     • Update Dockerfiles/README.md index                │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│  2. Create Dokploy Template (/dokploy-create)           │
+│     • Reference custom image from registry              │
+│     • Use registry.hashgrid.net/app:tag in compose      │
+│     • Complete template with custom image               │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│  3. Deploy to Dokploy                                   │
+│     • Template uses your custom image                   │
+│     • Image pulled from local registry                  │
+│     • No external dependencies                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Building Custom Images
+
+**Create custom Dockerfiles in `Dockerfiles/` directory:**
+
+```
+Dockerfiles/
+├── README.md              # Auto-generated index of all images
+├── bitcoind/
+│   └── Dockerfile         # Bitcoin Core v30.0
+├── custom-nginx/
+│   └── Dockerfile         # Nginx with custom modules
+└── my-app/
+    └── Dockerfile         # Your custom application
+```
+
+**Build and push to registry:**
+
+```bash
+# Build Bitcoin Core image
+/create-container Dockerfiles/bitcoind/Dockerfile bitcoind:30.0
+
+# Build with auto-generated tag
+/create-container Dockerfiles/my-app/Dockerfile
+
+# Result:
+# ✅ Image pushed to registry.hashgrid.net/bitcoind:30.0
+# ✅ Dockerfiles/README.md updated with index entry
+```
+
+**View available images:**
+
+```bash
+cat Dockerfiles/README.md
+```
+
+### Using Custom Images in Templates
+
+**Option 1: Reference during template creation**
+
+```bash
+/dokploy-create my-bitcoin-stack
+```
+
+Claude Code will detect custom images in your registry and offer them during template generation.
+
+**Option 2: Manual reference in docker-compose.yml**
+
+```yaml
+services:
+  bitcoind:
+    image: registry.hashgrid.net/bitcoind:30.0  # Your custom image
+    restart: always
+    volumes:
+      - bitcoin-data:/data
+    networks:
+      - app-net
+```
+
+### Benefits of Custom Registry
+
+- ✅ **Version Control** - Track all custom image versions
+- ✅ **No External Dependencies** - Images stored locally
+- ✅ **Faster Deployments** - No pulling from external registries
+- ✅ **Security Auditing** - Build images from verified Dockerfiles
+- ✅ **Consistency** - Same images across all deployments
+- ✅ **Custom Patches** - Apply security patches immediately
+
+### Registry Index
+
+The `Dockerfiles/README.md` maintains a complete index:
+
+| Application | Dockerfile Path | Latest Tag | Registry URL | Last Built |
+|-------------|----------------|------------|--------------|------------|
+| bitcoind | bitcoind/Dockerfile | 30.0 | registry.hashgrid.net/bitcoind:30.0 | 2025-12-29 08:46 UTC |
+
+**Auto-updated by `/create-container` command**
+
+---
+
 ## 📖 Documentation Structure
 
 ### For Everyone
@@ -286,6 +396,30 @@ T+30: DEPLOYMENT READY
 
 ## 🛠️ Available Commands
 
+### Container Management
+```bash
+/create-container <dockerfile-path> [image-tag]
+                                    # Build and push custom image to registry
+                                    # Updates Dockerfiles/README.md index
+                                    # See: .claude/commands/create-container.md
+
+# Examples:
+/create-container Dockerfiles/bitcoind/Dockerfile bitcoind:30.0
+/create-container Dockerfiles/myapp/Dockerfile
+```
+
+### Template Creation
+```bash
+/dokploy-create <app-name>          # Create production-ready Dokploy template
+                                    # Skills-first progressive loading
+                                    # Cloudflare-first integration
+                                    # See: .claude/commands/dokploy-create.md
+
+# Examples:
+/dokploy-create nextcloud
+/dokploy-create https://github.com/paperless-ngx/paperless-ngx
+```
+
 ### Validation & Testing
 ```bash
 npm run validate:all              # Validate all templates
@@ -408,10 +542,26 @@ dokploy-templates-cloudflare/
 ├── .env.example                 # Environment template
 ├── ai-agent.config.json         # Agent service config
 │
+├── Dockerfiles/                 # Custom container images
+│   ├── README.md                # Auto-generated registry index
+│   ├── bitcoind/
+│   │   └── Dockerfile
+│   └── [custom-app]/
+│       └── Dockerfile
+│
 ├── blueprints/                  # Template definitions
 │   ├── grafana/
 │   ├── pocketbase/
 │   └── [new-template]/
+│
+├── .claude/                     # Claude Code configuration
+│   ├── commands/
+│   │   ├── create-container.md  # Container build workflow
+│   │   └── dokploy-create.md    # Template creation workflow
+│   └── skills/                  # Skills-first architecture
+│       ├── dokploy-compose-structure/
+│       ├── dokploy-cloudflare-integration/
+│       └── [other-skills]/
 │
 ├── tests/                       # Test suite
 │   ├── template-validation.test.ts
