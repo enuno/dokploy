@@ -12,6 +12,7 @@ Uptime Kuma is an easy-to-use self-hosted monitoring tool that tracks service av
 ### Features
 
 - **Multi-Protocol Monitoring**: HTTP(s), TCP, DNS, Ping, MQTT, and more
+- **Docker Container Monitoring**: Monitor local Docker containers via socket mount (read-only)
 - **Status Pages**: Public status pages for your services
 - **Notifications**: 90+ notification providers (Discord, Slack, Email, etc.)
 - **Embedded Database**: SQLite database included - no external database needed
@@ -39,12 +40,18 @@ Uptime Kuma is an easy-to-use self-hosted monitoring tool that tracks service av
 │    │  - Configuration             │         │
 │    └──────────────────────────────┘         │
 │                                              │
-│    Data Volume: /app/data                   │
+│    Volumes:                                  │
+│    - /app/data (persistent storage)         │
+│    - /var/run/docker.sock:ro (monitoring)   │
 └──────────────┬───────────────────────────────┘
                │
                ├─── HTTPS (Traefik + Let's Encrypt)
+               ├─── Optional: Cloudflare Tunnel
                │
-               └─── Optional: Cloudflare Tunnel
+               └─── Docker Socket (read-only)
+                    ↓
+              Host Docker Containers
+              (monitoring capability)
 
 Monitoring Targets:
   → HTTP/HTTPS endpoints
@@ -52,7 +59,7 @@ Monitoring Targets:
   → DNS records
   → Ping (ICMP)
   → Databases (PostgreSQL, MySQL, MongoDB, Redis)
-  → Docker containers
+  → Docker containers (local & remote)
   → And more...
 ```
 
@@ -201,6 +208,119 @@ If using Cloudflare Tunnel exclusively, comment out Traefik labels in docker-com
 #   - "traefik.enable=true"
 #   ...
 ```
+
+## Docker Container Monitoring
+
+Uptime Kuma can monitor Docker containers running on the same host by accessing the Docker socket.
+
+### Features
+
+- ✅ Monitor container health status
+- ✅ Track container uptime and restarts
+- ✅ Alert on container state changes (stopped, unhealthy, etc.)
+- ✅ View container metadata and logs
+- ✅ Support for Swarm mode containers
+
+### How It Works
+
+The template includes a **read-only** mount of the Docker socket:
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+This allows Uptime Kuma to query Docker for container information without the ability to modify containers.
+
+### Setting Up Docker Monitor
+
+1. **Navigate to Monitors**:
+   - Click **+ Add New Monitor**
+   - Select monitor type: **Docker Container**
+
+2. **Configure Docker Connection**:
+   - **Docker Daemon**: `unix:///var/run/docker.sock`
+   - **Docker Host**: Leave empty (local socket)
+
+3. **Select Container**:
+   - Choose from dropdown list of running containers
+   - Or specify container name/ID manually
+
+4. **Configure Monitoring**:
+   - **Heartbeat Interval**: How often to check (default: 60 seconds)
+   - **Retry Interval**: Time between retries on failure
+   - **Status**: Expected container state (running, healthy, etc.)
+
+5. **Set Up Notifications**:
+   - Add notification channels for alerts
+   - Configure when to notify (state changes, health checks, etc.)
+
+### Example: Monitor Critical Services
+
+**Monitor Dokploy Container:**
+```
+Monitor Type: Docker Container
+Docker Daemon: unix:///var/run/docker.sock
+Container Name: dokploy
+Expected State: running
+Heartbeat: 60 seconds
+```
+
+**Monitor Database Container:**
+```
+Monitor Type: Docker Container
+Docker Daemon: unix:///var/run/docker.sock
+Container Name: postgres
+Expected State: healthy
+Heartbeat: 30 seconds
+```
+
+### Security Considerations
+
+**Read-Only Mount**: The Docker socket is mounted as `:ro` (read-only), preventing Uptime Kuma from:
+- Starting/stopping containers
+- Creating/deleting containers
+- Modifying container configurations
+
+**Attack Surface**: Even read-only access to Docker socket provides significant container information:
+- Container environment variables (may contain secrets)
+- Container configurations
+- Network topology
+
+**Recommendations**:
+1. ✅ Use Cloudflare Zero Trust Access to protect the Uptime Kuma dashboard
+2. ✅ Restrict user access to Uptime Kuma (create read-only monitoring users)
+3. ✅ Monitor Uptime Kuma's own access logs
+4. ✅ Consider using Docker TCP socket with TLS for remote monitoring instead
+
+### Monitoring Remote Docker Hosts
+
+To monitor Docker containers on remote hosts:
+
+1. **Configure Remote Docker Daemon** (on remote host):
+   ```bash
+   # Edit Docker daemon config
+   sudo nano /etc/docker/daemon.json
+   ```
+
+   Add TLS configuration:
+   ```json
+   {
+     "hosts": ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2376"],
+     "tls": true,
+     "tlscacert": "/etc/docker/ca.pem",
+     "tlscert": "/etc/docker/server-cert.pem",
+     "tlskey": "/etc/docker/server-key.pem",
+     "tlsverify": true
+   }
+   ```
+
+2. **In Uptime Kuma**:
+   - **Docker Daemon**: `tcp://remote-host:2376`
+   - **Docker TLS**: Enable
+   - Upload CA, client cert, and client key
+
+See: [Official Documentation](https://github.com/louislam/uptime-kuma/wiki/How-to-Monitor-Docker-Containers)
 
 ## Security Best Practices
 

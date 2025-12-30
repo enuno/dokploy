@@ -4,6 +4,10 @@ services:
     restart: always
     volumes:
       - uptime-kuma-data:/app/data
+      # Docker socket for container monitoring (read-only)
+      # Allows monitoring Docker containers on the same host
+      # See: https://github.com/louislam/uptime-kuma/wiki/How-to-Monitor-Docker-Containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       # ===========================================
       # Domain Configuration
