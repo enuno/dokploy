@@ -1,0 +1,57 @@
+services:
+  fmd-server:
+    build:
+      context: https://gitlab.com/fmd-foss/fmd-server.git#v0.5.0
+    restart: always
+    volumes:
+      - fmd-data:/fmd/objectbox
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      FMD_DOMAIN: ${FMD_DOMAIN:?Set your domain (e.g., fmd.example.com)}
+
+      # ===========================================
+      # Application Configuration
+      # FMD Server uses config.yml for detailed settings
+      # Mount custom config.yml as read-only volume:
+      # volumes:
+      #   - ./config.yml:/fmd/config.yml:ro
+      #
+      # See: https://gitlab.com/fmd-foss/fmd-server/-/blob/main/config.yml.example
+      # ===========================================
+    networks:
+      - fmd-server-net
+      - dokploy-network
+    labels:
+      # Traefik HTTPS routing with Cloudflare DNS-01 challenge
+      - "traefik.enable=true"
+      - "traefik.http.routers.fmd-server.rule=Host(`${FMD_DOMAIN}`)"
+      - "traefik.http.routers.fmd-server.entrypoints=websecure"
+      - "traefik.http.routers.fmd-server.tls.certresolver=cloudflare"
+      - "traefik.http.routers.fmd-server.middlewares=fmd-security-headers@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.fmd-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.fmd-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.fmd-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.fmd-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.fmd-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.fmd-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.fmd-server.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  fmd-data:
+    driver: local
+
+networks:
+  fmd-server-net:
+    driver: bridge
+  dokploy-network:
+    external: true

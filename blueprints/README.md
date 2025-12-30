@@ -27,6 +27,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [dashy](/blueprints/dashy/) | Customizable personal dashboard for organizing homelab services | 1 (dashy) | Ready |
 | [docker-registry](/blueprints/docker-registry/) | OCI Distribution implementation for private Docker image hosting | 4 | Ready |
 | [firecrawl](/blueprints/firecrawl/) | Web scraping and data extraction API that converts websites into LLM-friendly markdown and structured data | 6 (api, worker, playwright, postgres, redis, rabbitmq) | Ready |
+| [fmd-server](/blueprints/fmd-server/) | Find My Device server for Android tracking with embedded ObjectBox database and HTTPS encryption | 1 (fmd-server) | Ready |
 | [forgejo](/blueprints/forgejo/) | Self-hosted Git forge (Gitea fork) | 2 (forgejo, postgres) | Ready |
 | [gitingest](/blueprints/gitingest/) | Convert Git repositories into LLM-friendly text digests | 3 | Ready |
 | [grafana-observability](/blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |

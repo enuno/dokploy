@@ -1,0 +1,34 @@
+# FMD Server - Find My Device server for Android tracking
+# https://gitlab.com/fmd-foss/fmd-server
+# Version: v0.5.0
+#
+# IMPORTANT PREREQUISITE:
+# This template requires Cloudflare DNS-01 challenge for SSL certificates.
+# Configure Traefik with Cloudflare cert resolver before deploying:
+#   - Set CF_DNS_API_TOKEN in Traefik static configuration
+#   - Ensure "cloudflare" cert resolver is configured
+#   - See: https://doc.traefik.io/traefik/https/acme/#dnschallenge
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "fmd-server"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+FMD_DOMAIN = "${domain}"
+
+# ===========================================
+# Application Configuration
+# FMD Server uses config.yml for detailed settings
+# Mount custom config.yml as read-only volume:
+# volumes:
+#   - ./config.yml:/fmd/config.yml:ro
+#
+# See: https://gitlab.com/fmd-foss/fmd-server/-/blob/main/config.yml.example
+# ===========================================
