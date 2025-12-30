@@ -1,0 +1,84 @@
+# useSend - Open source email sending infrastructure
+# https://github.com/usesend/usesend
+# Alternative to Resend, SendGrid, and Postmark
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+nextauth_secret = "${base64:64}"
+
+# AWS SES/SNS credentials (required)
+aws_access_key = ""
+aws_secret_key = ""
+aws_default_region = "us-east-1"
+
+# OAuth Providers (at least one required)
+# GitHub OAuth
+github_id = ""
+github_secret = ""
+
+# Google OAuth (alternative to GitHub)
+google_client_id = ""
+google_client_secret = ""
+
+[[config.domains]]
+serviceName = "usesend"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+USESEND_DOMAIN = "${domain}"
+NEXTAUTH_URL = "https://${domain}"
+
+# ===========================================
+# Authentication Secrets
+# ===========================================
+NEXTAUTH_SECRET = "${nextauth_secret}"
+
+# ===========================================
+# Database Configuration
+# ===========================================
+POSTGRES_USER = "usesend"
+POSTGRES_DB = "usesend"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# AWS SES/SNS Configuration (Required)
+# Get credentials from AWS IAM Console:
+# 1. Create IAM user with programmatic access
+# 2. Attach policies: AmazonSESFullAccess, AmazonSNSFullAccess
+# 3. Generate access key and secret
+# ===========================================
+AWS_ACCESS_KEY = "${aws_access_key}"
+AWS_SECRET_KEY = "${aws_secret_key}"
+AWS_DEFAULT_REGION = "${aws_default_region}"
+
+# ===========================================
+# OAuth Providers (At least one required)
+# GitHub OAuth Configuration
+# Get from: https://github.com/settings/developers
+# 1. Create New OAuth App
+# 2. Homepage URL: https://${domain}
+# 3. Authorization callback URL: https://${domain}/api/auth/callback/github
+# ===========================================
+GITHUB_ID = "${github_id}"
+GITHUB_SECRET = "${github_secret}"
+
+# ===========================================
+# Google OAuth Configuration (Alternative)
+# Get from: https://console.cloud.google.com/apis/credentials
+# 1. Create OAuth 2.0 Client ID
+# 2. Authorized redirect URIs: https://${domain}/api/auth/callback/google
+# ===========================================
+GOOGLE_CLIENT_ID = "${google_client_id}"
+GOOGLE_CLIENT_SECRET = "${google_client_secret}"
+
+# ===========================================
+# Optional Configuration
+# ===========================================
+API_RATE_LIMIT = "100"
+AUTH_EMAIL_RATE_LIMIT = "5"
+DISCORD_WEBHOOK_URL = ""

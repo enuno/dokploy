@@ -1,0 +1,31 @@
+# Umami - Privacy-focused web analytics
+# https://github.com/umami-software/umami
+# Alternative to Google Analytics
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+app_secret = "${base64:64}"
+
+[[config.domains]]
+serviceName = "umami"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+UMAMI_DOMAIN = "${domain}"
+
+# ===========================================
+# Application Security
+# ===========================================
+APP_SECRET = "${app_secret}"
+
+# ===========================================
+# Database Configuration
+# ===========================================
+POSTGRES_USER = "umami"
+POSTGRES_DB = "umami"
+POSTGRES_PASSWORD = "${postgres_password}"

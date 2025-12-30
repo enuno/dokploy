@@ -54,6 +54,8 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
 | [uptime-kuma](/blueprints/uptime-kuma/) | Self-hosted monitoring tool for tracking service availability with 90+ notification providers | 1 (uptime-kuma) | Ready |
+| [umami](/blueprints/umami/) | Privacy-focused web analytics platform as an alternative to Google Analytics | 2 (umami, postgres) | Ready |
+| [usesend](/blueprints/usesend/) | Open-source email sending infrastructure powered by AWS SES with analytics dashboard and OAuth authentication | 3 (usesend, postgres, redis) | Ready |
 | [warp-docker](/blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
 | [warpod](/blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
 | [wot-relay](/blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |

@@ -1,0 +1,78 @@
+services:
+  umami:
+    image: docker.umami.is/umami-software/umami:postgresql-latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - umami-data:/app/.next
+    environment:
+      # ===========================================
+      # Database Configuration
+      # ===========================================
+      DATABASE_URL: postgresql://${POSTGRES_USER:-umami}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-umami}
+
+      # ===========================================
+      # Application Configuration
+      # ===========================================
+      APP_SECRET: ${APP_SECRET:?Set application secret for session encryption}
+
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      UMAMI_URL: https://${UMAMI_DOMAIN:?Set your domain}
+    networks:
+      - umami-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.umami.rule=Host(`${UMAMI_DOMAIN}`)"
+      - "traefik.http.routers.umami.entrypoints=websecure"
+      - "traefik.http.routers.umami.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.umami.middlewares=umami-security-headers@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.umami-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.umami-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.umami-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.umami-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.umami-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.umami-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.umami.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-umami}
+      POSTGRES_USER: ${POSTGRES_USER:-umami}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - umami-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-umami} -d ${POSTGRES_DB:-umami}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  umami-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  umami-net:
+    driver: bridge
+  dokploy-network:
+    external: true

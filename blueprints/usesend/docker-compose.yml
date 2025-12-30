@@ -1,0 +1,128 @@
+services:
+  usesend:
+    image: usesend/usesend:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - usesend-data:/app/.next
+    environment:
+      # ===========================================
+      # Database Configuration
+      # ===========================================
+      DATABASE_URL: postgresql://${POSTGRES_USER:-usesend}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usesend}
+
+      # ===========================================
+      # Redis Configuration
+      # ===========================================
+      REDIS_URL: redis://redis:6379
+
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      NEXTAUTH_URL: https://${USESEND_DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Authentication Secrets
+      # ===========================================
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NextAuth secret}
+
+      # ===========================================
+      # AWS SES/SNS Configuration (Required)
+      # ===========================================
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY:?Set AWS access key}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY:?Set AWS secret key}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+
+      # ===========================================
+      # OAuth Providers (At least one required)
+      # GitHub OAuth
+      # ===========================================
+      GITHUB_ID: ${GITHUB_ID}
+      GITHUB_SECRET: ${GITHUB_SECRET}
+
+      # ===========================================
+      # Google OAuth (Alternative to GitHub)
+      # ===========================================
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      # ===========================================
+      # Optional Configuration
+      # ===========================================
+      API_RATE_LIMIT: ${API_RATE_LIMIT:-100}
+      AUTH_EMAIL_RATE_LIMIT: ${AUTH_EMAIL_RATE_LIMIT:-5}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+    networks:
+      - usesend-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.usesend.rule=Host(`${USESEND_DOMAIN}`)"
+      - "traefik.http.routers.usesend.entrypoints=websecure"
+      - "traefik.http.routers.usesend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.usesend.middlewares=usesend-security-headers@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.usesend-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.usesend-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.usesend-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.usesend-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.usesend-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.usesend-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.usesend.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-usesend}
+      POSTGRES_USER: ${POSTGRES_USER:-usesend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - usesend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-usesend} -d ${POSTGRES_DB:-usesend}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - usesend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  usesend-data:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  usesend-net:
+    driver: bridge
+  dokploy-network:
+    external: true
