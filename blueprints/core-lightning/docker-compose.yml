@@ -1,6 +1,6 @@
 services:
   lightningd:
-    image: elementsproject/lightningd:v24.11.1
+    image: elementsproject/lightningd:v25.12
     restart: always
     depends_on:
       bitcoind:
@@ -11,46 +11,43 @@ services:
       # ===========================================
       # Network Configuration
       # ===========================================
-      LIGHTNINGD_NETWORK: ${LIGHTNINGD_NETWORK:-bitcoin}
+      LIGHTNING_NETWORK: ${LIGHTNING_NETWORK:-bitcoin}
 
       # ===========================================
       # Bitcoin Backend Configuration
       # ===========================================
-      LIGHTNINGD_BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
-      LIGHTNINGD_BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
-      LIGHTNINGD_BITCOIN_RPC_HOST: bitcoind
-      LIGHTNINGD_BITCOIN_RPC_PORT: ${BITCOIN_RPC_PORT:-8332}
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
 
       # ===========================================
-      # Lightning Node Configuration
+      # Node Identity
       # ===========================================
-      LIGHTNINGD_ALIAS: ${LIGHTNINGD_ALIAS:-MyCoreLightningNode}
-      LIGHTNINGD_RGB: ${LIGHTNINGD_RGB:-02F3E5}
+      LIGHTNING_ALIAS: ${LIGHTNING_ALIAS:-MyCoreLightningNode}
+      LIGHTNING_RGB_COLOR: ${LIGHTNING_RGB_COLOR:-3399FF}
+    command:
+      - --network=${LIGHTNING_NETWORK:-bitcoin}
+      - --bitcoin-rpcconnect=bitcoind
+      - --bitcoin-rpcport=8332
+      - --bitcoin-rpcuser=${BITCOIN_RPC_USER:-bitcoin}
+      - --bitcoin-rpcpassword=${BITCOIN_RPC_PASSWORD}
+      - --bitcoin-zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoin-zmqpubrawtx=tcp://bitcoind:28333
+      - --alias=${LIGHTNING_ALIAS:-MyCoreLightningNode}
+      - --rgb=${LIGHTNING_RGB_COLOR:-3399FF}
+      - --bind-addr=0.0.0.0:9735
+      - --announce-addr=${LIGHTNING_ANNOUNCE_ADDR}:${LIGHTNING_P2P_PORT:-9735}
+      - --log-level=${LIGHTNING_LOG_LEVEL:-info}
     networks:
-      - corelightning-net
+      - core-lightning-net
       - dokploy-network
     ports:
-      - "${LIGHTNING_P2P_PORT:-9735}:9735"  # P2P Lightning Network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lightningd.rule=Host(`${CLN_DOMAIN}`)"
-      - "traefik.http.routers.lightningd.entrypoints=websecure"
-      - "traefik.http.routers.lightningd.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.lightningd.middlewares=lightningd-security@docker"
-      # Security headers middleware
-      - "traefik.http.middlewares.lightningd-security.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.lightningd-security.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.lightningd-security.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.lightningd-security.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.lightningd-security.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.services.lightningd.loadbalancer.server.port=9835"
-      - "traefik.docker.network=dokploy-network"
+      - "${LIGHTNING_P2P_PORT:-9735}:9735"  # Lightning P2P network
     healthcheck:
-      test: ["CMD-SHELL", "lightning-cli getinfo > /dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "lightning-cli --network=${LIGHTNING_NETWORK:-bitcoin} getinfo > /dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s
+      start_period: 120s
 
   bitcoind:
     image: ruimarinho/bitcoin-core:27.0
@@ -62,6 +59,8 @@ services:
       - -server=1
       - -txindex=0
       - -prune=${BITCOIN_PRUNE:-10000}
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
     volumes:
       - bitcoin-data:/home/bitcoin/.bitcoin
     environment:
@@ -76,7 +75,7 @@ services:
       BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-bitcoin}
       BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set Bitcoin RPC password}
     networks:
-      - corelightning-net
+      - core-lightning-net
     healthcheck:
       test: ["CMD-SHELL", "bitcoin-cli -rpcuser=${BITCOIN_RPC_USER:-bitcoin} -rpcpassword=${BITCOIN_RPC_PASSWORD} getblockchaininfo > /dev/null 2>&1 || exit 1"]
       interval: 30s
@@ -91,7 +90,7 @@ volumes:
     driver: local
 
 networks:
-  corelightning-net:
+  core-lightning-net:
     driver: bridge
   dokploy-network:
     external: true

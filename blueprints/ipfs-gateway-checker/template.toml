@@ -1,0 +1,17 @@
+# IPFS Public Gateway Checker - Static Web Application
+# https://ipfs.github.io/public-gateway-checker/
+# Monitor and check the status of public IPFS gateways
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "ipfs-gateway-checker"
+port = 80
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+GATEWAY_CHECKER_DOMAIN = "${domain}"

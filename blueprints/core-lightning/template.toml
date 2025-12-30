@@ -1,44 +1,34 @@
-# Core Lightning - Lightning Network implementation focusing on spec compliance and performance
+# Core Lightning - Lightning Network implementation with Bitcoin Core backend
 # https://github.com/ElementsProject/lightning
 
 [variables]
-domain = "${domain}"
+# Bitcoin RPC credentials
 bitcoin_rpc_password = "${password:32}"
 
+# Lightning node configuration
+lightning_alias = ""
+lightning_rgb_color = "3399FF"
+lightning_announce_addr = ""
+
 [[config.domains]]
-serviceName = "lightningd"
-port = 9835
-host = "${domain}"
+# Note: Core Lightning does not have a web UI in this template
+# It uses P2P port 9735 which is exposed directly (not via Traefik)
+# Future enhancement: Add RTL (Ride The Lightning) web UI
 
 [config.env]
 # ===========================================
-# Domain Configuration
+# Bitcoin Core Configuration
 # ===========================================
-CLN_DOMAIN = "${domain}"
+BITCOIN_RPC_USER = "bitcoin"
+BITCOIN_RPC_PASSWORD = "${bitcoin_rpc_password}"
+BITCOIN_PRUNE = "10000"
 
 # ===========================================
 # Lightning Network Configuration
 # ===========================================
-LIGHTNINGD_NETWORK = "bitcoin"
-LIGHTNINGD_ALIAS = "MyCoreLightningNode"
-LIGHTNINGD_RGB = "02F3E5"
-
-# ===========================================
-# Bitcoin RPC Backend Configuration
-# ===========================================
-BITCOIN_RPC_USER = "bitcoin"
-BITCOIN_RPC_PASSWORD = "${bitcoin_rpc_password}"
-BITCOIN_RPC_PORT = "8332"
-
-# ===========================================
-# Bitcoin Core Configuration
-# Pruning: Set to 0 for full node (600+ GB), or prune amount in MB
-# Recommended: 10000 (10 GB) for pruned node
-# ===========================================
-BITCOIN_PRUNE = "10000"
-
-# ===========================================
-# Lightning P2P Port
-# Default: 9735 (mainnet Lightning Network)
-# ===========================================
+LIGHTNING_NETWORK = "bitcoin"
+LIGHTNING_ALIAS = "${lightning_alias}"
+LIGHTNING_RGB_COLOR = "${lightning_rgb_color}"
+LIGHTNING_ANNOUNCE_ADDR = "${lightning_announce_addr}"
 LIGHTNING_P2P_PORT = "9735"
+LIGHTNING_LOG_LEVEL = "info"

@@ -1,461 +1,601 @@
-# Core Lightning
+# Core Lightning (c-lightning)
 
-Lightning Network implementation focusing on spec compliance and performance, with integrated Bitcoin Core backend.
+**Lightning Network implementation with integrated Bitcoin Core backend**
 
-## Overview
-
-[Core Lightning](https://github.com/ElementsProject/lightning) (CLN) is a lightweight, highly extensible Lightning Network implementation written in C. This template deploys Core Lightning with a Bitcoin Core backend, providing a complete Lightning node infrastructure.
-
-## Architecture
-
-```
-┌─────────────────────┐     ┌─────────────────────┐
-│   lightningd        │────▶│     bitcoind        │
-│  (Lightning Node)   │     │  (Bitcoin Backend)  │
-│  Port 9835 (RPC)    │     │  Port 8332 (RPC)    │
-│  Port 9735 (P2P)    │     │  Pruned Node        │
-└──────────┬──────────┘     └─────────────────────┘
-           │                           │
-           │                           │
-   dokploy-network              corelightning-net
-   (External API)                  (Internal)
-```
-
-**Service Architecture:**
-- **lightningd**: Lightning Network daemon exposing RPC/gRPC API
-- **bitcoind**: Bitcoin Core providing blockchain data via RPC
-
-## Features
-
-- ⚡ **Lightning Network Node**: Full Lightning implementation with channel management
-- 🔗 **Bitcoin Core Backend**: Integrated pruned Bitcoin node (10GB vs 600GB full node)
-- 🌐 **RPC/gRPC API**: Exposed via Traefik with SSL/TLS (Let's Encrypt)
-- 🔒 **Security Hardening**: Network isolation, security headers, variable-based secrets
-- 📊 **Health Monitoring**: Container health checks for both services
-- 🎨 **Customizable**: Configurable network (mainnet/testnet/regtest), alias, color
-
-## Prerequisites
-
-- Dokploy instance running
-- Domain name configured in DNS
-- Minimum 15GB disk space (10GB Bitcoin + 5GB Lightning data)
-- Understanding of Lightning Network operations
-
-## Quick Start
-
-### 1. Deploy Template
-
-1. Navigate to Dokploy dashboard
-2. Go to **Templates** → **Import Template**
-3. Select **Core Lightning** template
-4. Configure required variables:
-   - `CLN_DOMAIN`: Your domain (e.g., `lightning.yourdomain.com`)
-   - Bitcoin RPC password will be auto-generated
-
-### 2. Initial Blockchain Sync
-
-**Important**: Bitcoin Core will sync blockchain on first startup. With pruned mode (default 10GB):
-- **Sync time**: 6-12 hours depending on hardware
-- **Disk usage**: ~10GB (vs 600GB for full node)
-- **Monitor progress**: Check bitcoind logs in Dokploy
-
-```bash
-# Check Bitcoin sync status
-docker exec -it <bitcoind-container> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getblockchaininfo
-
-# Key fields:
-# - "blocks": Current block height
-# - "verificationprogress": Percentage complete (0.0 to 1.0)
-# - "pruned": true (confirms pruning enabled)
-```
-
-### 3. Create Lightning Wallet
-
-Once Bitcoin is synced, initialize Lightning wallet:
-
-```bash
-# Connect to lightningd container
-docker exec -it <lightningd-container> lightning-cli newaddr
-
-# Fund the wallet by sending Bitcoin to the generated address
-# Check balance
-docker exec -it <lightningd-container> lightning-cli listfunds
-```
-
-### 4. Open Lightning Channels
-
-```bash
-# Connect to a peer (example: ACINQ node)
-docker exec -it <lightningd-container> lightning-cli connect <node-pubkey>@<node-host>:<port>
-
-# Open channel with funding amount in satoshis
-docker exec -it <lightningd-container> lightning-cli fundchannel <node-pubkey> <amount-sats>
-
-# List channels
-docker exec -it <lightningd-container> lightning-cli listchannels
-```
-
-## Configuration Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CLN_DOMAIN` | *required* | Domain for accessing Lightning RPC API |
-| `LIGHTNINGD_NETWORK` | `bitcoin` | Network type (`bitcoin`, `testnet`, `regtest`) |
-| `LIGHTNINGD_ALIAS` | `MyCoreLightningNode` | Public node alias (visible in network) |
-| `LIGHTNINGD_RGB` | `02F3E5` | Node color in hex (for explorers) |
-| `BITCOIN_RPC_USER` | `bitcoin` | Bitcoin Core RPC username |
-| `BITCOIN_RPC_PASSWORD` | *auto-generated* | Bitcoin Core RPC password (32 chars) |
-| `BITCOIN_RPC_PORT` | `8332` | Bitcoin Core RPC port |
-| `BITCOIN_PRUNE` | `10000` | Pruning size in MB (0 = full node, ~600GB) |
-| `LIGHTNING_P2P_PORT` | `9735` | Lightning P2P network port (for peers) |
-
-### Network Options
-
-- **Mainnet** (`bitcoin`): Real Bitcoin blockchain, requires funding with real BTC
-- **Testnet** (`testnet`): Test Bitcoin blockchain, use faucets for test BTC
-- **Regtest** (`regtest`): Local development network, instant block generation
-
-### Pruning Configuration
-
-| Mode | BITCOIN_PRUNE | Disk Usage | Use Case |
-|------|---------------|------------|----------|
-| Pruned (default) | `10000` | ~10GB | Most deployments |
-| Pruned (min) | `550` | ~550MB | Resource-constrained |
-| Full Node | `0` | ~600GB | Archive node, research |
-
-## Post-Deployment
-
-### 1. Access RPC API
-
-The Lightning RPC API is exposed via Traefik with SSL:
-
-```bash
-# Using lightning-cli via domain (requires auth setup)
-curl https://${CLN_DOMAIN}:9735/v1/getinfo
-
-# Using lightning-cli in container (recommended)
-docker exec -it <lightningd-container> lightning-cli getinfo
-```
-
-### 2. Configure Firewall
-
-**Required Port Openings:**
-- **9735 (TCP)**: Lightning P2P network (must be publicly accessible for peer connections)
-- **9835 (TCP)**: RPC API (secured via Traefik + Let's Encrypt)
-
-```bash
-# Example: UFW firewall
-sudo ufw allow 9735/tcp comment "Lightning P2P"
-sudo ufw allow 443/tcp comment "HTTPS (Traefik)"
-```
-
-### 3. Monitor Node Health
-
-```bash
-# Check Lightning node status
-docker exec -it <lightningd-container> lightning-cli getinfo
-
-# Check Bitcoin sync status
-docker exec -it <bitcoind-container> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getblockchaininfo
-
-# View container logs
-docker logs <lightningd-container> --follow
-docker logs <bitcoind-container> --follow
-```
-
-### 4. Verify Services
-
-1. **Bitcoin Core**: Check `getblockchaininfo` shows synced blocks
-2. **Lightning Daemon**: Check `lightning-cli getinfo` returns node info
-3. **Network Connectivity**: Check `lightning-cli listnodes` shows peers
-
-## Lightning Network Operations
-
-### Opening Channels
-
-```bash
-# 1. Fund on-chain wallet
-docker exec -it <lightningd-container> lightning-cli newaddr
-# Send Bitcoin to generated address
-
-# 2. Wait for confirmations
-docker exec -it <lightningd-container> lightning-cli listfunds
-
-# 3. Connect to peer
-docker exec -it <lightningd-container> lightning-cli connect <pubkey>@<host>:<port>
-
-# 4. Open channel (amount in satoshis)
-docker exec -it <lightningd-container> lightning-cli fundchannel <pubkey> <amount>
-
-# 5. Wait for channel to activate (~3 confirmations)
-docker exec -it <lightningd-container> lightning-cli listchannels
-```
-
-### Making Payments
-
-```bash
-# Decode Lightning invoice
-docker exec -it <lightningd-container> lightning-cli decodepay <bolt11-invoice>
-
-# Pay invoice
-docker exec -it <lightningd-container> lightning-cli pay <bolt11-invoice>
-
-# Check payment status
-docker exec -it <lightningd-container> lightning-cli listpays
-```
-
-### Receiving Payments
-
-```bash
-# Create invoice (amount in millisatoshis)
-docker exec -it <lightningd-container> lightning-cli invoice <amount-msats> <label> <description>
-
-# List invoices
-docker exec -it <lightningd-container> lightning-cli listinvoices
-
-# Check invoice status
-docker exec -it <lightningd-container> lightning-cli waitinvoice <label>
-```
-
-### Closing Channels
-
-```bash
-# Cooperative close
-docker exec -it <lightningd-container> lightning-cli close <channel-id>
-
-# Force close (if peer unresponsive)
-docker exec -it <lightningd-container> lightning-cli close <channel-id> true
-```
-
-## Bitcoin Core Configuration
-
-### Switching to Full Node
-
-To run a full Bitcoin node instead of pruned:
-
-1. Update `BITCOIN_PRUNE` in Dokploy environment: `0`
-2. Ensure sufficient disk space (~600GB)
-3. Restart services
-4. **Note**: Re-sync required if switching from pruned to full
-
-### Transaction Indexing
-
-By default, transaction indexing (`-txindex`) is disabled. To enable:
-
-1. Update docker-compose.yml command:
-```yaml
-command:
-  - -printtoconsole
-  - -rpcallowip=0.0.0.0/0
-  - -rpcbind=0.0.0.0
-  - -server=1
-  - -txindex=1  # Add this line
-  - -prune=0    # Must disable pruning
-```
-
-2. Requires full node mode (`BITCOIN_PRUNE=0`)
-3. Re-sync blockchain with `-reindex` flag
-
-## Troubleshooting
-
-### Issue 1: Bitcoin Core Not Syncing
-
-**Symptoms**: `getblockchaininfo` shows low block count or stuck
-
-**Solutions**:
-```bash
-# Check network connectivity
-docker exec -it <bitcoind-container> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getnetworkinfo
-
-# Check peer connections
-docker exec -it <bitcoind-container> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getpeerinfo
-
-# Restart Bitcoin Core
-docker restart <bitcoind-container>
-```
-
-### Issue 2: Lightning Daemon Won't Start
-
-**Symptoms**: Container restarts repeatedly
-
-**Solutions**:
-```bash
-# Check logs
-docker logs <lightningd-container> --tail 100
-
-# Common causes:
-# 1. Bitcoin Core not synced - wait for blockchain sync
-# 2. RPC password mismatch - verify BITCOIN_RPC_PASSWORD matches
-# 3. Corrupted Lightning data - restore from backup
-```
-
-### Issue 3: Cannot Open Channels
-
-**Symptoms**: `fundchannel` command fails
-
-**Solutions**:
-```bash
-# Check on-chain balance
-docker exec -it <lightningd-container> lightning-cli listfunds
-
-# Check Bitcoin Core connection
-docker exec -it <lightningd-container> lightning-cli getinfo
-# Verify "blockheight" matches current blockchain height
-
-# Ensure peer connection
-docker exec -it <lightningd-container> lightning-cli listpeers
-# Peer must be connected before opening channel
-```
-
-### Issue 4: RPC Connection Refused
-
-**Symptoms**: `lightning-cli` commands fail with connection error
-
-**Solutions**:
-```bash
-# Check Lightning daemon is running
-docker ps | grep lightningd
-
-# Check health status
-docker inspect <lightningd-container> --format='{{json .State.Health}}'
-
-# Verify RPC socket exists
-docker exec -it <lightningd-container> ls -la /root/.lightning/bitcoin/
-```
-
-### Issue 5: Disk Space Issues
-
-**Symptoms**: Container stops, logs show "no space left"
-
-**Solutions**:
-```bash
-# Check disk usage
-docker exec -it <bitcoind-container> du -sh /home/bitcoin/.bitcoin
-
-# Increase pruning limit (lower value = less disk)
-# Update BITCOIN_PRUNE to lower value (minimum 550)
-
-# Clean up old Docker volumes
-docker volume prune
-```
-
-## Backup and Recovery
-
-### What to Backup
-
-**Critical Data:**
-1. **Lightning Wallet**: `/root/.lightning/bitcoin/` directory
-   - Contains wallet keys, channel states
-   - **Loss = permanent loss of funds**
-
-2. **Bitcoin Wallet** (if using): `/home/bitcoin/.bitcoin/wallet/` directory
-   - Contains on-chain wallet keys
-
-### Backup Procedure
-
-```bash
-# 1. Stop Lightning daemon (to ensure consistent state)
-docker stop <lightningd-container>
-
-# 2. Backup Lightning data
-docker cp <lightningd-container>:/root/.lightning ./lightning-backup-$(date +%Y%m%d)
-
-# 3. Backup Bitcoin wallet (optional)
-docker cp <bitcoind-container>:/home/bitcoin/.bitcoin/wallet ./bitcoin-wallet-backup-$(date +%Y%m%d)
-
-# 4. Restart services
-docker start <lightningd-container>
-```
-
-### Recovery Procedure
-
-```bash
-# 1. Stop services
-docker stop <lightningd-container> <bitcoind-container>
-
-# 2. Restore Lightning data
-docker cp ./lightning-backup-YYYYMMDD/. <lightningd-container>:/root/.lightning/
-
-# 3. Restore Bitcoin wallet (if needed)
-docker cp ./bitcoin-wallet-backup-YYYYMMDD/. <bitcoind-container>:/home/bitcoin/.bitcoin/wallet/
-
-# 4. Start services
-docker start <bitcoind-container> <lightningd-container>
-
-# 5. Verify recovery
-docker exec -it <lightningd-container> lightning-cli getinfo
-docker exec -it <lightningd-container> lightning-cli listfunds
-```
-
-### Automated Backup (Recommended)
-
-Set up daily backups using cron:
-
-```bash
-# Add to crontab
-0 2 * * * /path/to/backup-lightning.sh
-
-# backup-lightning.sh
-#!/bin/bash
-BACKUP_DIR="/backups/lightning"
-DATE=$(date +%Y%m%d)
-
-docker stop lightningd
-docker cp lightningd:/root/.lightning ${BACKUP_DIR}/lightning-${DATE}
-docker start lightningd
-
-# Keep last 7 days
-find ${BACKUP_DIR} -name "lightning-*" -mtime +7 -delete
-```
-
-## Resources
-
-### Documentation
-- [Core Lightning Docs](https://docs.corelightning.org/)
-- [Bitcoin Core Docs](https://bitcoin.org/en/bitcoin-core/)
-- [Lightning Network Specs](https://github.com/lightning/bolts)
-
-### Community
-- [Core Lightning GitHub](https://github.com/ElementsProject/lightning)
-- [Core Lightning Community Chat](https://discord.gg/lightningcommunity)
-- [Bitcoin StackExchange](https://bitcoin.stackexchange.com/)
-
-### Explorers
-- [1ML - Lightning Network Explorer](https://1ml.com/)
-- [Amboss - Lightning Network Explorer](https://amboss.space/)
-- [mempool.space - Bitcoin & Lightning](https://mempool.space/lightning)
-
-### Learning
-- [Lightning Network Whitepaper](https://lightning.network/lightning-network-paper.pdf)
-- [Mastering the Lightning Network (Book)](https://github.com/lnbook/lnbook)
-- [Lightning Labs Builder's Guide](https://docs.lightning.engineering/)
-
-## Security Considerations
-
-1. **Backup Frequently**: Lightning channel states change frequently - backup after each channel update
-2. **Secure RPC Access**: RPC API is exposed via HTTPS - use strong passwords and consider IP allowlisting
-3. **Monitor Channels**: Inactive channels may be force-closed - monitor regularly
-4. **Hot Wallet**: Lightning wallets are hot wallets - only fund with amounts you can afford to lose
-5. **Network Exposure**: P2P port 9735 must be publicly accessible - ensure firewall configured correctly
-
-## Performance Tuning
-
-### Hardware Recommendations
-
-| Component | Minimum | Recommended | Optimal |
-|-----------|---------|-------------|---------|
-| CPU | 2 cores | 4 cores | 8+ cores |
-| RAM | 4GB | 8GB | 16GB+ |
-| Disk | 15GB SSD | 50GB SSD | 100GB+ NVMe |
-| Network | 10 Mbps | 100 Mbps | 1 Gbps |
-
-### Optimization Tips
-
-1. **Use SSD Storage**: Lightning requires fast disk I/O for channel updates
-2. **Increase Bitcoin Connections**: Add `-maxconnections=125` to Bitcoin command
-3. **Enable Fee Estimation**: Bitcoin Core fee estimates improve with more peers
-4. **Monitor Memory**: Lightning daemon memory grows with channels - allocate sufficient RAM
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ElementsProject/lightning/blob/master/LICENSE)
+[![Docker](https://img.shields.io/badge/docker-compose-blue.svg)](https://docs.docker.com/compose/)
+[![Lightning Network](https://img.shields.io/badge/lightning-network-yellow.svg)](https://lightning.network/)
 
 ---
 
-**Generated with Claude Code** 🤖
+## 📖 Overview
+
+Core Lightning (formerly c-lightning) is a lightweight, standards-compliant implementation of the Lightning Network protocol written in C. This Dokploy template deploys a complete Lightning Network node with an integrated Bitcoin Core backend, enabling instant Bitcoin payments with minimal fees.
+
+**Key Features:**
+- ⚡ **Lightning Network Node**: Full Lightning protocol implementation (BOLT specs)
+- 🔗 **Bitcoin Core Backend**: Integrated pruned Bitcoin node (10GB storage mode)
+- 🌐 **P2P Connectivity**: Direct Lightning Network peer connections (port 9735)
+- 🔐 **RPC Access**: Bitcoin RPC for blockchain queries (internal only)
+- 📊 **ZMQ Pub/Sub**: Real-time blockchain event notifications
+- 🚀 **Production Ready**: Health checks, automatic restarts, proper network isolation
+
+**Use Cases:**
+- Send/receive Bitcoin via Lightning Network
+- Open payment channels with other Lightning nodes
+- Route Lightning payments (earn routing fees)
+- Build Lightning-enabled applications
+- Participate in the Lightning Network economy
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Lightning Network                        │
+│                    (Global P2P Network)                      │
+└────────────────────────┬────────────────────────────────────┘
+                         │ Port 9735 (P2P)
+                         │
+                         ▼
+        ┌────────────────────────────────────┐
+        │         lightningd                 │
+        │  (elementsproject/lightningd)      │
+        │                                    │
+        │  - Lightning protocol impl         │
+        │  - Channel management              │
+        │  - Payment routing                 │
+        │  - Peer connections (0.0.0.0:9735) │
+        └────────────┬───────────────────────┘
+                     │ RPC (8332) + ZMQ (28332/28333)
+                     │ Internal network only
+                     ▼
+        ┌────────────────────────────────────┐
+        │          bitcoind                  │
+        │   (ruimarinho/bitcoin-core)        │
+        │                                    │
+        │  - Bitcoin blockchain sync         │
+        │  - Pruned mode (10GB storage)      │
+        │  - RPC server (8332)               │
+        │  - ZMQ block/tx notifications      │
+        └────────────────────────────────────┘
+                     │
+                     ▼
+        ┌────────────────────────────────────┐
+        │      Persistent Storage            │
+        │                                    │
+        │  - lightning-data: Node data       │
+        │  - bitcoin-data: Blockchain (~10GB)│
+        └────────────────────────────────────┘
+
+Networks:
+  core-lightning-net (internal): lightningd ↔ bitcoind
+  dokploy-network (external):    lightningd ↔ Lightning Network
+```
+
+**Network Isolation:**
+- `bitcoind`: Internal network only (secure backend)
+- `lightningd`: Both networks (external P2P + internal RPC)
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `BITCOIN_RPC_USER` | No | `bitcoin` | Bitcoin RPC username |
+| `BITCOIN_RPC_PASSWORD` | ✅ Yes | Auto-generated | Bitcoin RPC password (32 chars) |
+| `BITCOIN_PRUNE` | No | `10000` | Blockchain pruning (MB) - reduces storage to ~10GB |
+| `LIGHTNING_NETWORK` | No | `bitcoin` | Network: `bitcoin` (mainnet), `testnet`, `signet` |
+| `LIGHTNING_ALIAS` | No | Empty | Your node's public name (max 32 bytes) |
+| `LIGHTNING_RGB_COLOR` | No | `3399FF` | Node color in hex (appears in explorers) |
+| `LIGHTNING_ANNOUNCE_ADDR` | No | Empty | Public IP/domain for incoming connections |
+| `LIGHTNING_P2P_PORT` | No | `9735` | Lightning P2P port (must be open in firewall) |
+| `LIGHTNING_LOG_LEVEL` | No | `info` | Log level: `debug`, `info`, `unusual`, `broken` |
+
+**Auto-Generated Secrets (template.toml):**
+- `bitcoin_rpc_password`: 32-character random password
+
+### Port Configuration
+
+| Port | Protocol | Purpose | Exposure |
+|------|----------|---------|----------|
+| 9735 | TCP | Lightning P2P network | External (must be open) |
+| 8332 | TCP | Bitcoin RPC | Internal only |
+| 28332 | TCP | ZMQ block notifications | Internal only |
+| 28333 | TCP | ZMQ transaction notifications | Internal only |
+
+**Firewall Requirements:**
+```bash
+# Allow Lightning P2P (required for incoming connections)
+ufw allow 9735/tcp
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+**Required:**
+1. **Dokploy Instance**: Running Dokploy installation
+2. **Public IP**: For Lightning Network peer connections
+3. **Firewall**: Port 9735 open for incoming connections
+4. **Storage**: Minimum 15-25 GB free space (pruned mode)
+5. **RAM**: 1-2 GB minimum
+
+**Optional:**
+- Domain name (for `LIGHTNING_ANNOUNCE_ADDR`)
+- Static IP or dynamic DNS
+
+### Deployment Steps
+
+#### Step 1: Deploy in Dokploy
+
+1. **Create New Service** in Dokploy
+2. **Select Template**: Choose "Core Lightning" from templates
+3. **Configure Variables**:
+   - `LIGHTNING_ALIAS`: Your node name (e.g., "MyLightningNode")
+   - `LIGHTNING_RGB_COLOR`: Node color in hex (e.g., "FF5733")
+   - `LIGHTNING_ANNOUNCE_ADDR`: Your public IP or domain
+   - `BITCOIN_RPC_PASSWORD`: Auto-generated (leave default)
+4. **Deploy**: Click "Deploy" and wait for services to start
+
+#### Step 2: Open Firewall Port
+
+```bash
+# Allow Lightning P2P connections
+sudo ufw allow 9735/tcp
+
+# Verify port is open
+sudo ufw status | grep 9735
+```
+
+#### Step 3: Wait for Bitcoin Sync
+
+**Initial sync takes 6-24 hours** depending on network speed:
+
+```bash
+# Check Bitcoin sync progress
+docker exec <container-name> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getblockchaininfo
+
+# Look for:
+# "blocks": current block height
+# "headers": target block height
+# "verificationprogress": 0.0 to 1.0 (1.0 = synced)
+```
+
+**Lightning node will start once Bitcoin is synced.**
+
+#### Step 4: Verify Lightning Node
+
+```bash
+# Check Lightning node info
+docker exec <container-name> lightning-cli getinfo
+
+# Expected output:
+# {
+#   "id": "02abc123...",           # Your node public key
+#   "alias": "MyLightningNode",
+#   "color": "3399ff",
+#   "num_peers": 0,                 # Will increase as you connect
+#   "blockheight": 825000,          # Current block height
+#   "network": "bitcoin"
+# }
+```
+
+---
+
+## 💰 Using Your Lightning Node
+
+### Connect to Peers
+
+```bash
+# Connect to a Lightning node (example)
+docker exec <container-name> lightning-cli connect <node_pubkey>@<node_ip>:9735
+
+# Example:
+# lightning-cli connect 02abc123...@lightning.example.com:9735
+```
+
+### Open a Payment Channel
+
+```bash
+# Open channel with 0.001 BTC (100,000 satoshis)
+docker exec <container-name> lightning-cli fundchannel <node_pubkey> 100000
+
+# Check channel status
+docker exec <container-name> lightning-cli listfunds
+```
+
+### Send a Payment
+
+```bash
+# Pay a Lightning invoice
+docker exec <container-name> lightning-cli pay <bolt11_invoice>
+
+# Example:
+# lightning-cli pay lnbc10n1...
+```
+
+### Create an Invoice
+
+```bash
+# Create invoice for 1000 satoshis
+docker exec <container-name> lightning-cli invoice 1000 "payment-label" "Payment description"
+
+# Returns BOLT11 invoice string to share with payer
+```
+
+### Check Balance
+
+```bash
+# View on-chain and Lightning balances
+docker exec <container-name> lightning-cli listfunds
+
+# View channel balances
+docker exec <container-name> lightning-cli listchannels
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Issue 1: Bitcoin Sync Taking Too Long
+
+**Symptoms:**
+- Bitcoin sync stuck at low percentage
+- Lightning node not starting
+
+**Solutions:**
+1. **Check network speed**:
+   ```bash
+   docker logs <bitcoind-container> | tail -50
+   # Look for "UpdateTip" messages showing progress
+   ```
+2. **Increase pruning** (reduce storage, faster sync):
+   - Set `BITCOIN_PRUNE=5000` (5GB) in environment variables
+   - Redeploy service
+3. **Wait patiently**: Initial sync is normal (6-24 hours)
+4. **Verify connectivity**:
+   ```bash
+   docker exec <bitcoind-container> bitcoin-cli getpeerinfo | jq 'length'
+   # Should show 8-10 peers
+   ```
+
+### Issue 2: Lightning Node Not Connecting to Peers
+
+**Symptoms:**
+- `lightning-cli connect` fails with connection timeout
+- Zero peers after several hours
+
+**Solutions:**
+1. **Verify port 9735 is open**:
+   ```bash
+   # From external machine
+   telnet <your-server-ip> 9735
+   # Should connect (Ctrl+C to exit)
+   ```
+2. **Check firewall rules**:
+   ```bash
+   sudo ufw status | grep 9735
+   # Should show "ALLOW"
+   ```
+3. **Verify announce address**:
+   ```bash
+   docker exec <container-name> lightning-cli getinfo
+   # "address" should show your public IP
+   ```
+4. **Try connecting to well-known nodes**:
+   ```bash
+   # ACINQ node (example)
+   lightning-cli connect 03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f@3.33.236.230:9735
+   ```
+
+### Issue 3: Cannot Access Bitcoin RPC
+
+**Symptoms:**
+- Lightning node logs show "Connection refused" to bitcoind
+- Health check failing
+
+**Solutions:**
+1. **Check bitcoind health**:
+   ```bash
+   docker ps | grep bitcoind
+   # Should show "healthy" status
+   ```
+2. **Verify RPC credentials**:
+   ```bash
+   # Check environment variables match
+   docker exec <bitcoind-container> env | grep BITCOIN_RPC
+   docker exec <lightningd-container> env | grep BITCOIN_RPC
+   ```
+3. **Check network connectivity**:
+   ```bash
+   docker exec <lightningd-container> ping bitcoind
+   # Should respond
+   ```
+4. **Review bitcoind logs**:
+   ```bash
+   docker logs <bitcoind-container> 2>&1 | grep -i error
+   ```
+
+### Issue 4: Insufficient Disk Space
+
+**Symptoms:**
+- Bitcoin sync stops with "No space left on device"
+- Services crashing randomly
+
+**Solutions:**
+1. **Check disk usage**:
+   ```bash
+   df -h
+   docker system df
+   ```
+2. **Increase pruning** (reduce blockchain storage):
+   - Set `BITCOIN_PRUNE=5000` (5GB minimum)
+   - Restart bitcoind service
+3. **Clean up Docker**:
+   ```bash
+   docker system prune -a --volumes
+   # WARNING: Removes unused containers/volumes
+   ```
+
+### Issue 5: Lightning Channel Stuck "Opening"
+
+**Symptoms:**
+- Channel shows "CHANNELD_AWAITING_LOCKIN" for hours
+- Funds locked but channel not active
+
+**Solutions:**
+1. **Wait for confirmations** (usually 3-6 blocks):
+   ```bash
+   lightning-cli listfunds
+   # Check "blockheight" of pending channels
+   ```
+2. **Check Bitcoin mempool**:
+   ```bash
+   docker exec <bitcoind-container> bitcoin-cli getmempoolinfo
+   # High "size" = network congestion (wait longer)
+   ```
+3. **Verify funding transaction confirmed**:
+   ```bash
+   lightning-cli listfunds | jq '.channels[] | select(.state=="CHANNELD_AWAITING_LOCKIN")'
+   # Get txid, then check on block explorer
+   ```
+
+### Issue 6: Lightning CLI Not Found
+
+**Symptoms:**
+- `lightning-cli: command not found`
+
+**Solutions:**
+1. **Use full path**:
+   ```bash
+   docker exec <container-name> /usr/bin/lightning-cli getinfo
+   ```
+2. **Check container is running**:
+   ```bash
+   docker ps | grep lightning
+   ```
+3. **Verify image version**:
+   ```bash
+   docker inspect <container-name> | grep Image
+   # Should show elementsproject/lightningd:v25.12
+   ```
+
+---
+
+## 📊 Monitoring & Maintenance
+
+### Health Checks
+
+Both services have automated health checks:
+
+**Lightning:**
+```bash
+# Manual health check
+docker exec <container-name> lightning-cli getinfo
+# Returns node info if healthy
+```
+
+**Bitcoin:**
+```bash
+# Manual health check
+docker exec <container-name> bitcoin-cli -rpcuser=bitcoin -rpcpassword=<password> getblockchaininfo
+# Returns blockchain info if healthy
+```
+
+### Resource Usage
+
+**Expected resource consumption:**
+- **CPU**: Low (1-5% idle, 20-50% during sync)
+- **RAM**: 1-2 GB (Lightning + Bitcoin combined)
+- **Storage**:
+  - Initial: ~15-25 GB (pruned mode)
+  - Growth: ~500 MB/month (pruned chain growth)
+- **Network**:
+  - Sync: 10-50 GB download (initial)
+  - Ongoing: 1-5 GB/month
+
+### Backup Recommendations
+
+**Critical data to backup:**
+1. **Lightning wallet**: `/root/.lightning/bitcoin/hsm_secret` (CRITICAL - controls your funds)
+2. **Bitcoin wallet**: `/home/bitcoin/.bitcoin/wallet.dat` (if using on-chain wallet)
+3. **Channel database**: `/root/.lightning/bitcoin/lightningd.sqlite3`
+
+**Backup procedure:**
+```bash
+# Stop Lightning node first
+docker stop <lightningd-container>
+
+# Backup Lightning data
+docker cp <lightningd-container>:/root/.lightning/bitcoin/hsm_secret ./backup/
+docker cp <lightningd-container>:/root/.lightning/bitcoin/lightningd.sqlite3 ./backup/
+
+# Restart Lightning node
+docker start <lightningd-container>
+```
+
+**Store backups securely** (encrypted, offline, multiple locations).
+
+### Log Monitoring
+
+```bash
+# Lightning logs
+docker logs <lightningd-container> -f
+
+# Bitcoin logs
+docker logs <bitcoind-container> -f
+
+# Filter for errors
+docker logs <lightningd-container> 2>&1 | grep -i error
+```
+
+---
+
+## 🔒 Security Considerations
+
+1. **Bitcoin RPC Password**: Auto-generated 32-character password (stored in Dokploy secrets)
+2. **Network Isolation**: Bitcoin RPC only accessible from Lightning container
+3. **Firewall**: Only port 9735 exposed (Lightning P2P)
+4. **No Web UI**: No HTTP endpoints exposed (RPC only)
+5. **Pruned Mode**: Reduces attack surface (less data stored)
+
+**Security Best Practices:**
+- Keep RPC password secure (never expose publicly)
+- Regularly backup `hsm_secret` file (controls your Bitcoin)
+- Monitor logs for unusual peer connections
+- Use firewall rules to restrict 9735 to known peers (optional)
+- Keep Docker images updated (security patches)
+
+---
+
+## 🔄 Updates & Maintenance
+
+### Updating Lightning Node
+
+To update to a newer Core Lightning version:
+
+1. **Check current version**:
+   ```bash
+   docker exec <container-name> lightningd --version
+   ```
+2. **Update docker-compose.yml**:
+   ```yaml
+   image: elementsproject/lightningd:v26.0  # Change version
+   ```
+3. **Redeploy** in Dokploy
+4. **Verify** node restarts successfully:
+   ```bash
+   docker logs <container-name> | grep "Server started"
+   ```
+
+### Updating Bitcoin Core
+
+1. **Check current version**:
+   ```bash
+   docker exec <container-name> bitcoind --version
+   ```
+2. **Update docker-compose.yml**:
+   ```yaml
+   image: ruimarinho/bitcoin-core:28.0  # Change version
+   ```
+3. **Redeploy** in Dokploy
+4. **Verify** sync continues:
+   ```bash
+   docker logs <container-name> | grep "UpdateTip"
+   ```
+
+---
+
+## 📚 Resources
+
+### Official Documentation
+- **Core Lightning**: https://docs.corelightning.org/
+- **Lightning Network**: https://lightning.network/
+- **Bitcoin Core**: https://bitcoin.org/en/bitcoin-core/
+- **Docker Image**: https://hub.docker.com/r/elementsproject/lightningd
+
+### Community & Support
+- **Core Lightning GitHub**: https://github.com/ElementsProject/lightning
+- **Lightning Network Discord**: https://discord.gg/lightningnetwork
+- **Bitcoin Stack Exchange**: https://bitcoin.stackexchange.com/
+
+### Learning Resources
+- **Lightning Network Whitepaper**: https://lightning.network/lightning-network-paper.pdf
+- **BOLT Specifications**: https://github.com/lightning/bolts
+- **Mastering Lightning**: https://github.com/lnbook/lnbook
+
+### Network Explorers
+- **1ML.com**: https://1ml.com/ (Lightning Network explorer)
+- **Amboss.space**: https://amboss.space/ (Node rankings and analytics)
+- **Mempool.space**: https://mempool.space/ (Bitcoin blockchain explorer)
+
+---
+
+## 📝 License
+
+- **Core Lightning**: MIT License
+- **Bitcoin Core**: MIT License
+- **This Template**: MIT License
+
+---
+
+## 🤝 Contributing
+
+Found an issue or have a suggestion? Please open an issue in the [Dokploy Templates repository](https://github.com/your-org/dokploy-templates).
+
+---
+
+**Template Version**: 1.0.0
+**Lightning Version**: v25.12
+**Bitcoin Core Version**: 27.0
+**Last Updated**: 2025-12-29
+
+---
+
+## Additional Notes
+
+### Future Enhancements
+
+**Planned for future versions:**
+1. **Ride The Lightning (RTL)**: Web UI for node management
+2. **Thunderhub**: Alternative web-based node manager
+3. **Lightning Terminal**: Loop/Pool integration for liquidity management
+4. **Tor Support**: Hidden service for enhanced privacy
+5. **Watchtower**: Channel monitoring for offline nodes
+
+### Known Limitations
+
+1. **No Web UI**: Command-line interface only (RTL coming in future version)
+2. **Manual Channel Management**: No automated channel balancing
+3. **Pruned Mode Only**: Cannot run full archival node with this template
+4. **No Tor**: Clearnet connections only (Tor support planned)
+
+### Performance Tuning
+
+**For high-traffic nodes:**
+```yaml
+# In docker-compose.yml, add under lightningd command:
+- --max-concurrent-htlcs=30        # Default: 30
+- --htlc-minimum-msat=1            # Minimum payment size
+- --htlc-maximum-msat=4294967295   # Maximum payment size
+- --fee-base=1000                  # Base routing fee (msats)
+- --fee-per-satoshi=1              # Proportional fee (ppm)
+```
+
+**For low-resource servers:**
+```yaml
+# Reduce Bitcoin memory usage
+environment:
+  BITCOIN_PRUNE: 5000  # Minimum 5GB
+```
+
+---
+
+**Ready to join the Lightning Network? Deploy now and start routing payments! ⚡**
