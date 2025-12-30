@@ -55,7 +55,7 @@ services:
       - "traefik.http.services.uptime-kuma.loadbalancer.server.port=3001"
       - "traefik.docker.network=dokploy-network"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://127.0.0.1:3001"]
       interval: 30s
       timeout: 10s
       retries: 3
