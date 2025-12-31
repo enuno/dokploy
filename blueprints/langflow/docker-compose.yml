@@ -1,0 +1,91 @@
+services:
+  langflow:
+    image: langflowai/langflow:1.7.1
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - langflow-data:/app/langflow
+      - langflow-flows:/app/flows
+      - langflow-cache:/root/.cache/langflow
+    environment:
+      # Database Configuration
+      LANGFLOW_DATABASE_URL: postgresql://${POSTGRES_USER:-langflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-langflow}
+
+      # Application Configuration
+      LANGFLOW_CONFIG_DIR: /app/langflow
+
+      # Authentication (Optional)
+      LANGFLOW_AUTO_LOGIN: ${LANGFLOW_AUTO_LOGIN:-false}
+      LANGFLOW_SUPERUSER: ${LANGFLOW_SUPERUSER:-}
+      LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD:-}
+      LANGFLOW_SECRET_KEY: ${LANGFLOW_SECRET_KEY:?Set Langflow secret key}
+
+      # Server Configuration
+      LANGFLOW_HOST: 0.0.0.0
+      LANGFLOW_PORT: 7860
+
+      # Performance & Behavior
+      LANGFLOW_LOG_LEVEL: ${LANGFLOW_LOG_LEVEL:-info}
+      LANGFLOW_MAX_FILE_SIZE_UPLOAD: ${LANGFLOW_MAX_FILE_SIZE_UPLOAD:-10000}
+      LANGFLOW_WORKERS: ${LANGFLOW_WORKERS:-1}
+      LANGFLOW_AUTO_SAVING: ${LANGFLOW_AUTO_SAVING:-true}
+      LANGFLOW_LAZY_LOAD_COMPONENTS: ${LANGFLOW_LAZY_LOAD_COMPONENTS:-true}
+    networks:
+      - langflow-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.langflow.rule=Host(`${LANGFLOW_DOMAIN}`)"
+      - "traefik.http.routers.langflow.entrypoints=websecure"
+      - "traefik.http.routers.langflow.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.langflow.middlewares=security-headers@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.services.langflow.loadbalancer.server.port=7860"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-langflow}
+      POSTGRES_USER: ${POSTGRES_USER:-langflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - langflow-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-langflow} -d ${POSTGRES_DB:-langflow}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  langflow-data:
+    driver: local
+  langflow-flows:
+    driver: local
+  langflow-cache:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  langflow-net:
+    driver: bridge
+  dokploy-network:
+    external: true

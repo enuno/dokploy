@@ -42,10 +42,12 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
 | [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
+| [langflow](/blueprints/langflow/) | Visual AI workflow builder for creating LLM-powered applications with PostgreSQL backend | 2 (langflow, postgres) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay with PostgreSQL backend and Redis pub/sub | 4 (websocket-handler, event-handler, postgres, redis) | Ready |
 | [nostr-rs-relay](/blueprints/nostr-rs-relay/) | High-performance Rust-based Nostr relay with embedded SQLite database and WebSocket protocol support | 1 (nostr-relay) | Ready |
 | [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
+| [openrag](/blueprints/openrag/) | Comprehensive RAG platform with Langflow, OpenSearch, and Cloudflare R2 for intelligent document search and AI-powered conversations | 5 (opensearch, langflow, backend, frontend, dashboards) | Ready |
 | [opengist](/blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |
 | [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |

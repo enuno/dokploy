@@ -1,0 +1,52 @@
+# Langflow - Visual AI workflow builder for LLM applications
+# https://github.com/langflow-ai/langflow
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+langflow_secret_key = "${base64:64}"
+
+# Optional Authentication
+langflow_superuser = ""
+langflow_superuser_password = ""
+
+[[config.domains]]
+serviceName = "langflow"
+port = 7860
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+LANGFLOW_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration (PostgreSQL)
+# ===========================================
+POSTGRES_DB = "langflow"
+POSTGRES_USER = "langflow"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Application Security
+# ===========================================
+LANGFLOW_SECRET_KEY = "${langflow_secret_key}"
+
+# ===========================================
+# Authentication (Optional)
+# Leave blank to use default behavior (no login required)
+# Set both variables to enable authentication
+# ===========================================
+LANGFLOW_AUTO_LOGIN = "false"
+LANGFLOW_SUPERUSER = "${langflow_superuser}"
+LANGFLOW_SUPERUSER_PASSWORD = "${langflow_superuser_password}"
+
+# ===========================================
+# Performance & Behavior
+# ===========================================
+LANGFLOW_LOG_LEVEL = "info"
+LANGFLOW_MAX_FILE_SIZE_UPLOAD = "10000"
+LANGFLOW_WORKERS = "1"
+LANGFLOW_AUTO_SAVING = "true"
+LANGFLOW_LAZY_LOAD_COMPONENTS = "true"

@@ -1,0 +1,195 @@
+# OpenRAG - Comprehensive RAG platform with Langflow, Docling, and OpenSearch
+# https://github.com/langflow-ai/openrag
+
+[variables]
+# Domain Configuration
+domain = "${domain}"
+
+# OpenSearch Security
+opensearch_password = "${password:32}"
+
+# Langflow Authentication
+langflow_superuser = "${username}"
+langflow_superuser_password = "${password:24}"
+langflow_secret_key = "${base64:64}"
+
+# Cloudflare R2 Storage
+r2_bucket_name = ""
+r2_access_key_id = ""
+r2_secret_access_key = ""
+cf_account_id = ""
+
+# Cloudflare DNS Challenge (for wildcard SSL)
+cf_dns_api_token = ""
+
+# Cloudflare Zero Trust Access
+cf_team_name = ""
+
+# AI Provider Configuration (at least one required)
+llm_provider = "openai"
+llm_model = "gpt-4"
+embedding_provider = "openai"
+embedding_model = "text-embedding-3-small"
+
+# AI Provider API Keys (configure based on llm_provider choice)
+openai_api_key = ""
+anthropic_api_key = ""
+watsonx_api_key = ""
+watsonx_endpoint = ""
+watsonx_project_id = ""
+ollama_endpoint = ""
+
+# Optional Langflow Flow IDs
+langflow_chat_flow_id = ""
+langflow_ingest_flow_id = ""
+langflow_url_ingest_flow_id = ""
+nudges_flow_id = ""
+
+# Optional OAuth Integration
+google_oauth_client_id = ""
+google_oauth_client_secret = ""
+microsoft_graph_oauth_client_id = ""
+microsoft_graph_oauth_client_secret = ""
+
+# Optional Observability (Langfuse)
+langfuse_secret_key = ""
+langfuse_public_key = ""
+langfuse_host = ""
+
+# Optional Webhooks
+webhook_base_url = ""
+
+# Domain configuration for Traefik
+[[config.domains]]
+serviceName = "frontend"
+port = 3000
+host = "${domain}"
+
+[[config.domains]]
+serviceName = "langflow"
+port = 7860
+host = "langflow.${domain}"
+
+[[config.domains]]
+serviceName = "opensearch-dashboards"
+port = 5601
+host = "dashboards.${domain}"
+
+# Environment variables for all services
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+NEXT_PUBLIC_DOMAIN = "${domain}"
+
+# ===========================================
+# OpenSearch Configuration
+# IMPORTANT: Password must be 8+ chars with mixed case, digits, special chars
+# ===========================================
+OPENSEARCH_PASSWORD = "${opensearch_password}"
+
+# ===========================================
+# Langflow Authentication
+# ===========================================
+LANGFLOW_SUPERUSER = "${langflow_superuser}"
+LANGFLOW_SUPERUSER_PASSWORD = "${langflow_superuser_password}"
+LANGFLOW_SECRET_KEY = "${langflow_secret_key}"
+
+# ===========================================
+# Langflow Flow IDs (Optional)
+# Configure these after deploying Langflow workflows
+# ===========================================
+LANGFLOW_CHAT_FLOW_ID = "${langflow_chat_flow_id}"
+LANGFLOW_INGEST_FLOW_ID = "${langflow_ingest_flow_id}"
+LANGFLOW_URL_INGEST_FLOW_ID = "${langflow_url_ingest_flow_id}"
+NUDGES_FLOW_ID = "${nudges_flow_id}"
+
+# ===========================================
+# AI Provider Configuration
+# Choose: openai, anthropic, watsonx, ibm, or ollama
+# ===========================================
+LLM_PROVIDER = "${llm_provider}"
+LLM_MODEL = "${llm_model}"
+EMBEDDING_PROVIDER = "${embedding_provider}"
+EMBEDDING_MODEL = "${embedding_model}"
+
+# ===========================================
+# AI Provider API Keys
+# Configure based on LLM_PROVIDER selection above
+# ===========================================
+# OpenAI (if LLM_PROVIDER=openai)
+OPENAI_API_KEY = "${openai_api_key}"
+
+# Anthropic (if LLM_PROVIDER=anthropic)
+ANTHROPIC_API_KEY = "${anthropic_api_key}"
+
+# IBM WatsonX (if LLM_PROVIDER=watsonx or ibm)
+WATSONX_API_KEY = "${watsonx_api_key}"
+WATSONX_ENDPOINT = "${watsonx_endpoint}"
+WATSONX_PROJECT_ID = "${watsonx_project_id}"
+
+# Ollama (if LLM_PROVIDER=ollama)
+OLLAMA_ENDPOINT = "${ollama_endpoint}"
+
+# ===========================================
+# Cloudflare R2 Storage (Required)
+# Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+#
+# To create R2 API Token:
+# 1. Go to Cloudflare Dashboard > R2 > Overview
+# 2. Click "Manage R2 API Tokens"
+# 3. Create token with "Object Read & Write" permission
+# 4. Copy the Access Key ID and Secret Access Key
+# ===========================================
+R2_BUCKET_NAME = "${r2_bucket_name}"
+R2_ACCESS_KEY_ID = "${r2_access_key_id}"
+R2_SECRET_ACCESS_KEY = "${r2_secret_access_key}"
+CF_ACCOUNT_ID = "${cf_account_id}"
+
+# ===========================================
+# Cloudflare DNS Challenge (Required for wildcard SSL)
+# Get from: Cloudflare Dashboard > Profile > API Tokens
+# Create token with "Zone:DNS:Edit" permission
+# ===========================================
+CF_DNS_API_TOKEN = "${cf_dns_api_token}"
+
+# ===========================================
+# Cloudflare Zero Trust Access (Required)
+# Protects admin UIs (Langflow, OpenSearch Dashboards)
+# Get team name from: Cloudflare Dashboard > Zero Trust
+# ===========================================
+CF_TEAM_NAME = "${cf_team_name}"
+
+# ===========================================
+# Optional OAuth Integration
+# For Google Drive/Gmail access
+# ===========================================
+GOOGLE_OAUTH_CLIENT_ID = "${google_oauth_client_id}"
+GOOGLE_OAUTH_CLIENT_SECRET = "${google_oauth_client_secret}"
+
+# For SharePoint/OneDrive access
+MICROSOFT_GRAPH_OAUTH_CLIENT_ID = "${microsoft_graph_oauth_client_id}"
+MICROSOFT_GRAPH_OAUTH_CLIENT_SECRET = "${microsoft_graph_oauth_client_secret}"
+
+# ===========================================
+# Optional Observability (Langfuse)
+# For LLM tracing and monitoring
+# ===========================================
+LANGFUSE_SECRET_KEY = "${langfuse_secret_key}"
+LANGFUSE_PUBLIC_KEY = "${langfuse_public_key}"
+LANGFUSE_HOST = "${langfuse_host}"
+
+# ===========================================
+# Optional Webhooks
+# For continuous document ingestion
+# ===========================================
+WEBHOOK_BASE_URL = "${webhook_base_url}"
+
+# ===========================================
+# Advanced Langflow Configuration
+# ===========================================
+LANGFLOW_TIMEOUT = "2400"
+LANGFLOW_CONNECT_TIMEOUT = "30"
+DISABLE_INGEST_WITH_LANGFLOW = "false"

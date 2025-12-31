@@ -1,0 +1,243 @@
+services:
+  opensearch:
+    image: langflowai/openrag-opensearch:3.0.0
+    restart: always
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    environment:
+      # Security Configuration
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_PASSWORD:?Set OpenSearch admin password (8+ chars, mixed case, digits, special chars)}
+      DISABLE_SECURITY_PLUGIN: "false"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      # Cluster Configuration
+      discovery.type: single-node
+      bootstrap.memory_lock: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    networks:
+      - openrag-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  langflow:
+    build:
+      context: https://github.com/langflow-ai/openrag.git
+      dockerfile: Dockerfile.langflow
+    restart: always
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - langflow-flows:/app/flows
+      - langflow-cache:/root/.cache/langflow
+    environment:
+      # Langflow Authentication
+      LANGFLOW_AUTO_LOGIN: "False"
+      LANGFLOW_SUPERUSER: ${LANGFLOW_SUPERUSER:?Set Langflow admin username}
+      LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD:?Set Langflow admin password}
+      LANGFLOW_SECRET_KEY: ${LANGFLOW_SECRET_KEY:?Set Langflow secret key}
+      LANGFLOW_NEW_USER_IS_ACTIVE: "False"
+
+      # OpenSearch Connection
+      OPENSEARCH_URL: http://opensearch:9200
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
+
+      # Flow Configuration
+      LANGFLOW_TIMEOUT: ${LANGFLOW_TIMEOUT:-2400}
+      LANGFLOW_CONNECT_TIMEOUT: ${LANGFLOW_CONNECT_TIMEOUT:-30}
+    networks:
+      - openrag-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.langflow.rule=Host(`langflow.${DOMAIN}`)"
+      - "traefik.http.routers.langflow.entrypoints=websecure"
+      - "traefik.http.routers.langflow.tls.certresolver=cloudflare"
+      - "traefik.http.routers.langflow.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.langflow.tls.domains[0].sans=*.${DOMAIN}"
+      # Cloudflare Zero Trust Access Protection
+      - "traefik.http.routers.langflow.middlewares=cf-access-langflow@docker"
+      - "traefik.http.middlewares.cf-access-langflow.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      - "traefik.http.middlewares.cf-access-langflow.forwardauth.trustForwardHeader=true"
+      - "traefik.http.services.langflow.loadbalancer.server.port=7860"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+  backend:
+    build:
+      context: https://github.com/langflow-ai/openrag.git
+      dockerfile: Dockerfile.backend
+    restart: always
+    depends_on:
+      langflow:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - documents:/app/files
+      - api-keys:/app/keys
+    environment:
+      # Domain Configuration
+      DOMAIN: ${DOMAIN:?Set your domain}
+
+      # Langflow Integration
+      LANGFLOW_URL: http://langflow:7860
+      LANGFLOW_SECRET_KEY: ${LANGFLOW_SECRET_KEY}
+      LANGFLOW_CHAT_FLOW_ID: ${LANGFLOW_CHAT_FLOW_ID:-}
+      LANGFLOW_INGEST_FLOW_ID: ${LANGFLOW_INGEST_FLOW_ID:-}
+      LANGFLOW_URL_INGEST_FLOW_ID: ${LANGFLOW_URL_INGEST_FLOW_ID:-}
+      NUDGES_FLOW_ID: ${NUDGES_FLOW_ID:-}
+      DISABLE_INGEST_WITH_LANGFLOW: ${DISABLE_INGEST_WITH_LANGFLOW:-false}
+
+      # OpenSearch Connection
+      OPENSEARCH_URL: http://opensearch:9200
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
+
+      # AI Provider Configuration (choose one or more)
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+
+      # OpenAI (if LLM_PROVIDER=openai)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+      # Anthropic (if LLM_PROVIDER=anthropic)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # IBM WatsonX (if LLM_PROVIDER=watsonx or ibm)
+      WATSONX_API_KEY: ${WATSONX_API_KEY:-}
+      WATSONX_ENDPOINT: ${WATSONX_ENDPOINT:-}
+      WATSONX_PROJECT_ID: ${WATSONX_PROJECT_ID:-}
+
+      # Ollama (if LLM_PROVIDER=ollama)
+      OLLAMA_ENDPOINT: ${OLLAMA_ENDPOINT:-}
+
+      # Cloudflare R2 Storage (S3-compatible)
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?Set R2 access key ID}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?Set R2 secret access key}
+      AWS_ENDPOINT_URL: https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+      AWS_REGION: auto
+      S3_BUCKET: ${R2_BUCKET_NAME:?Set R2 bucket name}
+
+      # Optional OAuth Integration
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      MICROSOFT_GRAPH_OAUTH_CLIENT_ID: ${MICROSOFT_GRAPH_OAUTH_CLIENT_ID:-}
+      MICROSOFT_GRAPH_OAUTH_CLIENT_SECRET: ${MICROSOFT_GRAPH_OAUTH_CLIENT_SECRET:-}
+
+      # Optional Observability
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
+
+      # Optional Webhooks
+      WEBHOOK_BASE_URL: ${WEBHOOK_BASE_URL:-}
+    networks:
+      - openrag-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: https://github.com/langflow-ai/openrag.git
+      dockerfile: Dockerfile.frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      # Backend API Connection
+      NEXT_PUBLIC_API_URL: http://backend:8000
+
+      # Public Domain
+      NEXT_PUBLIC_DOMAIN: ${DOMAIN}
+    networks:
+      - openrag-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=cloudflare"
+      - "traefik.http.routers.frontend.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.frontend.tls.domains[0].sans=*.${DOMAIN}"
+      # Security headers middleware
+      - "traefik.http.routers.frontend.middlewares=security-headers@docker"
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:3.0.0
+    restart: always
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "false"
+    networks:
+      - openrag-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboards.rule=Host(`dashboards.${DOMAIN}`)"
+      - "traefik.http.routers.dashboards.entrypoints=websecure"
+      - "traefik.http.routers.dashboards.tls.certresolver=cloudflare"
+      - "traefik.http.routers.dashboards.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.dashboards.tls.domains[0].sans=*.${DOMAIN}"
+      # Cloudflare Zero Trust Access Protection
+      - "traefik.http.routers.dashboards.middlewares=cf-access-dashboards@docker"
+      - "traefik.http.middlewares.cf-access-dashboards.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      - "traefik.http.middlewares.cf-access-dashboards.forwardauth.trustForwardHeader=true"
+      - "traefik.http.services.dashboards.loadbalancer.server.port=5601"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  opensearch-data:
+    driver: local
+  langflow-flows:
+    driver: local
+  langflow-cache:
+    driver: local
+  documents:
+    driver: local
+  api-keys:
+    driver: local
+
+networks:
+  openrag-net:
+    driver: bridge
+  dokploy-network:
+    external: true
