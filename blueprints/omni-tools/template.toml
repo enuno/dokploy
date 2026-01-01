@@ -1,0 +1,26 @@
+# Omni-Tools - Self-hosted collection of web-based utilities
+# https://github.com/iib0011/omni-tools
+
+[variables]
+domain = "${domain}"
+
+# Optional: Localization API key for i18n support
+locize_api_key = ""
+
+[[config.domains]]
+serviceName = "omni-tools"
+port = 80
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Optional: Localization (i18n)
+# Get from: https://www.locize.com
+# Leave blank if not using localization service
+# ===========================================
+LOCIZE_API_KEY = "${locize_api_key}"

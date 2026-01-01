@@ -1,0 +1,31 @@
+services:
+  omni-tools:
+    image: iib0011/omni-tools:0.6.0
+    restart: always
+    environment:
+      # Optional: Localization API key for i18n support
+      LOCIZE_API_KEY: ${LOCIZE_API_KEY:-}
+    networks:
+      - omni-tools-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.omni-tools.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.omni-tools.entrypoints=websecure"
+      - "traefik.http.routers.omni-tools.tls.certresolver=letsencrypt"
+      - "traefik.http.services.omni-tools.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes: {}
+
+networks:
+  omni-tools-net:
+    driver: bridge
+  dokploy-network:
+    external: true

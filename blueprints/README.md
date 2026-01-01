@@ -37,6 +37,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [hyperbeam](/blueprints/hyperbeam/) | AO Protocol compute node with Actor-Oriented architecture for permaweb applications | 1 (hyperbeam) | Ready |
 | [ipfs-gateway-checker](/blueprints/ipfs-gateway-checker/) | Web-based tool for monitoring and checking the status of public IPFS gateways | 1 (nginx) | Ready |
 | [ipfs-sw-gateway](/blueprints/ipfs-sw-gateway/) | Browser-based IPFS gateway using Service Workers with wildcard SSL for subdomain content addressing | 1 (gateway) | Ready |
+| [it-tools](/blueprints/it-tools/) | Collection of 45+ handy developer utilities with client-side processing and great UX | 1 (it-tools) | Ready |
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
 | [lnd-rtl](/blueprints/lnd-rtl/) | Lightning Network Daemon with Ride The Lightning web UI and Bitcoin Core backend | 3 (rtl, lnd, bitcoind) | Ready |
 | [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
@@ -47,6 +48,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay with PostgreSQL backend and Redis pub/sub | 4 (websocket-handler, event-handler, postgres, redis) | Ready |
 | [nostr-rs-relay](/blueprints/nostr-rs-relay/) | High-performance Rust-based Nostr relay with embedded SQLite database and WebSocket protocol support | 1 (nostr-relay) | Ready |
 | [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
+| [omni-tools](/blueprints/omni-tools/) | Self-hosted collection of 40+ web utilities for media, PDF, text, and data manipulation with client-side processing | 1 (omni-tools) | Ready |
 | [openrag](/blueprints/openrag/) | Comprehensive RAG platform with Langflow, OpenSearch, and Cloudflare R2 for intelligent document search and AI-powered conversations | 5 (opensearch, langflow, backend, frontend, dashboards) | Ready |
 | [opengist](/blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |

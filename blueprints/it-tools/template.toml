@@ -1,0 +1,16 @@
+# IT-Tools - Collection of handy online tools for developers
+# https://github.com/CorentinTh/it-tools
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "it-tools"
+port = 80
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
