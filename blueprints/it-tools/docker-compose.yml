@@ -1,6 +1,6 @@
 services:
   it-tools:
-    image: corentinth/it-tools:2024.10.22-7ca5933
+    image: corentinth/it-tools:nightly
     restart: always
     networks:
       - it-tools-net
