@@ -59,6 +59,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
+| [tor-relay](/blueprints/tor-relay/) | Tor network relay (middle/bridge/exit) supporting anonymous internet routing infrastructure | 1 (tor-relay) | Ready |
 | [uptime-kuma](/blueprints/uptime-kuma/) | Self-hosted monitoring tool for tracking service availability with 90+ notification providers | 1 (uptime-kuma) | Ready |
 | [umami](/blueprints/umami/) | Privacy-focused web analytics platform as an alternative to Google Analytics | 2 (umami, postgres) | Ready |
 | [usesend](/blueprints/usesend/) | Open-source email sending infrastructure powered by AWS SES with analytics dashboard and OAuth authentication | 3 (usesend, postgres, redis) | Ready |

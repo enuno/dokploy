@@ -1,0 +1,79 @@
+# Tor Relay - Anonymous routing infrastructure for the Tor network
+# Official: https://www.torproject.org/
+# Docker: https://hub.docker.com/u/thetorproject/
+
+[variables]
+# Relay Identity (required)
+relay_nickname = "${username}"
+contact_email = "${email}"
+
+# Network Ports
+or_port = "9001"
+pt_port = "9002"
+
+# Relay Type (middle, bridge, or exit)
+relay_type = "middle"
+
+# Bandwidth Configuration (KB/s)
+bandwidth_rate = "100"
+bandwidth_burst = "200"
+
+# Optional: Traffic Accounting
+accounting_max = ""
+accounting_start = ""
+
+# Optional: MyFamily (comma-separated relay fingerprints)
+my_family = ""
+
+# Advanced Configuration
+enable_advanced_config = "0"
+
+[config.env]
+# ===========================================
+# Relay Identity
+# Required by Tor network for relay operator contact
+# ===========================================
+OR_PORT = "${or_port}"
+PT_PORT = "${pt_port}"
+EMAIL = "${contact_email}"
+
+# ===========================================
+# Relay Configuration
+# ===========================================
+RELAY_TYPE = "${relay_type}"
+RELAY_NICKNAME = "${relay_nickname}"
+
+# ===========================================
+# Bandwidth Limits
+# Values in KB/s (kilobytes per second)
+# Example: 100 KB/s = ~800 Kbps
+# ===========================================
+RELAY_BANDWIDTH_RATE = "${bandwidth_rate}"
+RELAY_BANDWIDTH_BURST = "${bandwidth_burst}"
+
+# ===========================================
+# Traffic Accounting (Optional)
+# Set monthly traffic limits to avoid unexpected bandwidth costs
+# ACCOUNTING_MAX: Maximum traffic per month (e.g., "500 GB")
+# ACCOUNTING_START: Start of accounting period (e.g., "month 1 00:00")
+# Leave blank for unlimited bandwidth
+# ===========================================
+ACCOUNTING_MAX = "${accounting_max}"
+ACCOUNTING_START = "${accounting_start}"
+
+# ===========================================
+# MyFamily Configuration (Optional)
+# If you run multiple relays, list their fingerprints here
+# Format: comma-separated fingerprints
+# Example: "ABC123...,DEF456..."
+# This helps the Tor network avoid using your relays in the same circuit
+# ===========================================
+MY_FAMILY = "${my_family}"
+
+# ===========================================
+# Advanced Configuration
+# Set to 1 to enable additional Tor configuration via environment variables
+# Variables must be prefixed with OBFS4V_ (e.g., OBFS4V_AddressDisableIPv6=1)
+# See: https://gitlab.torproject.org/tpo/anti-censorship/docker-obfs4-bridge
+# ===========================================
+OBFS4_ENABLE_ADDITIONAL_VARIABLES = "${enable_advanced_config}"
