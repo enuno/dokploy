@@ -12,6 +12,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 |----------|-------------|----------|--------|
 | [algo-relay](/blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
 | [anon-relay](/blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
+| [ar-io-node](/blueprints/ar-io-node/) | Production-ready Arweave gateway with Redis caching, network observation, and Cloudflare R2 archival storage | 4 (envoy, core, redis, observer) | Ready |
 | [ar-io-gateway](/blueprints/ar-io-gateway/) | Modular Arweave gateway with monitoring stack (Prometheus, Grafana, OpenTelemetry) and optional AO Compute Unit | 4-9 (base gateway + optional monitoring + AO) | Ready |
 | [ar-io-observer](/blueprints/ar-io-observer/) | AR.IO Network observer generating randomized observation reports for gateway nodes | 1 (observer) | Ready |
 | [anonupload](/blueprints/anonupload/) | Privacy-focused anonymous file sharing | 1 (php/apache) | Ready |

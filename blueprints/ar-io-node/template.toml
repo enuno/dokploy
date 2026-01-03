@@ -1,0 +1,102 @@
+# AR.IO Node - Gateway to the Arweave Permaweb
+# https://github.com/ar-io/ar-io-node
+
+[variables]
+domain = "${domain}"
+ar_io_wallet = ""
+observer_wallet = ""
+admin_api_key = "${base64:48}"
+
+# Optional Cloudflare R2 configuration
+aws_s3_bucket = ""
+aws_endpoint = ""
+aws_access_key_id = ""
+aws_secret_access_key = ""
+
+[[config.domains]]
+serviceName = "envoy"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Gateway Wallets (REQUIRED)
+# Get your Arweave wallet from: https://arweave.app/
+# AR_IO_WALLET: Gateway wallet address for network participation
+# OBSERVER_WALLET: Observer wallet address for submitting observations
+# ===========================================
+AR_IO_WALLET = "${ar_io_wallet}"
+OBSERVER_WALLET = "${observer_wallet}"
+
+# ===========================================
+# Admin API Security
+# ===========================================
+ADMIN_API_KEY = "${admin_api_key}"
+
+# ===========================================
+# ArNS Configuration (Optional)
+# Set this to your domain for ArNS subdomain routing
+# Example: example.com → enables *.example.com for ArNS names
+# Leave blank to disable ArNS subdomain routing
+# ===========================================
+ARNS_ROOT_HOST = ""
+
+# ===========================================
+# Blockchain Indexing
+# START_HEIGHT: Block height to start indexing from (0 = genesis)
+# STOP_HEIGHT: Block height to stop indexing at (empty = continuous)
+# ===========================================
+START_HEIGHT = "0"
+STOP_HEIGHT = ""
+
+# ===========================================
+# Redis Cache Configuration
+# ===========================================
+REDIS_MAX_MEMORY = "256mb"
+REDIS_CACHE_TTL_SECONDS = "3600"
+
+# ===========================================
+# Envoy Proxy Configuration
+# ===========================================
+ENVOY_LOG_LEVEL = "info"
+
+# ===========================================
+# Observer Configuration
+# ===========================================
+RUN_OBSERVER = "true"
+REPORT_HEALTH_CHECK = "true"
+ARNS_NAMES_TO_MONITOR_PER_GROUP = "8"
+
+# ===========================================
+# Performance Tuning
+# ===========================================
+CHAIN_CACHE_TYPE = "redis"
+ANS104_UNBUNDLE_WORKERS = "5"
+ANS104_DOWNLOAD_WORKERS = "10"
+
+# ===========================================
+# Cloudflare R2 Storage (Optional - for archival/backup)
+# Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+#
+# To create R2 API Token:
+# 1. Go to Cloudflare Dashboard > R2 > Overview
+# 2. Click "Manage R2 API Tokens"
+# 3. Create token with "Object Read & Write" permission
+# 4. Copy the Access Key ID and Secret Access Key
+#
+# Benefits:
+# - Offload multi-TB indexed data to object storage
+# - Zero egress fees (Cloudflare R2 advantage)
+# - Scalable storage beyond local disk capacity
+# ===========================================
+AWS_S3_BUCKET = "${aws_s3_bucket}"
+AWS_ENDPOINT = "${aws_endpoint}"
+AWS_ACCESS_KEY_ID = "${aws_access_key_id}"
+AWS_SECRET_ACCESS_KEY = "${aws_secret_access_key}"
+AWS_REGION = "auto"

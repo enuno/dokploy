@@ -1,0 +1,179 @@
+services:
+  envoy:
+    image: ghcr.io/ar-io/ar-io-envoy:1.3.0
+    restart: always
+    depends_on:
+      core:
+        condition: service_healthy
+      observer:
+        condition: service_started
+    environment:
+      # Logging
+      LOG_LEVEL: ${ENVOY_LOG_LEVEL:-info}
+
+      # Core gateway routing
+      CORE_HOST: core
+      CORE_PORT: 4000
+
+      # Observer routing
+      OBSERVER_HOST: observer
+      OBSERVER_PORT: 5050
+
+      # Port configuration
+      PORT: 3000
+    networks:
+      - ar-io-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ar-io.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.ar-io.entrypoints=websecure"
+      - "traefik.http.routers.ar-io.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ar-io.middlewares=ar-io-security@docker"
+      - "traefik.http.services.ar-io.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+      # Security headers middleware
+      - "traefik.http.middlewares.ar-io-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.ar-io-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.ar-io-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.ar-io-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.ar-io-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  core:
+    image: ghcr.io/ar-io/ar-io-core:1.3.0
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ar-io-chunks:/app/data/chunks
+      - ar-io-contiguous:/app/data/contiguous
+      - ar-io-headers:/app/data/headers
+      - ar-io-sqlite:/app/data/sqlite
+      - ar-io-duckdb:/app/data/duckdb
+      - ar-io-temp:/app/data/temp
+      - ar-io-lmdb:/app/data/lmdb
+      - ar-io-parquet:/app/data/parquet
+      - ar-io-datasets:/app/data/datasets
+    environment:
+      # Gateway configuration
+      AR_IO_WALLET: ${AR_IO_WALLET:?Set your gateway wallet address}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?Set admin API key for /ar-io/admin endpoints}
+
+      # Port configuration
+      PORT: 4000
+
+      # Redis cache
+      REDIS_CACHE_URL: redis://redis:6379
+      REDIS_CACHE_TTL_SECONDS: ${REDIS_CACHE_TTL_SECONDS:-3600}
+
+      # Blockchain indexing
+      START_HEIGHT: ${START_HEIGHT:-0}
+      STOP_HEIGHT: ${STOP_HEIGHT:-}
+
+      # ArNS configuration
+      ARNS_ROOT_HOST: ${ARNS_ROOT_HOST:-}
+
+      # ===========================================
+      # Cloudflare R2 Storage (Optional - for archival/backup)
+      # Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+      # Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+      # Benefits: Offload multi-TB indexed data, zero egress fees
+      # ===========================================
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_ENDPOINT: ${AWS_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-auto}
+
+      # Performance tuning
+      CHAIN_CACHE_TYPE: ${CHAIN_CACHE_TYPE:-redis}
+      ANS104_UNBUNDLE_WORKERS: ${ANS104_UNBUNDLE_WORKERS:-5}
+      ANS104_DOWNLOAD_WORKERS: ${ANS104_DOWNLOAD_WORKERS:-10}
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/ar-io/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "${REDIS_MAX_MEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  observer:
+    image: ghcr.io/ar-io/ar-io-observer:1.0.0
+    restart: always
+    environment:
+      # Observer wallet
+      OBSERVER_WALLET: ${OBSERVER_WALLET:?Set your observer wallet address}
+
+      # Port configuration
+      PORT: 5050
+
+      # Network monitoring
+      RUN_OBSERVER: ${RUN_OBSERVER:-true}
+      REPORT_HEALTH_CHECK: ${REPORT_HEALTH_CHECK:-true}
+
+      # ArNS monitoring
+      ARNS_NAMES_TO_MONITOR_PER_GROUP: ${ARNS_NAMES_TO_MONITOR_PER_GROUP:-8}
+    networks:
+      - ar-io-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5050"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  ar-io-chunks:
+    driver: local
+  ar-io-contiguous:
+    driver: local
+  ar-io-headers:
+    driver: local
+  ar-io-sqlite:
+    driver: local
+  ar-io-duckdb:
+    driver: local
+  ar-io-temp:
+    driver: local
+  ar-io-lmdb:
+    driver: local
+  ar-io-parquet:
+    driver: local
+  ar-io-datasets:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  ar-io-net:
+    driver: bridge
+  dokploy-network:
+    external: true
