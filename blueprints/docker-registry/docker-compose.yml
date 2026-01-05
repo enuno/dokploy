@@ -57,6 +57,7 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
+      - "traefik.http.middlewares.large-body.buffering.maxRequestBodyBytes=2147483648"
       - "traefik.http.routers.registry.rule=Host(`${REGISTRY_DOMAIN}`)"
       - "traefik.http.routers.registry.entrypoints=websecure"
       - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
