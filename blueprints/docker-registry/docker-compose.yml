@@ -26,6 +26,10 @@ services:
       REGISTRY_HTTP_ADDR: 0.0.0.0:5000
       REGISTRY_HTTP_HOST: https://${REGISTRY_DOMAIN:?Set registry domain}
 
+      # Maximum request body size (5GB for large image layers)
+      # Adjust this value based on your largest expected image layer
+      REGISTRY_HTTP_MAXREQUESTBODYSIZE: 5368709120
+
       # Headers
       REGISTRY_HTTP_HEADERS_X-Content-Type-Options: "[nosniff]"
 
@@ -57,8 +61,10 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.large-body.buffering.maxRequestBodyBytes=2147483648"
+      # Middleware for large image layers (5GB limit)
+      - "traefik.http.middlewares.large-body.buffering.maxRequestBodyBytes=5368709120"
       - "traefik.http.routers.registry.rule=Host(`${REGISTRY_DOMAIN}`)"
+      - "traefik.http.routers.registry.middlewares=large-body@docker"
       - "traefik.http.routers.registry.entrypoints=websecure"
       - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
       - "traefik.http.services.registry.loadbalancer.server.port=5000"
