@@ -1,0 +1,49 @@
+# OnionShare CLI - Secure anonymous file sharing over Tor
+# Official: https://onionshare.org/
+# GitHub: https://github.com/onionshare/onionshare
+# Docker: https://github.com/nikosch86/docker-onionshare
+
+[variables]
+# Local filesystem path for shared files
+# This directory will be mounted into the container
+data_dir = "/opt/onionshare/data"
+
+# OnionShare CLI arguments
+# Modes: (default is share)
+#   --receive    : Receive files from others
+#   --website    : Host a static website
+#   --chat       : Start a chat server
+#
+# Common flags:
+#   --persistent FILE : Use persistent .onion address
+#   --public          : Don't use private key (public access)
+#   --no-autostop-sharing : Continue after first download
+#   --title "NAME"    : Set custom title
+#   --verbose         : Enable verbose output
+#   --connect-timeout N : Tor connection timeout (default: 120)
+#
+# Example configurations:
+#   Share (one-time): /shared
+#   Share (persistent): --persistent /root/.config/onionshare/persistent.json --no-autostop-sharing /shared
+#   Receive files: --receive --no-autostop-sharing /shared
+#   Host website: --website /shared
+#   Chat server: --chat
+onionshare_args = "/shared"
+
+# No domain configuration - OnionShare uses .onion addresses via Tor
+# The .onion URL is displayed in container logs after startup
+
+[config.env]
+# ===========================================
+# Data Directory Configuration
+# Local path where files are stored/shared
+# Must exist on the host before deployment
+# ===========================================
+DATA_DIR = "${data_dir}"
+
+# ===========================================
+# OnionShare CLI Arguments
+# Customize the operating mode and behavior
+# See comments above for available options
+# ===========================================
+ONIONSHARE_ARGS = "${onionshare_args}"
