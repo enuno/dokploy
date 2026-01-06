@@ -1,6 +1,8 @@
 services:
   onionshare:
-    image: nikosch86/docker-onionshare:v2.6.1
+    # OnionShare v2.6 - secure anonymous file sharing over Tor
+    # Pinned by digest for reproducibility (updated: 2024-11-05)
+    image: effraie/onionshare-cli@sha256:9bd888961d7887125220d655249a3712e1570b6263ba02271767e494e5b3741c
     restart: unless-stopped
     volumes:
       # Persistent Tor data for consistent .onion address
@@ -9,8 +11,8 @@ services:
       # Users place files here to share, or receive files here
       - ${DATA_DIR:?Set local data directory path}:/shared
     # OnionShare CLI uses command-line arguments
-    # The entrypoint is: /usr/local/bin/onionshare-cli
-    # Default CMD is: /shared
+    # Entrypoint is: onionshare-cli
+    # Pass CLI args via ONIONSHARE_ARGS environment variable
     command: ${ONIONSHARE_ARGS:-/shared}
     networks:
       - onionshare-net

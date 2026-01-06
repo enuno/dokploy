@@ -265,7 +265,7 @@ Check logs for the actual error.
 - [OnionShare Official Site](https://onionshare.org/)
 - [OnionShare GitHub](https://github.com/onionshare/onionshare)
 - [OnionShare Documentation](https://docs.onionshare.org/)
-- [Docker Image](https://github.com/nikosch86/docker-onionshare)
+- [Docker Image](https://hub.docker.com/r/effraie/onionshare-cli)
 - [Tor Browser Download](https://www.torproject.org/download/)
 
 ## License
