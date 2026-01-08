@@ -63,10 +63,26 @@ services:
       - "traefik.enable=true"
       # Middleware for large image layers (5GB limit)
       - "traefik.http.middlewares.large-body.buffering.maxRequestBodyBytes=5368709120"
+
+      # =======================================================================
+      # Router 1: Primary (via Cloudflare proxy)
+      # =======================================================================
       - "traefik.http.routers.registry.rule=Host(`${REGISTRY_DOMAIN}`)"
       - "traefik.http.routers.registry.middlewares=large-body@docker"
       - "traefik.http.routers.registry.entrypoints=websecure"
       - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
+
+      # =======================================================================
+      # Router 2: Direct access (bypasses Cloudflare for large uploads)
+      # Set REGISTRY_DIRECT_DOMAIN to enable (e.g., registry-direct.example.com)
+      # DNS must point directly to server IP (grey cloud in Cloudflare)
+      # =======================================================================
+      - "traefik.http.routers.registry-direct.rule=Host(`${REGISTRY_DIRECT_DOMAIN:-disabled.local}`)"
+      - "traefik.http.routers.registry-direct.middlewares=large-body@docker"
+      - "traefik.http.routers.registry-direct.entrypoints=websecure"
+      - "traefik.http.routers.registry-direct.tls.certresolver=letsencrypt"
+
+      # Shared service configuration
       - "traefik.http.services.registry.loadbalancer.server.port=5000"
       - "traefik.docker.network=dokploy-network"
     healthcheck:
