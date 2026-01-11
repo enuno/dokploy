@@ -1,0 +1,119 @@
+services:
+  # =============================================================================
+  # ntfy - HTTP-based Pub-Sub Push Notification Service
+  # https://github.com/binwiederhier/ntfy
+  # =============================================================================
+  ntfy:
+    image: binwiederhier/ntfy:v2.15.0
+    restart: always
+    command: serve
+    user: "${NTFY_UID:-1000}:${NTFY_GID:-1000}"
+    init: true
+    volumes:
+      # Persistent storage for cache, attachments, and databases
+      - ntfy-cache:/var/cache/ntfy
+      # Optional: mount custom server.yml config
+      # - /path/to/server.yml:/etc/ntfy/server.yml:ro
+    environment:
+      # =======================================================================
+      # Base URL Configuration (Required)
+      # =======================================================================
+      NTFY_BASE_URL: https://${DOMAIN:?Set your ntfy domain}
+
+      # =======================================================================
+      # Cache Configuration
+      # =======================================================================
+      # SQLite database for message persistence
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      # How long to keep cached messages (default: 12h)
+      NTFY_CACHE_DURATION: ${CACHE_DURATION:-12h}
+
+      # =======================================================================
+      # Attachment Configuration
+      # =======================================================================
+      NTFY_ATTACHMENT_CACHE_DIR: /var/cache/ntfy/attachments
+      # Max file size per attachment (default: 15M)
+      NTFY_ATTACHMENT_FILE_SIZE_LIMIT: ${ATTACHMENT_SIZE_LIMIT:-15M}
+      # Total attachment cache size (default: 5G)
+      NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT: ${ATTACHMENT_TOTAL_LIMIT:-5G}
+      # How long attachments are kept (default: 3h)
+      NTFY_ATTACHMENT_EXPIRY_DURATION: ${ATTACHMENT_EXPIRY:-3h}
+
+      # =======================================================================
+      # Authentication Configuration
+      # =======================================================================
+      # SQLite database for user management
+      NTFY_AUTH_FILE: /var/cache/ntfy/user.db
+      # Default access level: read-write, read-only, write-only, deny-all
+      NTFY_AUTH_DEFAULT_ACCESS: ${AUTH_DEFAULT_ACCESS:-deny-all}
+      # Enable web login form
+      NTFY_ENABLE_LOGIN: ${ENABLE_LOGIN:-true}
+
+      # =======================================================================
+      # iOS Push Notification Support
+      # =======================================================================
+      # Forward poll requests to ntfy.sh for instant iOS delivery via APNS
+      NTFY_UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-https://ntfy.sh}
+
+      # =======================================================================
+      # Proxy Configuration (Required when behind Traefik)
+      # =======================================================================
+      NTFY_BEHIND_PROXY: "true"
+
+      # =======================================================================
+      # Rate Limiting (Per-Visitor)
+      # =======================================================================
+      NTFY_VISITOR_REQUEST_LIMIT_BURST: ${RATE_LIMIT_BURST:-60}
+      NTFY_VISITOR_ATTACHMENT_TOTAL_SIZE_LIMIT: ${VISITOR_ATTACHMENT_LIMIT:-100M}
+
+      # =======================================================================
+      # Logging Configuration
+      # =======================================================================
+      NTFY_LOG_LEVEL: ${LOG_LEVEL:-info}
+      NTFY_LOG_FORMAT: ${LOG_FORMAT:-text}
+
+      # =======================================================================
+      # Timezone
+      # =======================================================================
+      TZ: ${TZ:-UTC}
+
+    networks:
+      - ntfy-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Main router for ntfy web UI and API
+      - "traefik.http.routers.ntfy.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.ntfy.entrypoints=websecure"
+      - "traefik.http.routers.ntfy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ntfy.middlewares=ntfy-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.ntfy-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.ntfy-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.ntfy-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.ntfy-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.ntfy-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.ntfy.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  ntfy-cache:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ntfy-net:
+    driver: bridge
+  dokploy-network:
+    external: true

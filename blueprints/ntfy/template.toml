@@ -1,0 +1,87 @@
+# ntfy - HTTP-based Pub-Sub Push Notification Service
+# https://github.com/binwiederhier/ntfy
+#
+# Send push notifications to your phone or desktop from any script.
+# Supports Android, iOS (via APNS relay), and web browsers.
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "ntfy"
+port = 80
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration (Required)
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# User/Group Configuration
+# Set to match your host user to avoid permission issues with volumes
+# Find your UID/GID with: id -u && id -g
+# =============================================================================
+NTFY_UID = "1000"
+NTFY_GID = "1000"
+
+# =============================================================================
+# Cache Configuration
+# How long messages are stored before deletion
+# =============================================================================
+CACHE_DURATION = "12h"
+
+# =============================================================================
+# Attachment Configuration
+# Limits for file attachments sent with notifications
+# =============================================================================
+# Maximum size per attachment file
+ATTACHMENT_SIZE_LIMIT = "15M"
+# Total storage limit for all attachments
+ATTACHMENT_TOTAL_LIMIT = "5G"
+# How long attachments are kept before deletion
+ATTACHMENT_EXPIRY = "3h"
+
+# =============================================================================
+# Authentication Configuration
+# Controls who can subscribe to and publish notifications
+# =============================================================================
+# Default access for unauthenticated users:
+# - read-write: Anyone can publish and subscribe (not recommended)
+# - read-only: Anyone can subscribe, only auth users can publish
+# - write-only: Anyone can publish, only auth users can subscribe
+# - deny-all: Only authenticated users can access (recommended for private use)
+AUTH_DEFAULT_ACCESS = "deny-all"
+# Enable the web login form
+ENABLE_LOGIN = "true"
+
+# =============================================================================
+# iOS Push Notification Support
+# Forward poll requests to upstream ntfy.sh server for instant iOS delivery
+# This uses the official ntfy.sh APNS integration
+# Set to empty string to disable if you only use Android/web clients
+# =============================================================================
+UPSTREAM_BASE_URL = "https://ntfy.sh"
+
+# =============================================================================
+# Rate Limiting (Per-Visitor)
+# Protects against abuse and spam
+# =============================================================================
+# Initial request burst limit
+RATE_LIMIT_BURST = "60"
+# Per-visitor attachment storage limit
+VISITOR_ATTACHMENT_LIMIT = "100M"
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+# Log levels: trace, debug, info, warn, error
+LOG_LEVEL = "info"
+# Log format: text or json
+LOG_FORMAT = "text"
+
+# =============================================================================
+# Timezone
+# =============================================================================
+TZ = "UTC"

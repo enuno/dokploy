@@ -48,6 +48,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay with PostgreSQL backend and Redis pub/sub | 4 (websocket-handler, event-handler, postgres, redis) | Ready |
 | [nostr-rs-relay](/blueprints/nostr-rs-relay/) | High-performance Rust-based Nostr relay with embedded SQLite database and WebSocket protocol support | 1 (nostr-relay) | Ready |
+| [ntfy](/blueprints/ntfy/) | HTTP-based pub-sub push notification service for phones and desktops | 1 (ntfy) | Ready |
 | [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
 | [omni-tools](/blueprints/omni-tools/) | Self-hosted collection of 40+ web utilities for media, PDF, text, and data manipulation with client-side processing | 1 (omni-tools) | Ready |
 | [onionshare-cli](/blueprints/onionshare-cli/) | Secure anonymous file sharing, receiving, website hosting, and chat over Tor network | 1 (onionshare) | Ready |
