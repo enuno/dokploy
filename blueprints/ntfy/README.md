@@ -69,8 +69,6 @@ This Dokploy template provides a production-ready ntfy deployment with:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `NTFY_UID` | User ID for container | `1000` |
-| `NTFY_GID` | Group ID for container | `1000` |
 | `CACHE_DURATION` | Message retention time | `12h` |
 | `ATTACHMENT_SIZE_LIMIT` | Max file size per attachment | `15M` |
 | `ATTACHMENT_TOTAL_LIMIT` | Total attachment storage | `5G` |
@@ -103,19 +101,7 @@ The `AUTH_DEFAULT_ACCESS` setting controls default permissions:
 3. Use the GitHub source: `blueprints/ntfy/docker-compose.yml`
 4. Set environment variables (see Configuration above)
 
-### 2. Set volume permissions
-
-Before starting, create the data directory with correct ownership:
-
-```bash
-# SSH into your server
-mkdir -p /var/lib/dokploy/volumes/ntfy-cache
-chown 1000:1000 /var/lib/dokploy/volumes/ntfy-cache
-```
-
-Or adjust `NTFY_UID` and `NTFY_GID` to match your host user.
-
-### 3. Deploy and verify
+### 2. Deploy and verify
 
 After deployment, verify the health endpoint:
 
@@ -126,22 +112,69 @@ curl https://your-domain.com/v1/health
 
 ## Post-Deployment Setup
 
-### Create admin user
+### User Management
 
-After deployment, create an admin user via the ntfy CLI:
+Users are managed via CLI commands (the web UI only has sign-in, not sign-up).
+
+#### Create admin user
 
 ```bash
-# Access the container
-docker exec -it <container-name> /bin/sh
+# Generate a secure password and create admin user
+docker exec -e NTFY_PASSWORD="your-secure-password" <container-name> ntfy user add --role=admin admin
 
-# Add admin user
-ntfy user add --role=admin admin
+# Or generate a random password
+PASS=$(openssl rand -base64 16) && echo "Password: $PASS" && \
+docker exec -e NTFY_PASSWORD="$PASS" <container-name> ntfy user add --role=admin admin
+```
 
-# Add regular user
-ntfy user add user1
+#### Create regular user
 
-# Set topic permissions
-ntfy access user1 mytopic rw
+```bash
+docker exec -e NTFY_PASSWORD="user-password" <container-name> ntfy user add username
+```
+
+#### List users
+
+```bash
+docker exec <container-name> ntfy user list
+```
+
+#### Change user password
+
+```bash
+docker exec -e NTFY_PASSWORD="new-password" <container-name> ntfy user change-pass username
+```
+
+#### Delete user
+
+```bash
+docker exec <container-name> ntfy user del username
+```
+
+#### Set topic permissions
+
+```bash
+# Grant read-write access to a topic
+docker exec <container-name> ntfy access username mytopic rw
+
+# Grant read-only access
+docker exec <container-name> ntfy access username mytopic ro
+
+# Grant write-only access
+docker exec <container-name> ntfy access username mytopic wo
+
+# List all access permissions
+docker exec <container-name> ntfy access
+```
+
+#### Create access tokens (for API/scripts)
+
+```bash
+# Create a token for a user
+docker exec <container-name> ntfy token add username
+
+# List tokens
+docker exec <container-name> ntfy token list
 ```
 
 ### Test notifications
@@ -234,19 +267,6 @@ docker events --filter 'event=die' --format '{{.Actor.Attributes.name}}' | \
 
 ## Troubleshooting
 
-### Permission denied errors
-
-If you see permission errors in logs:
-
-```bash
-# Check container logs
-docker logs <container-name>
-
-# Fix volume permissions
-docker exec -it <container-name> ls -la /var/cache/ntfy/
-# Adjust NTFY_UID/NTFY_GID to match or chown the volume
-```
-
 ### iOS notifications not instant
 
 iOS requires the APNS relay through ntfy.sh:
@@ -259,13 +279,13 @@ iOS requires the APNS relay through ntfy.sh:
 
 ```bash
 # List users
-docker exec -it <container-name> ntfy user list
+docker exec <container-name> ntfy user list
 
 # Reset user password
-docker exec -it <container-name> ntfy user change-pass username
+docker exec -e NTFY_PASSWORD="new-password" <container-name> ntfy user change-pass username
 
 # Check access control
-docker exec -it <container-name> ntfy access
+docker exec <container-name> ntfy access
 ```
 
 ### Health check failing
@@ -274,10 +294,13 @@ If the container restarts due to health check failures:
 
 ```bash
 # Test health endpoint manually
-docker exec -it <container-name> wget -q http://localhost:80/v1/health -O -
+docker exec <container-name> wget -q http://localhost:80/v1/health -O -
 
 # Check if ntfy is listening
-docker exec -it <container-name> netstat -tlnp
+docker exec <container-name> netstat -tlnp
+
+# Check container logs
+docker logs <container-name>
 ```
 
 ## Resources
