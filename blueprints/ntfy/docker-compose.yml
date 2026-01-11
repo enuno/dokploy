@@ -7,7 +7,6 @@ services:
     image: binwiederhier/ntfy:v2.15.0
     restart: always
     command: serve
-    user: "${NTFY_UID:-1000}:${NTFY_GID:-1000}"
     init: true
     volumes:
       # Persistent storage for cache, attachments, and databases

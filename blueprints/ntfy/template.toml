@@ -19,14 +19,6 @@ host = "${domain}"
 DOMAIN = "${domain}"
 
 # =============================================================================
-# User/Group Configuration
-# Set to match your host user to avoid permission issues with volumes
-# Find your UID/GID with: id -u && id -g
-# =============================================================================
-NTFY_UID = "1000"
-NTFY_GID = "1000"
-
-# =============================================================================
 # Cache Configuration
 # How long messages are stored before deletion
 # =============================================================================
