@@ -1,0 +1,50 @@
+# dashdot-homarr - Server Dashboard for Homarr Integration
+# https://github.com/MauriceNino/dashdot
+#
+# A dashdot instance optimized for embedding in Homarr's System Health widget.
+# Deploy this in the same Dokploy project as your Homarr instance.
+#
+# After deployment, add the dashdot URL to Homarr:
+# 1. Edit your Homarr dashboard
+# 2. Add "System Health Monitoring" widget
+# 3. Create a Dash. integration with URL: https://${domain}
+# 4. Select the integration in the widget settings
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "dashdot"
+port = 3001
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration (Required)
+# =============================================================================
+DASHDOT_DOMAIN = "${domain}"
+
+# =============================================================================
+# Homarr Domain (Optional - for iframe security)
+# Set this to your Homarr domain to restrict iframe embedding
+# Leave empty to allow embedding from any HTTPS origin
+# =============================================================================
+# HOMARR_DOMAIN = "dashboard.example.com"
+
+# =============================================================================
+# Widget Configuration
+# Available widgets: os, cpu, storage, ram, network, gpu
+# =============================================================================
+DASHDOT_WIDGET_LIST = "os,cpu,storage,ram,network"
+
+# =============================================================================
+# Display Settings (optimized for Homarr widget)
+# =============================================================================
+DASHDOT_PAGE_TITLE = "Server Stats"
+DASHDOT_USE_IMPERIAL = "false"
+DASHDOT_ALWAYS_SHOW_PERCENTAGES = "true"
+
+# =============================================================================
+# Timezone Configuration
+# =============================================================================
+TZ = "UTC"

@@ -1,0 +1,72 @@
+services:
+  # =============================================================================
+  # dashdot - Server Dashboard for Homarr Integration
+  # https://github.com/MauriceNino/dashdot
+  # =============================================================================
+  # This template is optimized for use with Homarr's System Health widget.
+  # Deploy in the same Dokploy project as Homarr for easy integration.
+  # =============================================================================
+  dashdot:
+    image: mauricenino/dashdot:6.2.4
+    restart: always
+    privileged: true
+    volumes:
+      # Read-only mount of host filesystem for system metrics
+      - /:/mnt/host:ro
+      # Timezone configuration
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # =======================================================================
+      # Widget Configuration (optimized for Homarr widget display)
+      # =======================================================================
+      DASHDOT_WIDGET_LIST: ${DASHDOT_WIDGET_LIST:-os,cpu,storage,ram,network}
+      # =======================================================================
+      # Display Settings
+      # =======================================================================
+      DASHDOT_PAGE_TITLE: ${DASHDOT_PAGE_TITLE:-Server Stats}
+      DASHDOT_USE_IMPERIAL: ${DASHDOT_USE_IMPERIAL:-false}
+      DASHDOT_ALWAYS_SHOW_PERCENTAGES: ${DASHDOT_ALWAYS_SHOW_PERCENTAGES:-true}
+      DASHDOT_SHOW_DASH_VERSION: "none"
+      # =======================================================================
+      # Enable Homarr/iframe embedding
+      # =======================================================================
+      DASHDOT_ACCEPT_OOKLA_EULA: ${DASHDOT_ACCEPT_OOKLA_EULA:-false}
+      DASHDOT_DISABLE_INTEGRATIONS: "false"
+      # =======================================================================
+      # Server Configuration
+      # =======================================================================
+      DASHDOT_PORT: "3001"
+      # =======================================================================
+      # Timezone
+      # =======================================================================
+      TZ: ${TZ:-UTC}
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Router for dashdot dashboard
+      - "traefik.http.routers.dashdot-homarr.rule=Host(`${DASHDOT_DOMAIN:?Set your dashdot domain}`)"
+      - "traefik.http.routers.dashdot-homarr.entrypoints=websecure"
+      - "traefik.http.routers.dashdot-homarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashdot-homarr.middlewares=dashdot-homarr-headers@docker"
+      # Headers middleware - allow iframe embedding from Homarr
+      - "traefik.http.middlewares.dashdot-homarr-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.http.middlewares.dashdot-homarr-headers.headers.contentSecurityPolicy=frame-ancestors 'self' https://${HOMARR_DOMAIN:-*}"
+      - "traefik.http.middlewares.dashdot-homarr-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.dashdot-homarr-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.services.dashdot-homarr.loadbalancer.server.port=3001"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  dokploy-network:
+    external: true
