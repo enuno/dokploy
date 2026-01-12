@@ -1,0 +1,24 @@
+# Glance - Self-Hosted Feed Dashboard
+# https://github.com/glanceapp/glance
+#
+# A lightweight, customizable dashboard that aggregates RSS feeds,
+# weather, stocks, YouTube, Reddit, and more into a single page.
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "glance"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration (Required)
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Timezone Configuration
+# =============================================================================
+TZ = "UTC"

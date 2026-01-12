@@ -1,0 +1,59 @@
+services:
+  # =============================================================================
+  # Glance - Self-Hosted Feed Dashboard
+  # https://github.com/glanceapp/glance
+  # =============================================================================
+  glance:
+    image: glanceapp/glance:v0.8.4
+    restart: always
+    volumes:
+      # Configuration file (create glance.yml before deploying)
+      - glance-config:/app/config
+      # Timezone configuration
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # =======================================================================
+      # Timezone (fallback if host timezone not mounted)
+      # =======================================================================
+      TZ: ${TZ:-UTC}
+    networks:
+      - glance-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Main router for Glance dashboard
+      - "traefik.http.routers.glance.rule=Host(`${DOMAIN:?Set your domain}`)"
+      - "traefik.http.routers.glance.entrypoints=websecure"
+      - "traefik.http.routers.glance.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.glance.middlewares=glance-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.glance-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.glance-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.glance-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.glance-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.glance-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.glance.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  glance-config:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  glance-net:
+    driver: bridge
+  dokploy-network:
+    external: true
