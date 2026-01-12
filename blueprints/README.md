@@ -26,6 +26,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [cloudflared](/blueprints/cloudflared/) | Cloudflare Tunnel client for secure ingress without public IPs | 3 | Ready |
 | [core-lightning](/blueprints/core-lightning/) | Lightning Network implementation with integrated Bitcoin Core backend | 2 (lightningd, bitcoind) | Ready |
 | [dashy](/blueprints/dashy/) | Customizable personal dashboard for organizing homelab services | 1 (dashy) | Ready |
+| [dashdot](/blueprints/dashdot/) | Modern glassmorphism server dashboard for monitoring OS, CPU, RAM, storage, network, and GPU metrics | 1 (dashdot) | Ready |
 | [docker-registry](/blueprints/docker-registry/) | OCI Distribution implementation for private Docker image hosting | 4 | Ready |
 | [firecrawl](/blueprints/firecrawl/) | Web scraping and data extraction API that converts websites into LLM-friendly markdown and structured data | 6 (api, worker, playwright, postgres, redis, rabbitmq) | Ready |
 | [fmd-server](/blueprints/fmd-server/) | Find My Device server for Android tracking with embedded ObjectBox database and HTTPS encryption | 1 (fmd-server) | Ready |
