@@ -4,7 +4,7 @@ services:
   # https://github.com/MauriceNino/dashdot
   # =============================================================================
   dashdot:
-    image: mauricenino/dashdot:v6.2.4
+    image: mauricenino/dashdot:6.2.4
     restart: always
     privileged: true
     volumes:
