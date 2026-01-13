@@ -1,0 +1,95 @@
+# PowerDNS - Complete DNS Infrastructure
+# https://github.com/chrisss404/powerdns
+#
+# Full-featured DNS infrastructure with authoritative server, recursor,
+# load balancer (dnsdist), and web admin interface.
+
+[variables]
+domain = "${domain}"
+admin_db_password = "${password:32}"
+auth_db_password = "${password:32}"
+pdns_api_key = "${password:32}"
+secret_key = "${base64:64}"
+
+[[config.domains]]
+serviceName = "admin"
+port = 3031
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Admin Database (PowerDNS Admin Web UI)
+# =============================================================================
+ADMIN_DB_NAME = "pda"
+ADMIN_DB_USER = "pda"
+ADMIN_DB_PASSWORD = "${admin_db_password}"
+
+# =============================================================================
+# Authoritative Database (Zone Storage)
+# =============================================================================
+AUTH_DB_NAME = "pdns"
+AUTH_DB_USER = "pdns"
+AUTH_DB_PASSWORD = "${auth_db_password}"
+
+# =============================================================================
+# PowerDNS API Key
+# Used by admin UI to manage zones on the authoritative server
+# =============================================================================
+PDNS_API_KEY = "${pdns_api_key}"
+
+# =============================================================================
+# Flask Secret Key (for PowerDNS Admin sessions)
+# =============================================================================
+SECRET_KEY = "${secret_key}"
+
+# =============================================================================
+# DNS Ports
+# Default: 53 (standard DNS port - requires root or capabilities)
+# Change if port 53 is already in use on the host
+# =============================================================================
+DNS_PORT = "53"
+DOT_PORT = "853"
+
+# =============================================================================
+# Optional: Web Server Password (for API endpoints)
+# Leave empty to disable password protection on web APIs
+# =============================================================================
+WEBSERVER_PASSWORD = ""
+
+# =============================================================================
+# Optional: dnsdist API Key
+# For managing dnsdist via its REST API
+# =============================================================================
+DNSDIST_API_KEY = ""
+
+# =============================================================================
+# Optional: Recursor API Key
+# For managing recursor via its REST API
+# =============================================================================
+RECURSOR_API_KEY = ""
+
+# =============================================================================
+# Optional: DNSSEC
+# Set to "validate" to enable DNSSEC validation in recursor
+# =============================================================================
+ENABLE_DNSSEC = "off"
+
+# =============================================================================
+# Optional: DNS-over-TLS (DoT)
+# Set to "yes" to enable DoT on port 853
+# Note: Requires valid TLS certificate configuration
+# =============================================================================
+ENABLE_DOT = "no"
+
+# =============================================================================
+# Optional: Forward Zones
+# Configure specific zones to forward to the authoritative server
+# Format: "zone=ip:port, zone2=ip2:port2"
+# Example: "example.com=127.0.0.1:53, test.local=127.0.0.1:53"
+# =============================================================================
+FORWARD_ZONES = ""

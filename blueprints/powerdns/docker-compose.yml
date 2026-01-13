@@ -1,0 +1,259 @@
+services:
+  # =============================================================================
+  # PowerDNS Admin - Web UI for DNS Zone Management
+  # https://github.com/PowerDNS-Admin/PowerDNS-Admin
+  # =============================================================================
+  # Provides web interface for managing DNS zones, records, and users.
+  # Connects to the authoritative server via its API.
+  # =============================================================================
+  admin:
+    image: chrisss404/powerdns:latest-admin
+    restart: always
+    depends_on:
+      admin-db:
+        condition: service_healthy
+      authoritative:
+        condition: service_healthy
+    environment:
+      # =======================================================================
+      # Database Configuration
+      # =======================================================================
+      PDA_DB_HOST: admin-db
+      PDA_DB_PORT: "5432"
+      PDA_DB_NAME: ${ADMIN_DB_NAME:-pda}
+      PDA_DB_USER: ${ADMIN_DB_USER:-pda}
+      PDA_DB_PASSWORD: ${ADMIN_DB_PASSWORD:?Set admin database password}
+
+      # =======================================================================
+      # PowerDNS API Connection
+      # =======================================================================
+      PDNS_API_URL: http://authoritative:8081
+      PDNS_API_KEY: ${PDNS_API_KEY:?Set PowerDNS API key}
+
+      # =======================================================================
+      # Application Settings
+      # =======================================================================
+      SECRET_KEY: ${SECRET_KEY:?Set Flask secret key}
+    networks:
+      - powerdns-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.powerdns-admin.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.powerdns-admin.entrypoints=websecure"
+      - "traefik.http.routers.powerdns-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.powerdns-admin.middlewares=powerdns-headers@docker"
+      # Security headers
+      - "traefik.http.middlewares.powerdns-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.powerdns-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.powerdns-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.powerdns-headers.headers.browserXssFilter=true"
+      - "traefik.http.services.powerdns-admin.loadbalancer.server.port=3031"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3031/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # Admin Database - PostgreSQL for PowerDNS Admin
+  # =============================================================================
+  admin-db:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - admin-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${ADMIN_DB_NAME:-pda}
+      POSTGRES_USER: ${ADMIN_DB_USER:-pda}
+      POSTGRES_PASSWORD: ${ADMIN_DB_PASSWORD:?Set admin database password}
+    networks:
+      - powerdns-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ADMIN_DB_USER:-pda} -d ${ADMIN_DB_NAME:-pda}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # PowerDNS Authoritative Server
+  # https://doc.powerdns.com/authoritative/
+  # =============================================================================
+  # The authoritative DNS server that holds your DNS zones and records.
+  # =============================================================================
+  authoritative:
+    image: chrisss404/powerdns:4.9.3-authoritative
+    restart: always
+    depends_on:
+      authoritative-db:
+        condition: service_healthy
+    environment:
+      # =======================================================================
+      # Database Backend
+      # =======================================================================
+      PDNS_gpgsql_host: authoritative-db
+      PDNS_gpgsql_port: "5432"
+      PDNS_gpgsql_dbname: ${AUTH_DB_NAME:-pdns}
+      PDNS_gpgsql_user: ${AUTH_DB_USER:-pdns}
+      PDNS_gpgsql_password: ${AUTH_DB_PASSWORD:?Set authoritative database password}
+
+      # =======================================================================
+      # API Configuration
+      # =======================================================================
+      PDNS_api: "yes"
+      PDNS_api_key: ${PDNS_API_KEY:?Set PowerDNS API key}
+      PDNS_webserver: "yes"
+      PDNS_webserver_address: "0.0.0.0"
+      PDNS_webserver_port: "8081"
+      PDNS_webserver_allow_from: "0.0.0.0/0"
+      PDNS_webserver_password: ${WEBSERVER_PASSWORD:-}
+
+      # =======================================================================
+      # DNS Server Settings
+      # =======================================================================
+      PDNS_local_address: "0.0.0.0"
+      PDNS_local_port: "53"
+      PDNS_master: "yes"
+      PDNS_slave: "no"
+      PDNS_default_soa_content: "ns1.@ hostmaster.@ 0 10800 3600 604800 3600"
+    networks:
+      - powerdns-net
+    healthcheck:
+      test: ["CMD", "pdns_control", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # Authoritative Database - PostgreSQL for zone storage
+  # =============================================================================
+  authoritative-db:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - authoritative-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-pdns}
+      POSTGRES_USER: ${AUTH_DB_USER:-pdns}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?Set authoritative database password}
+    networks:
+      - powerdns-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-pdns} -d ${AUTH_DB_NAME:-pdns}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # dnsdist - DNS Load Balancer and Traffic Director
+  # https://dnsdist.org/
+  # =============================================================================
+  # Routes DNS queries to appropriate backends (authoritative/recursor).
+  # Exposes DNS on standard ports (53, 853 for DoT).
+  # =============================================================================
+  dnsdist:
+    image: chrisss404/powerdns:1.9.8-dnsdist
+    restart: always
+    depends_on:
+      authoritative:
+        condition: service_healthy
+      recursor:
+        condition: service_healthy
+    ports:
+      # DNS ports exposed to host
+      - "${DNS_PORT:-53}:53/tcp"
+      - "${DNS_PORT:-53}:53/udp"
+      - "${DOT_PORT:-853}:853/tcp"
+    environment:
+      # =======================================================================
+      # Backend Servers
+      # =======================================================================
+      DNSDIST_authoritative: authoritative
+      DNSDIST_recursor: recursor
+
+      # =======================================================================
+      # API Configuration
+      # =======================================================================
+      DNSDIST_api_key: ${DNSDIST_API_KEY:-}
+      DNSDIST_webserver_password: ${WEBSERVER_PASSWORD:-}
+
+      # =======================================================================
+      # DNS-over-TLS Configuration (optional)
+      # =======================================================================
+      DNSDIST_dot: ${ENABLE_DOT:-no}
+    networks:
+      - powerdns-net
+    healthcheck:
+      test: ["CMD", "dnsdist", "-e", "showServers()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # PowerDNS Recursor - Recursive DNS Resolver
+  # https://doc.powerdns.com/recursor/
+  # =============================================================================
+  # Resolves external DNS queries for domains not hosted locally.
+  # =============================================================================
+  recursor:
+    image: chrisss404/powerdns:5.1.3-recursor
+    restart: always
+    environment:
+      # =======================================================================
+      # Recursor Settings
+      # =======================================================================
+      PDNS_local_address: "0.0.0.0"
+      PDNS_local_port: "53"
+      PDNS_quiet: "no"
+
+      # =======================================================================
+      # API Configuration
+      # =======================================================================
+      PDNS_api_key: ${RECURSOR_API_KEY:-}
+      PDNS_webserver: "yes"
+      PDNS_webserver_address: "0.0.0.0"
+      PDNS_webserver_port: "8082"
+      PDNS_webserver_allow_from: "0.0.0.0/0"
+      PDNS_webserver_password: ${WEBSERVER_PASSWORD:-}
+
+      # =======================================================================
+      # DNSSEC Settings
+      # =======================================================================
+      PDNS_dnssec: ${ENABLE_DNSSEC:-off}
+
+      # =======================================================================
+      # Forward Zones (optional - forward to authoritative)
+      # =======================================================================
+      PDNS_forward_zones: ${FORWARD_ZONES:-}
+    networks:
+      - powerdns-net
+    healthcheck:
+      test: ["CMD", "rec_control", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  admin-db-data:
+    driver: local
+  authoritative-db-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  powerdns-net:
+    driver: bridge
+  dokploy-network:
+    external: true
