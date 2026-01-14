@@ -1,0 +1,163 @@
+services:
+  # =============================================================================
+  # Lightning Stream - LMDB Replication for PowerDNS
+  # https://github.com/PowerDNS/lightningstream
+  # =============================================================================
+  # Near real-time synchronization of PowerDNS LMDB databases across instances
+  # using S3-compatible object storage as intermediary.
+  # =============================================================================
+
+  # =============================================================================
+  # PowerDNS Authoritative Server
+  # =============================================================================
+  authoritative:
+    image: powerdns/pdns-auth-49:4.9.3
+    restart: always
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - lmdb-data:/var/lib/powerdns
+    environment:
+      # =======================================================================
+      # PowerDNS Configuration
+      # =======================================================================
+      PDNS_launch: lmdb
+      PDNS_lmdb_filename: /var/lib/powerdns/pdns.lmdb
+      PDNS_lmdb_sync_mode: nometasync
+      # API settings (required for zone management)
+      PDNS_api: "yes"
+      PDNS_api_key: ${PDNS_API_KEY:?Set PowerDNS API key}
+      PDNS_webserver: "yes"
+      PDNS_webserver_address: "0.0.0.0"
+      PDNS_webserver_port: "8081"
+      PDNS_webserver_allow_from: "0.0.0.0/0"
+      # Server settings
+      PDNS_local_address: "0.0.0.0"
+      PDNS_local_port: "53"
+      PDNS_default_soa_content: "ns1.${DOMAIN}. hostmaster.${DOMAIN}. 0 10800 3600 604800 3600"
+    ports:
+      - "${DNS_PORT:-53}:53/tcp"
+      - "${DNS_PORT:-53}:53/udp"
+    networks:
+      - lightningstream-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # API endpoint
+      - "traefik.http.routers.pdns-api.rule=Host(`api.${DOMAIN}`)"
+      - "traefik.http.routers.pdns-api.entrypoints=websecure"
+      - "traefik.http.routers.pdns-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pdns-api.middlewares=pdns-api-headers@docker"
+      - "traefik.http.middlewares.pdns-api-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.pdns-api-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.services.pdns-api.loadbalancer.server.port=8081"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "pdns_control", "rping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # Lightning Stream Syncer
+  # =============================================================================
+  syncer:
+    image: powerdns/lightningstream:0.5.1
+    restart: always
+    depends_on:
+      minio:
+        condition: service_healthy
+      authoritative:
+        condition: service_healthy
+    volumes:
+      - lmdb-data:/var/lib/powerdns
+      - ./lightningstream.yaml:/etc/lightningstream/config.yaml:ro
+    environment:
+      # =======================================================================
+      # Instance Configuration
+      # =======================================================================
+      INSTANCE_ID: ${INSTANCE_ID:-instance-1}
+      # =======================================================================
+      # S3 Configuration (MinIO by default)
+      # =======================================================================
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_BUCKET: ${S3_BUCKET:-lightningstream}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_REGION: ${S3_REGION:-us-east-1}
+    command: ["sync", "--config", "/etc/lightningstream/config.yaml"]
+    networks:
+      - lightningstream-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Syncer status endpoint
+      - "traefik.http.routers.syncer.rule=Host(`sync.${DOMAIN}`)"
+      - "traefik.http.routers.syncer.entrypoints=websecure"
+      - "traefik.http.routers.syncer.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.syncer-headers.headers.stsSeconds=31536000"
+      - "traefik.http.services.syncer.loadbalancer.server.port=8500"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8500/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # MinIO - S3-Compatible Object Storage
+  # =============================================================================
+  # Default S3 backend. Can be replaced with Cloudflare R2 (see README)
+  # =============================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: always
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    networks:
+      - lightningstream-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # MinIO Console
+      - "traefik.http.routers.minio.rule=Host(`s3.${DOMAIN}`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls.certresolver=letsencrypt"
+      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+      # MinIO API
+      - "traefik.http.routers.minio-api.rule=Host(`s3-api.${DOMAIN}`)"
+      - "traefik.http.routers.minio-api.entrypoints=websecure"
+      - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  lmdb-data:
+    driver: local
+  minio-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  lightningstream-net:
+    driver: bridge
+  dokploy-network:
+    external: true

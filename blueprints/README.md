@@ -47,6 +47,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
 | [langflow](/blueprints/langflow/) | Visual AI workflow builder for creating LLM-powered applications with PostgreSQL backend | 2 (langflow, postgres) | Ready |
+| [lightningstream](/blueprints/lightningstream/) | Near real-time LMDB replication for PowerDNS using S3-compatible storage (MinIO/R2) | 3 (authoritative, syncer, minio) | Ready |
 | [lobe-chat](/blueprints/lobe-chat/) | Modern AI chat platform with multi-provider support, knowledge base, and pgvector storage | 2 (lobe-chat, postgres) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay with PostgreSQL backend and Redis pub/sub | 4 (websocket-handler, event-handler, postgres, redis) | Ready |
