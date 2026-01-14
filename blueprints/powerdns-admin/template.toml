@@ -1,0 +1,71 @@
+# PowerDNS-Admin - Web Interface for PowerDNS
+# https://github.com/PowerDNS-Admin/PowerDNS-Admin
+#
+# Feature-rich web interface for managing PowerDNS zones and records.
+# Connects to an existing PowerDNS Authoritative server via API.
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+secret_key = "${base64:64}"
+
+[[config.domains]]
+serviceName = "powerdns-admin"
+port = 80
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Database Configuration
+# =============================================================================
+POSTGRES_DB = "pda"
+POSTGRES_USER = "pda"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# =============================================================================
+# Flask Application Security
+# =============================================================================
+SECRET_KEY = "${secret_key}"
+
+# =============================================================================
+# Logging
+# Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# =============================================================================
+LOG_LEVEL = "WARNING"
+
+# =============================================================================
+# PowerDNS API Connection (configured in web UI after first login)
+# =============================================================================
+# After deploying, configure your PowerDNS server connection in:
+# Settings → PDNS → PDNS API URL and PDNS API Key
+#
+# Example API URL: http://your-powerdns-server:8081
+# The API key is configured in your PowerDNS authoritative server config
+# =============================================================================
+
+# =============================================================================
+# Optional: LDAP Authentication
+# Enable LDAP for enterprise single sign-on
+# =============================================================================
+LDAP_ENABLED = "False"
+LDAP_URI = ""
+LDAP_BASE_DN = ""
+LDAP_BIND_USER_DN = ""
+LDAP_BIND_USER_PASSWORD = ""
+
+# =============================================================================
+# Optional: SAML Authentication
+# Enable SAML 2.0 for SSO with identity providers
+# =============================================================================
+SAML_ENABLED = "False"
+
+# =============================================================================
+# Optional: OAuth Authentication
+# Enable OAuth for GitHub, Google, Azure AD, etc.
+# =============================================================================
+OAUTH_ENABLED = "False"

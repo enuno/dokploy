@@ -63,6 +63,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [someguy](/blueprints/someguy/) | HTTP Delegated Routing V1 server for IPFS with Amino DHT proxy | 1 (someguy) | Ready |
 | [pihole](/blueprints/pihole/) | Network-wide ad blocking with DNS-over-HTTPS, Cloudflared upstream, and Tailscale VPN | 4 (cloudflared, tailscale, pihole, dnscrypt-proxy) | Ready |
 | [powerdns](/blueprints/powerdns/) | Complete DNS infrastructure with authoritative server, recursor, load balancer (dnsdist), and web admin | 6 (admin, admin-db, authoritative, authoritative-db, dnsdist, recursor) | Ready |
+| [powerdns-admin](/blueprints/powerdns-admin/) | Web interface for PowerDNS with zone management, LDAP/SAML/OAuth auth, and PostgreSQL backend | 2 (powerdns-admin, postgres) | Ready |
 | [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |

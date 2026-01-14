@@ -1,0 +1,124 @@
+services:
+  # =============================================================================
+  # PowerDNS-Admin - Web Interface for PowerDNS
+  # https://github.com/PowerDNS-Admin/PowerDNS-Admin
+  # =============================================================================
+  # A feature-rich web interface for managing PowerDNS zones and records.
+  # Connects to an external PowerDNS Authoritative server via its API.
+  # =============================================================================
+  powerdns-admin:
+    image: powerdnsadmin/pda-legacy:v0.4.2
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # =======================================================================
+      # Flask Application Security
+      # =======================================================================
+      SECRET_KEY: ${SECRET_KEY:?Set Flask secret key}
+
+      # =======================================================================
+      # Database Configuration (PostgreSQL)
+      # =======================================================================
+      SQLALCHEMY_DATABASE_URI: postgresql://${POSTGRES_USER:-pda}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pda}
+
+      # =======================================================================
+      # PowerDNS API Connection
+      # Connect to your existing PowerDNS Authoritative server
+      # =======================================================================
+      # Note: These are configured in the web UI after first login
+      # PDNS_API_URL: ${PDNS_API_URL:-}
+      # PDNS_API_KEY: ${PDNS_API_KEY:-}
+
+      # =======================================================================
+      # Application Settings
+      # =======================================================================
+      BIND_ADDRESS: "0.0.0.0"
+      PORT: "80"
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
+
+      # =======================================================================
+      # Optional: LDAP Authentication
+      # =======================================================================
+      LDAP_ENABLED: ${LDAP_ENABLED:-False}
+      LDAP_URI: ${LDAP_URI:-}
+      LDAP_BASE_DN: ${LDAP_BASE_DN:-}
+      LDAP_BIND_USER_DN: ${LDAP_BIND_USER_DN:-}
+      LDAP_BIND_USER_PASSWORD: ${LDAP_BIND_USER_PASSWORD:-}
+
+      # =======================================================================
+      # Optional: SAML Authentication
+      # =======================================================================
+      SAML_ENABLED: ${SAML_ENABLED:-False}
+
+      # =======================================================================
+      # Optional: OAuth Authentication
+      # =======================================================================
+      OAUTH_ENABLED: ${OAUTH_ENABLED:-False}
+    volumes:
+      - pda-data:/data
+    networks:
+      - powerdns-admin-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.powerdns-admin.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.powerdns-admin.entrypoints=websecure"
+      - "traefik.http.routers.powerdns-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.powerdns-admin.middlewares=powerdns-admin-headers@docker"
+      # Security headers
+      - "traefik.http.middlewares.powerdns-admin-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.powerdns-admin-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.powerdns-admin-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.powerdns-admin-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.powerdns-admin-headers.headers.frameDeny=true"
+      - "traefik.http.services.powerdns-admin.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # PostgreSQL - Database for PowerDNS-Admin
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pda}
+      POSTGRES_USER: ${POSTGRES_USER:-pda}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - powerdns-admin-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pda} -d ${POSTGRES_DB:-pda}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  pda-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  powerdns-admin-net:
+    driver: bridge
+  dokploy-network:
+    external: true
