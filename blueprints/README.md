@@ -69,6 +69,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [pda-next](/blueprints/pda-next/) | Next-generation PowerDNS Admin with React/FastAPI, OAuth, WebAuthn, and API-first architecture (beta) | 5 (web, api, worker, mysql, redis) | Beta |
 | [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
+| [scrt-link](/blueprints/scrt-link/) | End-to-end encrypted ephemeral secret sharing with self-destructing links and Cloudflare R2 storage | 2 (scrt-link, postgres) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
 | [tor-relay](/blueprints/tor-relay/) | Tor network relay (middle/bridge/exit) supporting anonymous internet routing infrastructure | 1 (tor-relay) | Ready |
 | [uptime-kuma](/blueprints/uptime-kuma/) | Self-hosted monitoring tool for tracking service availability with 90+ notification providers | 1 (uptime-kuma) | Ready |
