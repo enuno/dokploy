@@ -1,0 +1,174 @@
+services:
+  # =============================================================================
+  # PDA-Next - Next Generation PowerDNS Admin
+  # https://github.com/PowerDNS-Admin/pda-next
+  # =============================================================================
+  # Advanced management and monitoring tool for PowerDNS software suite.
+  # WARNING: This project is not production-ready (per upstream).
+  # =============================================================================
+
+  # =============================================================================
+  # API Service - FastAPI Backend
+  # =============================================================================
+  api:
+    build:
+      context: https://github.com/PowerDNS-Admin/pda-next.git#main
+      dockerfile: deploy/docker/api/Dockerfile
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PYTHONPATH: /srv/app/src
+      PDA_DEBUG: ${PDA_DEBUG:-0}
+      PDA_ENV: ${PDA_ENV:-prod}
+      PDA_HOSTNAME: ${DOMAIN}
+      PDA_MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PDA_MYSQL_DATABASE: ${MYSQL_DATABASE:-pda}
+      # Redis connection
+      PDA_REDIS_HOST: redis
+      PDA_REDIS_PORT: "6379"
+      # MySQL connection
+      PDA_MYSQL_HOST: mysql
+      PDA_MYSQL_PORT: "3306"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8081
+      --workers 4
+    networks:
+      - pda-next-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # Worker Service - Celery Background Tasks
+  # =============================================================================
+  worker:
+    build:
+      context: https://github.com/PowerDNS-Admin/pda-next.git#main
+      dockerfile: deploy/docker/api/Dockerfile
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PYTHONPATH: /srv/app/src
+      PDA_DEBUG: ${PDA_DEBUG:-0}
+      PDA_ENV: ${PDA_ENV:-prod}
+      PDA_HOSTNAME: ${DOMAIN}
+      PDA_MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PDA_MYSQL_DATABASE: ${MYSQL_DATABASE:-pda}
+      PDA_REDIS_HOST: redis
+      PDA_REDIS_PORT: "6379"
+      PDA_MYSQL_HOST: mysql
+      PDA_MYSQL_PORT: "3306"
+    command: >
+      celery -A app.worker worker
+      --beat
+      --loglevel=info
+    stop_grace_period: 900s
+    networks:
+      - pda-next-net
+
+  # =============================================================================
+  # Web Service - React/Vite Frontend
+  # =============================================================================
+  web:
+    build:
+      context: https://github.com/PowerDNS-Admin/pda-next.git#main
+      dockerfile: deploy/docker/web/Dockerfile
+    restart: always
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      PDA_ENV: ${PDA_ENV:-prod}
+      PDA_HOSTNAME: ${DOMAIN}
+      VITE_API_URL: https://${DOMAIN}/api
+    networks:
+      - pda-next-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pda-next.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.pda-next.entrypoints=websecure"
+      - "traefik.http.routers.pda-next.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pda-next.middlewares=pda-next-headers@docker"
+      # Security headers
+      - "traefik.http.middlewares.pda-next-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.pda-next-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.pda-next-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.pda-next-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.pda-next-headers.headers.frameDeny=true"
+      - "traefik.http.services.pda-next.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # =============================================================================
+  # MySQL - Database
+  # =============================================================================
+  mysql:
+    image: mysql:8.4
+    restart: always
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MySQL root password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pda}
+    networks:
+      - pda-next-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # Redis - Cache and Message Broker
+  # =============================================================================
+  redis:
+    image: redis:8-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - pda-next-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  pda-next-net:
+    driver: bridge
+  dokploy-network:
+    external: true

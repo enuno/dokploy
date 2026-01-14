@@ -1,0 +1,44 @@
+# PDA-Next - Next Generation PowerDNS Admin
+# https://github.com/PowerDNS-Admin/pda-next
+#
+# Advanced management and monitoring tool for PowerDNS software suite.
+# WARNING: This project is not production-ready (per upstream).
+# License: CC BY-NC 4.0 (Non-Commercial)
+
+[variables]
+domain = "${domain}"
+mysql_root_password = "${password:32}"
+
+[[config.domains]]
+serviceName = "web"
+port = 8000
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Database Configuration (MySQL 8.4)
+# =============================================================================
+MYSQL_ROOT_PASSWORD = "${mysql_root_password}"
+MYSQL_DATABASE = "pda"
+
+# =============================================================================
+# Application Settings
+# =============================================================================
+# Debug mode: 0 = disabled (production), 1 = enabled (development)
+PDA_DEBUG = "0"
+
+# Environment: prod, local
+PDA_ENV = "prod"
+
+# =============================================================================
+# PowerDNS API Connection (configured in web UI after first login)
+# =============================================================================
+# After deploying, configure your PowerDNS server connection in the UI:
+# - PDNS API URL: http://your-powerdns-server:8081
+# - PDNS API Key: Your configured API key from pdns.conf
+# =============================================================================
