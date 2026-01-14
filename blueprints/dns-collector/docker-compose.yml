@@ -1,0 +1,64 @@
+services:
+  # =============================================================================
+  # DNS-collector - DNS Traffic Analysis and Monitoring
+  # https://github.com/dmachard/DNS-collector
+  # =============================================================================
+  # Lightweight tool for capturing DNS queries and responses from DNS servers,
+  # processing them intelligently, and sending clean data to monitoring systems.
+  # =============================================================================
+
+  # =============================================================================
+  # DNS-collector Main Service
+  # =============================================================================
+  dnscollector:
+    image: dmachard/go-dnscollector:v2.0.0
+    restart: always
+    volumes:
+      - dnscollector-data:/var/dnscollector
+      - ./config.yml:/etc/dnscollector/config.yml:ro
+    environment:
+      # =======================================================================
+      # Server Identity
+      # =======================================================================
+      DNSCOLLECTOR_SERVER_IDENTITY: ${SERVER_IDENTITY:-dns-collector-1}
+    ports:
+      # DNStap listener (for receiving DNS data from DNS servers)
+      - "${DNSTAP_PORT:-6000}:6000/tcp"
+    networks:
+      - dnscollector-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Prometheus metrics endpoint
+      - "traefik.http.routers.dnscollector-metrics.rule=Host(`metrics.${DOMAIN}`)"
+      - "traefik.http.routers.dnscollector-metrics.entrypoints=websecure"
+      - "traefik.http.routers.dnscollector-metrics.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dnscollector-metrics.loadbalancer.server.port=8080"
+      # REST API endpoint
+      - "traefik.http.routers.dnscollector-api.rule=Host(`api.${DOMAIN}`)"
+      - "traefik.http.routers.dnscollector-api.entrypoints=websecure"
+      - "traefik.http.routers.dnscollector-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dnscollector-api.loadbalancer.server.port=9165"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  dnscollector-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  dnscollector-net:
+    driver: bridge
+  dokploy-network:
+    external: true

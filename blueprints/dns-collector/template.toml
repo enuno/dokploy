@@ -1,0 +1,74 @@
+# DNS-collector - DNS Traffic Analysis and Monitoring
+# https://github.com/dmachard/DNS-collector
+#
+# Lightweight tool for capturing DNS queries and responses from DNS servers,
+# processing them intelligently, and sending clean data to monitoring systems.
+# Supports DNStap protocol, Prometheus metrics, and REST API telemetry.
+
+[variables]
+domain = "${domain}"
+
+# Prometheus metrics subdomain
+[[config.domains]]
+serviceName = "dnscollector"
+port = 8080
+host = "metrics.${domain}"
+
+# REST API telemetry subdomain
+[[config.domains]]
+serviceName = "dnscollector"
+port = 9165
+host = "api.${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Server Identity
+# =============================================================================
+# Unique identifier for this DNS-collector instance
+# Useful when running multiple collectors
+SERVER_IDENTITY = "dns-collector-1"
+
+# =============================================================================
+# DNStap Listener Port
+# =============================================================================
+# Port for receiving DNStap data from DNS servers
+# Configure your DNS server to send DNStap to this port
+# Default: 6000
+DNSTAP_PORT = "6000"
+
+# =============================================================================
+# DNS Server Integration
+# =============================================================================
+# Configure your DNS servers to send DNStap data to this collector:
+#
+# PowerDNS Authoritative:
+#   dnstap-log=yes
+#   dnstap-socket-path=dnstap
+#   dnstap-frame-stream-server=<collector-ip>:6000
+#
+# PowerDNS Recursor:
+#   dnstap=yes
+#   dnstap-log-client-queries=yes
+#   dnstap-log-client-responses=yes
+#   dnstap-socket-path=dnstap
+#   dnstap-frame-stream-server=<collector-ip>:6000
+#
+# BIND 9:
+#   dnstap { (any); };
+#   dnstap-output tcp <collector-ip> port 6000;
+#
+# Unbound:
+#   dnstap:
+#     dnstap-enable: yes
+#     dnstap-socket-path: ""
+#     dnstap-ip: "<collector-ip>@6000"
+#     dnstap-send-identity: yes
+#     dnstap-send-version: yes
+#     dnstap-log-client-query-messages: yes
+#     dnstap-log-client-response-messages: yes
+# =============================================================================

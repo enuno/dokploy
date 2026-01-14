@@ -1,0 +1,117 @@
+# DNS-collector Configuration
+# https://github.com/dmachard/DNS-collector
+#
+# This configuration sets up a complete DNS monitoring pipeline:
+# - DNStap listener for receiving DNS data from DNS servers
+# - JSON file logging for persistent storage
+# - Prometheus metrics export for monitoring
+# - REST API for real-time telemetry access
+
+global:
+  # Server identification
+  server-identity: dns-collector
+
+  # Trace/debug settings
+  trace:
+    verbose: false
+    log-malformed: true
+    filename: ""
+
+  # Worker configuration
+  worker:
+    interval-monitor: 10
+    buffer-size: 4096
+
+  # Telemetry endpoint (REST API)
+  telemetry:
+    enabled: true
+    listen-ip: 0.0.0.0
+    listen-port: 9165
+
+# =============================================================================
+# Processing Pipelines
+# =============================================================================
+pipelines:
+  # ===========================================================================
+  # DNStap Collector Pipeline
+  # Receives DNS data from DNS servers via DNStap protocol
+  # ===========================================================================
+  - name: dnstap-collector
+    dnstap:
+      listen-ip: 0.0.0.0
+      listen-port: 6000
+      # Optional: Require TLS for secure connections
+      # tls-support: true
+      # cert-file: /path/to/cert.pem
+      # key-file: /path/to/key.pem
+    transforms:
+      normalize:
+        qname-lowercase: true
+        qname-replace-nonprintable: true
+      # GeoIP enrichment (requires MaxMind database)
+      # geoip:
+      #   mmdb-country-file: /var/dnscollector/GeoLite2-Country.mmdb
+      #   mmdb-city-file: /var/dnscollector/GeoLite2-City.mmdb
+      #   mmdb-asn-file: /var/dnscollector/GeoLite2-ASN.mmdb
+      filtering:
+        # Drop internal/health check queries
+        drop-fqdn-file: ""
+        drop-domain-file: ""
+        # Keep only specific query types (empty = all)
+        keep-query-type: []
+    routing-policy:
+      forward: [json-logger, prometheus-exporter]
+      dropped: []
+
+  # ===========================================================================
+  # JSON File Logger
+  # Writes DNS records to rotating log files
+  # ===========================================================================
+  - name: json-logger
+    logfile:
+      file-path: /var/dnscollector/dnstap.log
+      mode: flat-json
+      # File rotation settings
+      max-size: 100
+      max-files: 10
+      # Compression
+      compress: true
+      compress-interval: 60
+
+  # ===========================================================================
+  # Prometheus Metrics Exporter
+  # Exposes DNS metrics for Prometheus/Grafana monitoring
+  # ===========================================================================
+  - name: prometheus-exporter
+    prometheus:
+      listen-ip: 0.0.0.0
+      listen-port: 8080
+      # Metric labels
+      top-n: 10
+      # Histogram buckets for latency
+      histogram-metrics-enabled: true
+
+# =============================================================================
+# Optional Pipelines (uncomment to enable)
+# =============================================================================
+
+# Elasticsearch output
+# - name: elasticsearch-logger
+#   elasticsearch:
+#     server: https://elasticsearch:9200
+#     index: dnscollector
+#     bulk-size: 100
+
+# Loki output (for Grafana Loki)
+# - name: loki-logger
+#   loki:
+#     server-url: http://loki:3100/loki/api/v1/push
+#     job-name: dnscollector
+#     mode: flat-json
+
+# Syslog output
+# - name: syslog-logger
+#   syslog:
+#     transport: tcp
+#     remote-address: syslog-server:514
+#     mode: flat-json
