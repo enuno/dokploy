@@ -1,0 +1,81 @@
+# MCP Registry - Model Context Protocol Server Registry
+# https://github.com/modelcontextprotocol/registry
+#
+# A community-driven registry service for MCP servers.
+# Functions as an "app store" for MCP servers, providing clients with curated listings.
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+jwt_private_key = "${base64:32}"
+
+# Main registry domain
+[[config.domains]]
+serviceName = "mcp-registry"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Registry Version
+# Options: latest, main, v1.0.0, etc.
+# See: https://github.com/modelcontextprotocol/registry/pkgs/container/registry
+# =============================================================================
+MCP_REGISTRY_VERSION = "latest"
+
+# =============================================================================
+# Database Configuration
+# =============================================================================
+POSTGRES_DB = "mcp-registry"
+POSTGRES_USER = "mcpregistry"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# =============================================================================
+# JWT Configuration
+# 32-byte hex-encoded Ed25519 seed for JWT signing
+# To generate manually: openssl rand -hex 32
+# =============================================================================
+JWT_PRIVATE_KEY = "${jwt_private_key}"
+
+# =============================================================================
+# Seed Data Configuration
+# Default: Seeds from production MCP registry API
+# Options:
+#   - https://registry.modelcontextprotocol.io/v0/servers (production, default)
+#   - /data/seed.json (local file for offline use)
+# =============================================================================
+SEED_FROM = "https://registry.modelcontextprotocol.io/v0/servers"
+ENABLE_REGISTRY_VALIDATION = "true"
+
+# =============================================================================
+# Anonymous Authentication
+# Enable to allow public token generation for anonymous namespace
+# WARNING: Enabling allows anyone to publish servers under anonymous namespace
+# =============================================================================
+ENABLE_ANONYMOUS_AUTH = "false"
+
+# =============================================================================
+# GitHub OAuth (Optional but Recommended)
+# Required for namespace ownership validation and server publishing
+# Create OAuth App: https://github.com/settings/developers
+# Callback URL: https://${domain}/auth/github/callback
+# =============================================================================
+GITHUB_CLIENT_ID = ""
+GITHUB_CLIENT_SECRET = ""
+
+# =============================================================================
+# Google OIDC (Optional)
+# For enterprise/organizational access control
+# Configure at: https://console.cloud.google.com/apis/credentials
+# =============================================================================
+OIDC_ENABLED = "false"
+OIDC_ISSUER = "https://accounts.google.com"
+OIDC_CLIENT_ID = ""
+OIDC_EXTRA_CLAIMS = ""
+OIDC_EDIT_PERMISSIONS = "*"
+OIDC_PUBLISH_PERMISSIONS = "*"

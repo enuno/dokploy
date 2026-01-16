@@ -1,0 +1,124 @@
+services:
+  # =============================================================================
+  # MCP Registry - Model Context Protocol Server Registry
+  # https://github.com/modelcontextprotocol/registry
+  # =============================================================================
+  # A community-driven registry service for Model Context Protocol (MCP) servers.
+  # Functions as an "app store" for MCP servers that provides clients with curated
+  # listings of available servers.
+  # =============================================================================
+
+  # =============================================================================
+  # MCP Registry Application
+  # =============================================================================
+  mcp-registry:
+    image: ghcr.io/modelcontextprotocol/registry:${MCP_REGISTRY_VERSION:-latest}
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # =======================================================================
+      # Server Configuration
+      # =======================================================================
+      MCP_REGISTRY_SERVER_ADDRESS: ":8080"
+      MCP_REGISTRY_VERSION: ${MCP_REGISTRY_VERSION:-latest}
+
+      # =======================================================================
+      # Database Configuration
+      # =======================================================================
+      MCP_REGISTRY_DATABASE_URL: postgresql://${POSTGRES_USER:-mcpregistry}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mcp-registry}
+
+      # =======================================================================
+      # Seed Data Configuration
+      # Default: seeds from production MCP registry API
+      # Set MCP_REGISTRY_SEED_FROM to local file for offline use
+      # =======================================================================
+      MCP_REGISTRY_SEED_FROM: ${SEED_FROM:-https://registry.modelcontextprotocol.io/v0/servers}
+      MCP_REGISTRY_ENABLE_REGISTRY_VALIDATION: ${ENABLE_REGISTRY_VALIDATION:-true}
+
+      # =======================================================================
+      # JWT Signing Key
+      # 32-byte hex-encoded Ed25519 seed for JWT signing
+      # Generate with: openssl rand -hex 32
+      # =======================================================================
+      MCP_REGISTRY_JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT private key (32-byte hex)}
+
+      # =======================================================================
+      # Anonymous Authentication
+      # Enable to allow public token generation for anonymous namespace
+      # =======================================================================
+      MCP_REGISTRY_ENABLE_ANONYMOUS_AUTH: ${ENABLE_ANONYMOUS_AUTH:-false}
+
+      # =======================================================================
+      # GitHub OAuth (Optional)
+      # Required for namespace ownership validation and server publishing
+      # Create OAuth App: https://github.com/settings/developers
+      # Callback URL: https://${DOMAIN}/auth/github/callback
+      # =======================================================================
+      MCP_REGISTRY_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      MCP_REGISTRY_GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+
+      # =======================================================================
+      # Google OIDC (Optional)
+      # For enterprise/organizational access control
+      # =======================================================================
+      MCP_REGISTRY_OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      MCP_REGISTRY_OIDC_ISSUER: ${OIDC_ISSUER:-https://accounts.google.com}
+      MCP_REGISTRY_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      MCP_REGISTRY_OIDC_EXTRA_CLAIMS: ${OIDC_EXTRA_CLAIMS:-}
+      MCP_REGISTRY_OIDC_EDIT_PERMISSIONS: ${OIDC_EDIT_PERMISSIONS:-*}
+      MCP_REGISTRY_OIDC_PUBLISH_PERMISSIONS: ${OIDC_PUBLISH_PERMISSIONS:-*}
+    networks:
+      - mcp-registry-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-registry.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.mcp-registry.entrypoints=websecure"
+      - "traefik.http.routers.mcp-registry.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-registry.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # PostgreSQL Database
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mcp-registry}
+      POSTGRES_USER: ${POSTGRES_USER:-mcpregistry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - mcp-registry-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mcpregistry} -d ${POSTGRES_DB:-mcp-registry}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  mcp-registry-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -46,6 +46,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [lnd-rtl](/blueprints/lnd-rtl/) | Lightning Network Daemon with Ride The Lightning web UI and Bitcoin Core backend | 3 (rtl, lnd, bitcoind) | Ready |
 | [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
 | [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
+| [mcp-registry](/blueprints/mcp-registry/) | Community-driven MCP server registry with GitHub OAuth namespace ownership and server publishing | 2 (mcp-registry, postgres) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
 | [langflow](/blueprints/langflow/) | Visual AI workflow builder for creating LLM-powered applications with PostgreSQL backend | 2 (langflow, postgres) | Ready |
 | [lightningstream](/blueprints/lightningstream/) | Near real-time LMDB replication for PowerDNS using S3-compatible storage (MinIO/R2) | 3 (authoritative, syncer, minio) | Ready |
