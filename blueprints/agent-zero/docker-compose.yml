@@ -1,0 +1,84 @@
+services:
+  # =============================================================================
+  # Agent Zero - Dynamic Agentic AI Framework
+  # https://github.com/agent0ai/agent-zero
+  # =============================================================================
+  # A general-purpose AI agent framework with persistent memory, multi-agent
+  # cooperation, code execution, browser automation, and document processing.
+  # Runs in an isolated Docker container with full Linux system access.
+  # =============================================================================
+
+  # =============================================================================
+  # Agent Zero Application
+  # =============================================================================
+  agent-zero:
+    image: agent0ai/agent-zero:${AGENT_ZERO_VERSION:-latest}
+    restart: always
+    volumes:
+      # =======================================================================
+      # Persistent Data Volumes
+      # Mount specific subdirectories to preserve data across upgrades
+      # Do NOT mount the entire /a0 directory - only specific paths
+      # =======================================================================
+      - agent-zero-memory:/a0/memory
+      - agent-zero-knowledge:/a0/knowledge
+      - agent-zero-logs:/a0/logs
+      - agent-zero-tmp:/a0/tmp
+    environment:
+      # =======================================================================
+      # Web UI Authentication
+      # Protects the web interface with basic auth
+      # =======================================================================
+      A0_WEB_UI_PASSWORD: ${WEB_UI_PASSWORD:-}
+
+      # =======================================================================
+      # LLM Provider Configuration
+      # Configure via Web UI Settings after deployment
+      # Supported providers: OpenRouter, OpenAI, Azure, Ollama, Venice.ai
+      # =======================================================================
+      # Note: API keys are configured through the Web UI for security
+      # The agent never sees credentials stored in the "Secrets" section
+
+      # =======================================================================
+      # Ollama Configuration (Optional - for local models)
+      # If using Ollama on host, set to: http://host.docker.internal:11434
+      # =======================================================================
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+    networks:
+      - agent-zero-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.agent-zero.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.agent-zero.entrypoints=websecure"
+      - "traefik.http.routers.agent-zero.tls.certresolver=letsencrypt"
+      - "traefik.http.services.agent-zero.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  agent-zero-memory:
+    driver: local
+  agent-zero-knowledge:
+    driver: local
+  agent-zero-logs:
+    driver: local
+  agent-zero-tmp:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  agent-zero-net:
+    driver: bridge
+  dokploy-network:
+    external: true

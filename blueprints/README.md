@@ -10,6 +10,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 
 | Template | Description | Services | Status |
 |----------|-------------|----------|--------|
+| [agent-zero](/blueprints/agent-zero/) | Autonomous AI agent framework with code execution, browser automation, and persistent memory | 1 (agent-zero) | Ready |
 | [algo-relay](/blueprints/algo-relay/) | Nostr's first algorithmic relay with scoring and recommendations | 6 | Ready |
 | [anon-relay](/blueprints/anon-relay/) | ANyONe Protocol relay with hidden service support | 1 (anon) | Ready |
 | [ar-io-node](/blueprints/ar-io-node/) | Production-ready Arweave gateway with Redis caching, network observation, and Cloudflare R2 archival storage | 4 (envoy, core, redis, observer) | Ready |

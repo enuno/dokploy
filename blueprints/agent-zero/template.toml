@@ -1,0 +1,61 @@
+# Agent Zero - Dynamic Agentic AI Framework
+# https://github.com/agent0ai/agent-zero
+#
+# A general-purpose AI agent with persistent memory, multi-agent cooperation,
+# code execution, browser automation, and document processing capabilities.
+
+[variables]
+domain = "${domain}"
+web_ui_password = "${password:16}"
+
+# Main agent-zero domain
+[[config.domains]]
+serviceName = "agent-zero"
+port = 80
+host = "${domain}"
+
+[config.env]
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+DOMAIN = "${domain}"
+
+# =============================================================================
+# Image Version
+# Options: latest, v2, v0.9.7, testing, development
+# Hacking Edition: agent0ai/agent-zero:hacking (Kali Linux based)
+# See: https://hub.docker.com/r/agent0ai/agent-zero/tags
+# =============================================================================
+AGENT_ZERO_VERSION = "latest"
+
+# =============================================================================
+# Web UI Authentication
+# Protects the web interface with basic authentication
+# Leave empty to disable (not recommended for public deployments)
+# =============================================================================
+WEB_UI_PASSWORD = "${web_ui_password}"
+
+# =============================================================================
+# Ollama Configuration (Optional)
+# For using local LLM models with Ollama
+# If Ollama runs on the host machine, use: http://host.docker.internal:11434
+# If Ollama runs in Docker on same network: http://ollama:11434
+# =============================================================================
+OLLAMA_BASE_URL = ""
+
+# =============================================================================
+# LLM Provider API Keys
+# IMPORTANT: API keys should be configured through the Web UI Settings
+# for security. The agent never sees credentials stored in "Secrets" section.
+#
+# Supported providers:
+# - OpenRouter (default): https://openrouter.ai/
+# - OpenAI: https://platform.openai.com/
+# - Azure OpenAI: https://azure.microsoft.com/
+# - Anthropic: https://console.anthropic.com/
+# - Venice.ai: https://venice.ai/
+# - GitHub Copilot
+# - Local models via Ollama
+#
+# After deployment, access Web UI → Settings → API Keys
+# =============================================================================
