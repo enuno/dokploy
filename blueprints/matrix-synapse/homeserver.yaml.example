@@ -1,0 +1,203 @@
+# Matrix Synapse Homeserver Configuration
+# This is an example configuration with Cloudflare R2 media storage
+# After deploying, generate your actual homeserver.yaml with:
+#   docker exec <synapse-container> generate
+#
+# Then merge the R2 storage configuration from this file into your generated config
+
+# =============================================================================
+# SERVER CONFIGURATION
+# =============================================================================
+server_name: "matrix.example.com"  # Replace with your domain
+pid_file: /data/homeserver.pid
+web_client_location: https://app.element.io/
+
+# =============================================================================
+# LISTENERS (Client & Federation APIs)
+# =============================================================================
+listeners:
+  # HTTP listener for client and federation
+  - port: 8008
+    tls: false  # TLS handled by Traefik reverse proxy
+    type: http
+    x_forwarded: true  # Trust X-Forwarded-For header from Traefik
+    bind_addresses: ['0.0.0.0']
+
+    resources:
+      - names: [client, federation]
+        compress: false
+
+# =============================================================================
+# DATABASE (PostgreSQL - Required for Production)
+# =============================================================================
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: your-postgres-password-here  # Use environment variable
+    database: synapse
+    host: postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+# =============================================================================
+# MEDIA STORAGE (Cloudflare R2 via S3-compatible API)
+# =============================================================================
+media_store_path: /data/media_store
+max_upload_size: 50M
+max_image_pixels: 32M
+
+# Media storage providers - Cloudflare R2 integration
+media_storage_providers:
+  - module: s3_storage_provider.S3StorageProviderBackend
+    store_local: true          # Keep local copy for fast thumbnail generation
+    store_remote: true         # Upload to R2 for long-term storage
+    store_synchronous: false   # Async upload (recommended for performance)
+    config:
+      bucket: your-r2-bucket-name           # Replace with R2 bucket name
+      region_name: auto
+      endpoint_url: https://your-account-id.r2.cloudflarestorage.com
+      access_key_id: your-r2-access-key-id
+      secret_access_key: your-r2-secret-access-key
+
+# =============================================================================
+# REGISTRATION & USER MANAGEMENT
+# =============================================================================
+enable_registration: false  # Disable public registration (recommended)
+enable_registration_without_verification: false
+registration_shared_secret: "your-registration-secret-here"  # For creating users
+
+# Require email for registration (if enabled)
+# registrations_require_3pid:
+#   - email
+
+# =============================================================================
+# FEDERATION
+# =============================================================================
+# Federation is enabled by default
+# Make sure port 8448 is accessible for server-to-server communication
+federation_domain_whitelist: []  # Empty = federate with all domains
+
+# Increase timeout for slow homeservers
+federation_client_timeout: 60s
+
+# =============================================================================
+# SECURITY & PRIVACY
+# =============================================================================
+# Require 3PID (email/phone) for password reset
+# account_threepid_delegates:
+#   email: https://example.com     # Or use built-in email
+
+# Enable password login
+password_config:
+  enabled: true
+  # Require minimum password strength
+  policy:
+    enabled: true
+    minimum_length: 8
+    require_digit: true
+    require_symbol: false
+    require_lowercase: true
+    require_uppercase: true
+
+# =============================================================================
+# REDIS (For Worker Scaling - Optional)
+# =============================================================================
+# Uncomment when using Synapse workers for horizontal scaling
+# redis:
+#   enabled: true
+#   host: redis
+#   port: 6379
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+log_config: "/data/matrix.example.com.log.config"
+
+# =============================================================================
+# SIGNING KEYS
+# =============================================================================
+signing_key_path: "/data/matrix.example.com.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+# =============================================================================
+# METRICS & REPORTING
+# =============================================================================
+enable_metrics: false
+report_stats: true
+
+# =============================================================================
+# OPTIONAL: EMAIL NOTIFICATIONS
+# =============================================================================
+# email:
+#   smtp_host: smtp.example.com
+#   smtp_port: 587
+#   smtp_user: "synapse@example.com"
+#   smtp_pass: "your-smtp-password"
+#   require_transport_security: true
+#   notif_from: "Your Matrix Server <synapse@example.com>"
+#   app_name: "Matrix"
+#   enable_notifs: true
+
+# =============================================================================
+# OPTIONAL: URL PREVIEWS
+# =============================================================================
+url_preview_enabled: true
+url_preview_ip_range_blacklist:
+  - '127.0.0.0/8'
+  - '10.0.0.0/8'
+  - '172.16.0.0/12'
+  - '192.168.0.0/16'
+  - '100.64.0.0/10'
+  - '169.254.0.0/16'
+  - '::1/128'
+  - 'fe80::/64'
+  - 'fc00::/7'
+
+max_spider_size: 10M
+
+# =============================================================================
+# OPTIONAL: TURN SERVER (For VoIP)
+# =============================================================================
+# turn_uris:
+#   - "turn:turn.example.com:3478?transport=udp"
+#   - "turn:turn.example.com:3478?transport=tcp"
+# turn_shared_secret: "your-turn-shared-secret"
+# turn_user_lifetime: 86400000
+# turn_allow_guests: true
+
+# =============================================================================
+# PRESENCE & TYPING NOTIFICATIONS
+# =============================================================================
+presence:
+  enabled: true
+
+# =============================================================================
+# ROOM DIRECTORY
+# =============================================================================
+# Allow users to publish rooms to the public directory
+enable_room_list_search: true
+
+# =============================================================================
+# RETENTION POLICIES (Optional - Auto-delete old messages)
+# =============================================================================
+# retention:
+#   enabled: true
+#   default_policy:
+#     min_lifetime: 1d
+#     max_lifetime: 1y
+#   allowed_lifetime_min: 1d
+#   allowed_lifetime_max: 1y
+#   purge_jobs:
+#     - shortest_max_lifetime: 1d
+#       longest_max_lifetime: 3d
+#       interval: 5m
+
+# =============================================================================
+# ADDITIONAL MODULES (Optional)
+# =============================================================================
+# modules:
+#   - module: synapse.module_api.ModuleApi
+#     config: {}

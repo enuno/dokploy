@@ -1,0 +1,52 @@
+# Matrix Synapse - Decentralized communication homeserver
+# Official: https://github.com/matrix-org/synapse
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+postgres_db = "synapse"
+postgres_user = "synapse"
+tz = "UTC"
+uid = "991"
+gid = "991"
+
+# Cloudflare R2 Configuration (Optional but Recommended)
+# See README.md for setup instructions
+cf_account_id = ""
+r2_bucket_name = ""
+r2_access_key_id = ""
+r2_secret_access_key = ""
+
+# Cloudflare Zero Trust (Optional)
+# For admin API protection with SSO/2FA
+cf_team_name = ""
+
+[[config.domains]]
+serviceName = "synapse"
+port = 8008
+host = "${domain}"
+
+[config.env]
+# Server Configuration
+DOMAIN = "${domain}"
+SYNAPSE_SERVER_NAME = "${domain}"
+SYNAPSE_REPORT_STATS = "yes"
+
+# Database Configuration
+POSTGRES_DB = "${postgres_db}"
+POSTGRES_USER = "${postgres_user}"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# Cloudflare R2 Storage (leave blank if not using)
+CF_ACCOUNT_ID = "${cf_account_id}"
+R2_BUCKET_NAME = "${r2_bucket_name}"
+R2_ACCESS_KEY_ID = "${r2_access_key_id}"
+R2_SECRET_ACCESS_KEY = "${r2_secret_access_key}"
+
+# Cloudflare Zero Trust (leave blank if not using)
+CF_TEAM_NAME = "${cf_team_name}"
+
+# Application Settings
+TZ = "${tz}"
+UID = "${uid}"
+GID = "${gid}"
