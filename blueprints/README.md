@@ -46,6 +46,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
 | [lnd-rtl](/blueprints/lnd-rtl/) | Lightning Network Daemon with Ride The Lightning web UI and Bitcoin Core backend | 3 (rtl, lnd, bitcoind) | Ready |
 | [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
+| [matrix-synapse](/blueprints/matrix-synapse/) | Matrix homeserver with Cloudflare R2 media storage and federation support | 3 (synapse, postgres, redis) | Ready |
 | [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
 | [mcp-registry](/blueprints/mcp-registry/) | Community-driven MCP server registry with GitHub OAuth namespace ownership and server publishing | 2 (mcp-registry, postgres) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
@@ -64,6 +65,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |
 | [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
 | [padloc](/blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
+| [signal-cli-rest-api](/blueprints/signal-cli-rest-api/) | REST API wrapper for Signal Messenger enabling programmatic messaging with QR code device linking | 1 (signal-cli-rest-api) | Ready |
 | [someguy](/blueprints/someguy/) | HTTP Delegated Routing V1 server for IPFS with Amino DHT proxy | 1 (someguy) | Ready |
 | [pihole](/blueprints/pihole/) | Network-wide ad blocking with DNS-over-HTTPS, Cloudflared upstream, and Tailscale VPN | 4 (cloudflared, tailscale, pihole, dnscrypt-proxy) | Ready |
 | [powerdns](/blueprints/powerdns/) | Complete DNS infrastructure with authoritative server, recursor, load balancer (dnsdist), and web admin | 6 (admin, admin-db, authoritative, authoritative-db, dnsdist, recursor) | Ready |
