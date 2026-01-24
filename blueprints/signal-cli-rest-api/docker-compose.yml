@@ -1,0 +1,68 @@
+services:
+  # =============================================================================
+  # Signal CLI REST API - REST API wrapper for signal-cli
+  # =============================================================================
+  signal-cli-rest-api:
+    image: bbernhard/signal-cli-rest-api:0.96
+    restart: always
+    volumes:
+      # Persistent storage for Signal device registration and keys
+      # CRITICAL: Losing this volume requires device re-registration
+      - signal-data:/home/.local/share/signal-cli
+    environment:
+      # =======================================================================
+      # Operational Mode
+      # =======================================================================
+      # MODE: Operational mode for signal-cli
+      # Options: normal (default), native, json-rpc
+      # - normal: REST API + signal-cli daemon
+      # - native: signal-cli native binary (faster, platform-specific)
+      # - json-rpc: JSON-RPC protocol support
+      MODE: ${MODE:-normal}
+
+      # =======================================================================
+      # File Ownership (Optional)
+      # =======================================================================
+      # Set UID/GID for signal-cli data files
+      # Useful for matching host user permissions
+      SIGNAL_CLI_UID: ${SIGNAL_CLI_UID:-1000}
+      SIGNAL_CLI_GID: ${SIGNAL_CLI_GID:-1000}
+
+    networks:
+      - signal-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.signal-cli.rule=Host(`${SIGNAL_DOMAIN}`)"
+      - "traefik.http.routers.signal-cli.entrypoints=websecure"
+      - "traefik.http.routers.signal-cli.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.signal-cli.middlewares=signal-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.signal-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.signal-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.signal-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.signal-security.headers.frameDeny=true"
+      - "traefik.http.services.signal-cli.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/v1/about || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  signal-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  signal-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -1,0 +1,42 @@
+# Signal CLI REST API - REST API wrapper for signal-cli
+# https://github.com/bbernhard/signal-cli-rest-api
+
+[variables]
+# Domain for webhook callbacks and HTTPS access
+domain = "${domain}"
+
+# Optional: Operational mode (normal/native/json-rpc)
+mode = "normal"
+
+# Optional: File ownership for signal-cli data
+signal_cli_uid = "1000"
+signal_cli_gid = "1000"
+
+[[config.domains]]
+serviceName = "signal-cli-rest-api"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# Required for webhook callbacks from Signal
+# ===========================================
+SIGNAL_DOMAIN = "${domain}"
+
+# ===========================================
+# Operational Mode
+# Options: normal (default), native, json-rpc
+# - normal: REST API + signal-cli daemon
+# - native: signal-cli native binary (faster, platform-specific)
+# - json-rpc: JSON-RPC protocol support
+# ===========================================
+MODE = "${mode}"
+
+# ===========================================
+# File Ownership (Optional)
+# Set UID/GID for signal-cli data files
+# Useful for matching host user permissions
+# ===========================================
+SIGNAL_CLI_UID = "${signal_cli_uid}"
+SIGNAL_CLI_GID = "${signal_cli_gid}"
