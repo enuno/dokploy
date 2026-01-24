@@ -1,0 +1,85 @@
+# GoAccess for Nginx Proxy Manager
+# Real-time web log analyzer with dashboard
+# Official: https://github.com/xavier-hernandez/goaccess-for-nginxproxymanager
+
+services:
+  goaccess:
+    image: xavierh/goaccess-for-nginxproxymanager:1.9.4
+    restart: unless-stopped
+
+    environment:
+      # Timezone
+      TZ: ${tz:-UTC}
+
+      # Log Processing Configuration
+      LOG_TYPE: ${log_type:-NPM}
+      SKIP_ARCHIVED_LOGS: ${skip_archived_logs:-False}
+      EXCLUDE_IPS: ${exclude_ips:-}
+      INCLUDE_PROXY_HOSTS: ${include_proxy_hosts:-}
+      LOG_TYPE_FILE_PATTERN: ${log_pattern:-*.log}
+
+      # Authentication (if enabled)
+      BASIC_AUTH: ${basic_auth:-False}
+      BASIC_AUTH_USERNAME: ${basic_auth_username:-}
+      BASIC_AUTH_PASSWORD: ${basic_auth_password:-}
+
+      # Display & Performance
+      HTML_REFRESH: ${html_refresh:-}
+      KEEP_LAST: ${keep_last:-}
+      PROCESSING_THREADS: ${processing_threads:-1}
+      ENABLE_BROWSERS_LIST: ${enable_browsers:-False}
+      CUSTOM_BROWSERS: ${custom_browsers:-}
+
+      # Localization
+      LANG: ${lang:-en_US.UTF-8}
+
+      # Debugging
+      DEBUG: ${debug:-False}
+
+      # User/Group IDs
+      PUID: ${puid:-1000}
+      PGID: ${pgid:-1000}
+
+      # Cloudflare Zero Trust (Optional)
+      CF_TEAM_NAME: ${cf_team_name:-}
+
+    volumes:
+      # NPM Logs (read-only)
+      # Mount your Nginx Proxy Manager log directory here
+      # Example: /var/lib/docker/volumes/npm_data/_data/logs:/opt/log:ro
+      - ${npm_log_path:?NPM log directory path required}:/opt/log:ro
+
+      # Custom GoAccess Configuration (optional, only for LOG_TYPE=CUSTOM)
+      # - ${custom_config_path}:/opt/custom:ro
+
+    networks:
+      - dokploy-network
+
+    labels:
+      # Traefik Configuration
+      - traefik.enable=true
+      - traefik.http.routers.goaccess.rule=Host(`${domain}`)
+      - traefik.http.routers.goaccess.entrypoints=websecure
+      - traefik.http.routers.goaccess.tls.certresolver=letsencrypt
+      - traefik.http.services.goaccess.loadbalancer.server.port=7880
+
+      # WebSocket Support (required for real-time updates)
+      - traefik.http.middlewares.goaccess-ws.headers.customrequestheaders.Connection=Upgrade
+      - traefik.http.middlewares.goaccess-ws.headers.customrequestheaders.Upgrade=websocket
+      - traefik.http.routers.goaccess.middlewares=goaccess-ws
+
+      # Cloudflare Zero Trust Protection (Optional)
+      # Uncomment to enable dashboard protection via Cloudflare Access
+      # - traefik.http.middlewares.cf-access-goaccess.plugin.cloudflare-access.team=${cf_team_name}
+      # - traefik.http.routers.goaccess.middlewares=goaccess-ws,cf-access-goaccess
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7880/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  dokploy-network:
+    external: true

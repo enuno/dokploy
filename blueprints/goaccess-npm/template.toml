@@ -1,0 +1,79 @@
+# GoAccess for Nginx Proxy Manager - Dokploy Template
+# Real-time web log analyzer
+# Official: https://github.com/xavier-hernandez/goaccess-for-nginxproxymanager
+
+[variables]
+domain = "${domain}"
+npm_log_path = ""
+log_type = "NPM"
+tz = "UTC"
+puid = "1000"
+pgid = "1000"
+
+# Log Processing (Optional)
+skip_archived_logs = "False"
+exclude_ips = ""
+include_proxy_hosts = ""
+log_pattern = "*.log"
+
+# Authentication (Optional)
+basic_auth = "False"
+basic_auth_username = ""
+basic_auth_password = ""
+
+# Display & Performance (Optional)
+html_refresh = ""
+keep_last = ""
+processing_threads = "1"
+enable_browsers = "False"
+custom_browsers = ""
+
+# Localization (Optional)
+lang = "en_US.UTF-8"
+
+# Debugging (Optional)
+debug = "False"
+
+# Cloudflare Zero Trust (Optional)
+cf_team_name = ""
+
+[[config.domains]]
+serviceName = "goaccess"
+port = 7880
+host = "${domain}"
+
+[config.env]
+# Timezone
+TZ = "${tz}"
+
+# Log Processing
+LOG_TYPE = "${log_type}"
+SKIP_ARCHIVED_LOGS = "${skip_archived_logs}"
+EXCLUDE_IPS = "${exclude_ips}"
+INCLUDE_PROXY_HOSTS = "${include_proxy_hosts}"
+LOG_TYPE_FILE_PATTERN = "${log_pattern}"
+
+# Authentication
+BASIC_AUTH = "${basic_auth}"
+BASIC_AUTH_USERNAME = "${basic_auth_username}"
+BASIC_AUTH_PASSWORD = "${basic_auth_password}"
+
+# Display & Performance
+HTML_REFRESH = "${html_refresh}"
+KEEP_LAST = "${keep_last}"
+PROCESSING_THREADS = "${processing_threads}"
+ENABLE_BROWSERS_LIST = "${enable_browsers}"
+CUSTOM_BROWSERS = "${custom_browsers}"
+
+# Localization
+LANG = "${lang}"
+
+# Debugging
+DEBUG = "${debug}"
+
+# User/Group IDs
+PUID = "${puid}"
+PGID = "${pgid}"
+
+# Cloudflare Zero Trust
+CF_TEAM_NAME = "${cf_team_name}"
