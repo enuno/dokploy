@@ -20,6 +20,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [beszel](/blueprints/beszel/) | Lightweight server monitoring hub with agent architecture | 4 | Ready |
 | [blinko](/blueprints/blinko/) | AI-powered personal note-taking tool with RAG for semantic search | 2 (blinko, postgres) | Ready |
 | [bluesky-pds](/blueprints/bluesky-pds/) | AT Protocol Personal Data Server for Bluesky federation | 1 (pds) | Ready |
+| [browserless](/blueprints/browserless/) | Headless Chromium browser automation with Puppeteer and Playwright, optional Cloudflare R2 storage | 1 (browserless) | Ready |
 | [borgitory](/blueprints/borgitory/) | Web UI for managing BorgBackup repositories with scheduling and cloud sync | 1 (borgitory) | Ready |
 | [btcpayserver](/blueprints/btcpayserver/) | Full-stack Bitcoin payment processor with Lightning Network (LND/CLN/Eclair), optional Bitcoin node (pruned/full), multiple access methods (Traefik/Tor/Tunnel), and R2 encrypted backups | 3-13 (base + optional Bitcoin node, Lightning, Tor, Tunnel, R2 backup) | Ready |
 | [chibisafe](/blueprints/chibisafe/) | TypeScript file upload and sharing platform with albums and S3 support | 3 (backend, frontend, caddy) | Ready |
