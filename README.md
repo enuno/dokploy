@@ -1,8 +1,10 @@
 # Dokploy Templates + Cloudflare Integration - AI Coding Agent System
 
-**Version:** 1.0.0  
-**Last Updated:** December 24, 2025  
-**Repository:** https://github.com/enuno/dokploy  
+[![codecov](https://codecov.io/github/enuno/dokploy/graph/badge.svg?token=51RJO0LXYK)](https://codecov.io/github/enuno/dokploy)
+
+**Version:** 1.0.0
+**Last Updated:** December 24, 2025
+**Repository:** https://github.com/enuno/dokploy
 **Project Lead:** Ryno Crypto Mining Services - ServerDomes Network Engineering
 
 ---
@@ -494,6 +496,10 @@ All templates must meet:
 - ✅ **Cloudflare Integration:** API tests pass (if applicable)
 - ✅ **Documentation:** Complete and clear
 - ✅ **No Secrets:** Hardcoded credentials forbidden
+
+### Code Coverage Visualization
+
+![Coverage Sunburst](https://codecov.io/github/enuno/dokploy/graphs/sunburst.svg?token=51RJO0LXYK)
 
 ---
 

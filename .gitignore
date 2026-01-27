@@ -45,3 +45,19 @@ yarn-error.log*
 tmp/
 temp/
 SESSION_LOG.md
+
+# Git worktrees
+.worktrees/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Testing
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Build
+dist/
+build/
