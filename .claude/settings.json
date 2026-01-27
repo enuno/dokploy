@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts Notification"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts Notification"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts Stop"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts Stop"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts PreToolUse"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PreToolUse"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts PostToolUse"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PostToolUse"
           }
         ]
       }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts SubagentStop"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts SubagentStop"
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts UserPromptSubmit"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts UserPromptSubmit"
           }
         ]
       }
@@ -72,7 +72,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /Users/elvis/Documents/Git/HomeLab-Tools/dokploy/.claude/hooks/index.ts PreCompact"
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PreCompact"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts SessionStart"
           }
         ]
       }
