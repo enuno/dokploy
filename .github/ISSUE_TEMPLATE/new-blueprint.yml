@@ -1,0 +1,99 @@
+name: New Blueprint Request
+description: Request a new Dokploy application template
+title: "[Blueprint] "
+labels: ["blueprint", "template-request"]
+assignees:
+  - copilot
+body:
+  - type: input
+    id: app-name
+    attributes:
+      label: Application Name
+      description: The name of the application (lowercase-with-hyphens)
+      placeholder: e.g., grafana, redis, minio
+    validations:
+      required: true
+
+  - type: input
+    id: docker-image
+    attributes:
+      label: Docker Image
+      description: The Docker Hub image to use
+      placeholder: e.g., grafana/grafana, redis:7-alpine
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Specific version tag (not 'latest')
+      placeholder: e.g., 10.2.0, 7.2-alpine
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Brief description of the application
+      placeholder: What does this application do?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: cloudflare
+    attributes:
+      label: Cloudflare Services
+      description: Which Cloudflare services should be integrated?
+      options:
+        - label: Cloudflare Workers
+        - label: Cloudflare D1 (database)
+        - label: Cloudflare R2 (storage)
+        - label: Cloudflare KV (key-value)
+        - label: Cloudflare Pages
+        - label: None (no Cloudflare integration)
+
+  - type: checkboxes
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Does this template require additional services?
+      options:
+        - label: PostgreSQL
+        - label: MySQL/MariaDB
+        - label: Redis
+        - label: MongoDB
+        - label: None (standalone service)
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Additional Requirements
+      description: Any special configuration, environment variables, or setup requirements
+      placeholder: e.g., Requires admin credentials, needs persistent storage, etc.
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Relevant documentation or resources
+      placeholder: |
+        - GitHub: https://github.com/org/repo
+        - Website: https://example.com
+        - Documentation: https://docs.example.com
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Blueprint Checklist
+      description: Requirements for blueprint completion
+      options:
+        - label: docker-compose.yml with pinned version
+        - label: template.toml with proper variable declarations
+        - label: Logo SVG file
+        - label: README.md with setup instructions
+        - label: meta.json entry
+        - label: Validation passes (`npm run validate:all`)
+        - label: Tests pass (`npm run test:coverage`)
+        - label: No hardcoded credentials
