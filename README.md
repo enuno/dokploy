@@ -2,10 +2,26 @@
 
 [![codecov](https://codecov.io/github/enuno/dokploy/graph/badge.svg?token=51RJO0LXYK)](https://codecov.io/github/enuno/dokploy)
 
-**Version:** 1.0.0
-**Last Updated:** December 24, 2025
+**Version:** 2.0.0
+**Last Updated:** February 11, 2026
 **Repository:** https://github.com/enuno/dokploy
 **Project Lead:** Ryno Crypto Mining Services - ServerDomes Network Engineering
+
+---
+
+## 🚀 What's New (v2.0)
+
+**Agent Configuration Optimized** - 68% token reduction for AI interactions:
+- ✅ **Token Reduction**: 4,731 → 1,487 words (68% reduction)
+- ✅ **Blueprint Creator**: Automated template generation via GitHub Issues
+- ✅ **Version Scanner**: Daily automated checks for outdated Docker images
+- ✅ **Correct Architecture**: Uses actual GitHub Copilot features (not invalid `.agent.md`)
+
+**New Documentation:**
+- 📖 [OPTIMIZATION_COMPLETE.md](./OPTIMIZATION_COMPLETE.md) - Quick reference
+- 📖 [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Complete details
+- 📖 [docs/BLUEPRINT_CREATOR.md](./docs/BLUEPRINT_CREATOR.md) - Blueprint creation guide
+- 📖 [docs/VERSION_SCANNER.md](./docs/VERSION_SCANNER.md) - Version scanner setup
 
 ---
 
@@ -18,9 +34,11 @@ This repository contains **production-ready Dokploy application templates** with
 - ✅ **Self-Contained Templates** - Each template is a complete Docker Compose + template.toml package
 - ✅ **Cloudflare Integration** - Workers, Pages, D1, R2, KV support built-in
 - ✅ **Production-Ready** - Tested, validated, staged before PR submission
-- ✅ **AI-Assisted** - Claude designs, Cursor implements, Cline validates, Windsurf orchestrates
+- ✅ **AI-Assisted** - Optimized agent configuration with 68% fewer tokens
+- ✅ **Automated Blueprint Creation** - GitHub Issues → Copilot → PR workflow
+- ✅ **Automated Version Checking** - Daily scans for outdated Docker images
 - ✅ **Automated Validation** - >80% test coverage, staging deployment, health checks
-- ✅ **Zero-Trust Standards** - AGENTS.md as centralized source of truth for all agents
+- ✅ **Centralized Standards** - `.github/copilot-instructions.md` + `AGENTS.md`
 
 ---
 
@@ -51,8 +69,23 @@ This repository contains **production-ready Dokploy application templates** with
    npm run validate:all
    ```
 
-### For AI Agents (Skills-First Approach)
+### For AI Agents
 
+**All AI coding agents** now use an **optimized configuration** with 68% fewer tokens:
+
+#### GitHub Copilot (Recommended)
+**Primary Config**: [.github/copilot-instructions.md](./.github/copilot-instructions.md) (242 words)
+
+**Create Blueprint via Issues:**
+1. Go to [Issues → New Issue](https://github.com/enuno/dokploy/issues/new/choose)
+2. Select "New Blueprint Request"
+3. Fill in application details
+4. Assign `@copilot`
+5. Copilot creates complete template + PR
+
+See: [docs/BLUEPRINT_CREATOR.md](./docs/BLUEPRINT_CREATOR.md)
+
+#### Claude Code (Skills-First Approach)
 **Claude Code** uses a **skills-first approach** - instead of specialized agents, you use generic agents that load skills progressively:
 
 1. **Create Dokploy Template** (Skills-First Command)
@@ -216,19 +249,24 @@ The `Dockerfiles/README.md` maintains a complete index:
 
 ### For Everyone
 - **[README.md](./README.md)** ← You are here (project overview)
-- **[AGENTS.md](./AGENTS.md)** ⭐ **START HERE** (Universal standards & source of truth)
-- **[SKILLS.md](./SKILLS.md)** 🆕 **Skills Ecosystem** (v2.0+ skills-first architecture)
+- **[AGENTS.md](./AGENTS.md)** ⭐ **Universal standards** (929 words, optimized)
+- **[OPTIMIZATION_COMPLETE.md](./OPTIMIZATION_COMPLETE.md)** 🆕 **v2.0 Summary** (what changed)
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** 🆕 **Complete details** (full implementation)
 
-### For Claude Code (v2.0+ Skills-First)
-- **[CLAUDE.md](./CLAUDE.md)** - Claude Code skills-first configuration
-- **[SKILLS.md](./SKILLS.md)** - Complete skills ecosystem documentation
+### For GitHub Copilot (Recommended)
+- **[.github/copilot-instructions.md](./.github/copilot-instructions.md)** - Primary config (242 words)
+- **[.github/instructions/blueprints.instructions.md](./.github/instructions/blueprints.instructions.md)** - Path-specific rules
+- **[.github/ISSUE_TEMPLATE/new-blueprint.yml](./.github/ISSUE_TEMPLATE/new-blueprint.yml)** - Blueprint request form
+- **[docs/BLUEPRINT_CREATOR.md](./docs/BLUEPRINT_CREATOR.md)** 🆕 - Blueprint creation guide
+- **[docs/VERSION_SCANNER.md](./docs/VERSION_SCANNER.md)** 🆕 - Version scanner setup
+
+### For Claude Code (Skills-First)
+- **[CLAUDE.md](./CLAUDE.md)** - Claude Code config (316 words, optimized)
 - **[.claude/commands/dokploy-create.md](./.claude/commands/dokploy-create.md)** - Primary command
 - **[.claude/skills/](./.claude/skills/)** - Individual skill definitions
 
-### For Other AI Tools (Legacy, Reference Only)
-- **[CURSOR.md](./CURSOR.md)** - Cursor IDE configuration (v1.x multi-agent)
-- **[COPILOT.md](./COPILOT.md)** - GitHub Copilot inline suggestions
-- **[CLINE.md](./CLINE.md)** - Cline/Claude Dev MCP execution
+### For Other AI Tools (Reference)
+- **[CURSOR.md](./CURSOR.md)** - Cursor IDE configuration
 - **[WINDSURF.md](./WINDSURF.md)** - Windsurf async orchestration
 
 ### For Project Coordination
@@ -237,14 +275,16 @@ The `Dockerfiles/README.md` maintains a complete index:
 - **[docs/API.md](./docs/API.md)** - Cloudflare API integration guide
 - **[docs/SECURITY.md](./docs/SECURITY.md)** - Security policies & audit logging
 - **[docs/DESIGNSYSTEM.md](./docs/DESIGNSYSTEM.md)** - Dokploy template design patterns
+- **[docs/BLUEPRINT_CREATOR.md](./docs/BLUEPRINT_CREATOR.md)** 🆕 - Blueprint creation via issues
+- **[docs/VERSION_SCANNER.md](./docs/VERSION_SCANNER.md)** 🆕 - Automated version checking
 
 ### For Configuration
+- **[.github/copilot-instructions.md](./.github/copilot-instructions.md)** 🆕 - GitHub Copilot primary config
+- **[.github/instructions/](./.github/instructions/)** 🆕 - Path-specific instructions
 - **[.aiignore](./.aiignore)** - Files excluded from AI context
 - **[.env.example](./.env.example)** - Environment variable template
-- **[ai-agent.config.json](./ai-agent.config.json)** - Agent service configuration
 - **[.cursor/settings.json](./.cursor/settings.json)** - Cursor IDE workspace config
 - **[.windsurfrules](./.windsurfrules)** - Windsurf async workflow definition
-- **[.clinerules](./.clinerules)** - Cline MCP server configuration
 
 ---
 
@@ -636,22 +676,22 @@ Result: Complete integration in <10 minutes!
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.0 | Feb 11, 2026 | Agent optimization (68% token reduction), blueprint creator, version scanner |
 | 1.0.0 | Dec 24, 2025 | Initial release with multi-agent system |
 
 ---
 
 ## 📋 Checklist: Getting Started
 
-- [ ] Read [AGENTS.md](./AGENTS.md) (source of truth)
+- [ ] Read [AGENTS.md](./AGENTS.md) (universal standards, 929 words)
+- [ ] Read [OPTIMIZATION_COMPLETE.md](./OPTIMIZATION_COMPLETE.md) (v2.0 changes)
 - [ ] Set up `.env.local` from `.env.example`
 - [ ] Run `pnpm install`
 - [ ] Run `npm run validate:all` (verify setup)
-- [ ] Choose an AI agent for your task:
-  - [ ] Design? → Use Claude
-  - [ ] Implement? → Use Cursor
-  - [ ] Test? → Use Cline
-  - [ ] Monitor? → Use Windsurf
-  - [ ] Quick fix? → Use Copilot
+- [ ] Choose workflow:
+  - [ ] Create blueprint via GitHub Issues → [docs/BLUEPRINT_CREATOR.md](./docs/BLUEPRINT_CREATOR.md)
+  - [ ] Use Claude Code skills-first → [CLAUDE.md](./CLAUDE.md)
+  - [ ] Setup version scanner → [docs/VERSION_SCANNER.md](./docs/VERSION_SCANNER.md)
 
 ---
 
@@ -662,5 +702,5 @@ Result: Complete integration in <10 minutes!
 ---
 
 **Maintained By:** Ryno Crypto Mining Services - ServerDomes Network Engineering  
-**Last Updated:** December 24, 2025  
+**Last Updated:** February 11, 2026  
 **License:** MIT (per original Dokploy)
