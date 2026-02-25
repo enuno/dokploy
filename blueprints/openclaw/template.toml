@@ -1,0 +1,58 @@
+# OpenClaw - Personal AI Assistant
+# https://github.com/openclaw/openclaw
+
+[variables]
+domain = "${domain}"
+gateway_token = "${base64:48}"
+
+[[config.domains]]
+serviceName = "openclaw-gateway"
+port = 18790
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Gateway Configuration
+# ===========================================
+OPENCLAW_GATEWAY_HOST = "0.0.0.0"
+OPENCLAW_GATEWAY_PORT = "18789"
+OPENCLAW_GATEWAY_TOKEN = "${gateway_token}"
+
+# ===========================================
+# Model Provider Configuration
+# Choose one primary provider and set others to empty
+#
+# Claude (Anthropic) - https://console.anthropic.com/
+#   Best for: General purpose, code, reasoning
+#   Models: Claude 3 Opus, Sonnet, Haiku
+#
+# OpenAI - https://platform.openai.com/api-keys
+#   Best for: GPT-4, GPT-4 Turbo, general purpose
+#   Models: GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
+#
+# Mistral - https://console.mistral.ai/
+#   Best for: High performance, cost-effective reasoning
+#   Models: Mistral Large, Mistral 8x7B, Mistral 7B
+#   Benefits: Fast inference, open weights option, competitive pricing
+#
+# OpenRouter - https://openrouter.ai
+#   Best for: Multiple models in one API, cost optimization
+#   Models: 100+ including Claude, GPT-4, Mixtral, Llama 2
+#   Benefits: Fallback routing, usage analytics, billing aggregation
+#
+# Venice.ai - https://venice.ai
+#   Best for: Privacy-focused, multiple open models
+#   Models: Open source models (Llama 2, Mistral, etc.)
+#   Benefits: Privacy-first, no data retention, cheaper
+# ===========================================
+ANTHROPIC_API_KEY = ""
+OPENAI_API_KEY = ""
+MISTRAL_API_KEY = ""
+OPENROUTER_API_KEY = ""
+VENICE_API_KEY = ""
+
+# ===========================================
+# Optional Configuration
+# ===========================================
+DEBUG = "false"
+LOG_LEVEL = "info"
