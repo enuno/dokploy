@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts Notification"
+            "command": "bun ./.claude/hooks/index.ts Notification"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts Stop"
+            "command": "bun ./.claude/hooks/index.ts Stop"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PreToolUse"
+            "command": "bun ./.claude/hooks/index.ts PreToolUse"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PostToolUse"
+            "command": "bun ./.claude/hooks/index.ts PostToolUse"
           }
         ]
       }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts SubagentStop"
+            "command": "bun ./.claude/hooks/index.ts SubagentStop"
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts UserPromptSubmit"
+            "command": "bun ./.claude/hooks/index.ts UserPromptSubmit"
           }
         ]
       }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts PreCompact"
+            "command": "bun ./.claude/hooks/index.ts PreCompact"
           }
         ]
       }
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun /opt/dokploy/.worktrees/feature/add-codecov-workflow/.claude/hooks/index.ts SessionStart"
+            "command": "bun ./.claude/hooks/index.ts SessionStart"
           }
         ]
       }
