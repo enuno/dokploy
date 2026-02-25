@@ -68,6 +68,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |
 | [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
 | [padloc](/blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
+| [personalized-deep-research](/blueprints/personalized-deep-research/) | Intelligent research agent with Nuxt frontend for complex AI-powered research tasks | 1 (deep-research-web) | Ready |
 | [signal-cli-rest-api](/blueprints/signal-cli-rest-api/) | REST API wrapper for Signal Messenger enabling programmatic messaging with QR code device linking | 1 (signal-cli-rest-api) | Ready |
 | [someguy](/blueprints/someguy/) | HTTP Delegated Routing V1 server for IPFS with Amino DHT proxy | 1 (someguy) | Ready |
 | [pihole](/blueprints/pihole/) | Network-wide ad blocking with DNS-over-HTTPS, Cloudflared upstream, and Tailscale VPN | 4 (cloudflared, tailscale, pihole, dnscrypt-proxy) | Ready |

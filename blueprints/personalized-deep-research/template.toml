@@ -1,0 +1,22 @@
+# Personalized Deep Research Web UI
+# Intelligent research agent with Vue/Nuxt frontend
+# https://github.com/mem0ai/personalized-deep-research
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "deep-research-web"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Application Domain
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+NODE_ENV = "production"
