@@ -3,8 +3,8 @@ services:
     image: ghcr.io/openclaw/openclaw:v0.9.0
     restart: always
     volumes:
-      - openclaw-workspace:/root/.openclaw/workspace
-      - openclaw-data:/root/.openclaw
+      - /opt/openclaw/workspace:/root/.openclaw/workspace
+      - /opt/openclaw:/root/.openclaw
     environment:
       # ===========================================
       # Gateway Configuration
