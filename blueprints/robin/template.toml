@@ -1,0 +1,96 @@
+# Robin - AI-Powered Dark Web OSINT Tool with Venice.ai & OpenRouter.ai
+# https://github.com/apurvsinghgautam/robin
+
+[variables]
+# ===========================================
+# Domain Configuration (User-provided)
+# ===========================================
+domain = "${domain}"
+
+# ===========================================
+# Cloudflare R2 Storage
+# Get from: Cloudflare Dashboard
+# ===========================================
+cf_account_id = ""
+r2_bucket_name = ""
+r2_access_key_id = ""
+r2_secret_access_key = ""
+
+# ===========================================
+# LLM Provider API Keys
+# Get from: https://venice.ai/console/api (Venice.ai)
+# Get from: https://openrouter.ai/keys (OpenRouter.ai)
+# ===========================================
+venice_api_key = ""
+openrouter_api_key = ""
+
+[[config.domains]]
+serviceName = "robin"
+port = 8501
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+DOMAIN = "${domain}"
+
+# ===========================================
+# Cloudflare Configuration
+# Account ID format: Get from Cloudflare Dashboard URL
+# https://dash.cloudflare.com/<ACCOUNT_ID>/...
+# ===========================================
+CF_ACCOUNT_ID = "${cf_account_id}"
+
+# ===========================================
+# Cloudflare R2 Storage
+# Get from: Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Endpoint format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+#
+# To create R2 bucket:
+# 1. Go to Cloudflare Dashboard > R2 > Overview
+# 2. Click "Create bucket"
+# 3. Name: e.g., "robin-investigations"
+# 4. Region: Automatic
+#
+# To create R2 API token:
+# 1. Go to R2 > Overview > Manage R2 API Tokens
+# 2. Click "Create API token"
+# 3. Permissions: "Object Read & Write"
+# 4. Optionally restrict to specific bucket
+# 5. Copy Access Key ID and Secret Access Key
+# ===========================================
+S3_BUCKET = "${r2_bucket_name}"
+S3_ACCESS_KEY_ID = "${r2_access_key_id}"
+S3_SECRET_ACCESS_KEY = "${r2_secret_access_key}"
+S3_REGION = "auto"
+
+# ===========================================
+# LLM Provider Configuration
+# Supported: venice, openrouter
+#
+# Venice.ai Setup:
+# 1. Go to https://venice.ai/console/api
+# 2. Create new API key
+# 3. Copy API key
+#
+# OpenRouter.ai Setup (optional fallback):
+# 1. Go to https://openrouter.ai/keys
+# 2. Create new API key
+# 3. Copy API key
+# ===========================================
+LLM_PROVIDER = "venice"
+VENICE_API_KEY = "${venice_api_key}"
+OPENROUTER_API_KEY = "${openrouter_api_key}"
+
+# ===========================================
+# Streamlit Configuration
+# ===========================================
+STREAMLIT_SERVER_HEADLESS = "true"
+STREAMLIT_SERVER_PORT = "8501"
+
+# ===========================================
+# Tor Service Configuration (Internal)
+# ===========================================
+TOR_PROXY_HOST = "tor"
+TOR_PROXY_PORT = "9050"

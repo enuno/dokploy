@@ -62,7 +62,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [onedev](/blueprints/onedev/) | Git server with built-in CI/CD, Kanban boards, and package registry | 6 | Ready |
 | [omni-tools](/blueprints/omni-tools/) | Self-hosted collection of 40+ web utilities for media, PDF, text, and data manipulation with client-side processing | 1 (omni-tools) | Ready |
 | [onionshare-cli](/blueprints/onionshare-cli/) | Secure anonymous file sharing, receiving, website hosting, and chat over Tor network | 1 (onionshare) | Ready |
-| [openclaw](/blueprints/openclaw/) | Personal AI assistant with multi-channel messaging integration and voice capabilities | 1 (openclaw-gateway) | Ready |
+| [openclaw](/blueprints/openclaw/) | Personal AI assistant with multi-channel messaging integration, voice capabilities, and Tailscale mesh VPN | 2 (openclaw-gateway, tailscale) | Ready |
 | [openrag](/blueprints/openrag/) | Comprehensive RAG platform with Langflow, OpenSearch, and Cloudflare R2 for intelligent document search and AI-powered conversations | 5 (opensearch, langflow, backend, frontend, dashboards) | Ready |
 | [opengist](/blueprints/opengist/) | Self-hosted Git-backed pastebin (GitHub Gist alternative) | 2 (opengist, postgres) | Ready |
 | [open-notebook](/blueprints/open-notebook/) | Private multi-model AI knowledge management platform with 16+ AI provider support | 1 (all-in-one) | Ready |
@@ -77,6 +77,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [pda-next](/blueprints/pda-next/) | Next-generation PowerDNS Admin with React/FastAPI, OAuth, WebAuthn, and API-first architecture (beta) | 5 (web, api, worker, mysql, redis) | Beta |
 | [paperless-ngx](/blueprints/paperless-ngx/) | Document management system with OCR | 5 (web, postgres, redis, tika, gotenberg) | Ready |
 | [rainbow](/blueprints/rainbow/) | Production-grade IPFS HTTP gateway with Cloudflare DNS-01 wildcard SSL and Zero Trust admin protection | 1 (rainbow) | Ready |
+| [robin](/blueprints/robin/) | AI-powered dark web OSINT tool with Venice.ai/OpenRouter.ai LLM support and Cloudflare R2 investigation storage | 2 (robin, tor) | Ready |
 | [scrt-link](/blueprints/scrt-link/) | End-to-end encrypted ephemeral secret sharing with self-destructing links and Cloudflare R2 storage | 2 (scrt-link, postgres) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
 | [tor-relay](/blueprints/tor-relay/) | Tor network relay (middle/bridge/exit) supporting anonymous internet routing infrastructure | 1 (tor-relay) | Ready |
