@@ -1,0 +1,68 @@
+# AI-Context - Markdown Generator for LLM Context
+# Official: https://github.com/tanq16/ai-context
+# Description: Stateless markdown generator for LLM context with Cloudflare Access security and R2 integration
+
+[variables]
+# Required: Your domain where ai-context will be accessible
+domain = "${domain}"
+
+# Required: Cloudflare Access team name (from Zero Trust Dashboard)
+# Example: "mycompany"
+cf_team_name = "${cf_team_name:?Set Cloudflare Access team name}"
+
+# Required: Cloudflare Account ID (for R2 endpoint construction)
+# Found in: Cloudflare Dashboard URL (xxxxx.r2.cloudflarestorage.com)
+cf_account_id = "${cf_account_id:?Set Cloudflare Account ID}"
+
+# Optional: R2 Bucket name for storing generated context files
+# Leave empty to use local volumes only
+r2_bucket_name = ""
+
+# Optional: R2 API Token Access Key ID
+# Create at: Cloudflare Dashboard → R2 → Manage R2 API Tokens
+r2_access_key_id = ""
+
+# Optional: R2 API Token Secret Access Key
+r2_secret_access_key = ""
+
+# Optional: GitHub Personal Access Token for accessing private repositories
+# Create at: GitHub Settings → Developer Settings → Personal Access Tokens
+# Requires: repo:read scope for private repositories
+github_token = ""
+
+# Optional: Custom certificate resolver (letsencrypt or cloudflare for DNS-01)
+# Default: letsencrypt (HTTP-01 challenge)
+# Use "cloudflare" if you need wildcard certificates (requires CF_DNS_API_TOKEN)
+cert_resolver = "letsencrypt"
+
+# Optional: Cloudflare DNS API Token (only needed for DNS-01 challenge)
+# Required permissions: Zone → DNS → Edit
+cf_dns_api_token = ""
+
+[[config.domains]]
+serviceName = "ai-context"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# Domain configuration
+DOMAIN = "${domain}"
+APP_URL = "https://${domain}"
+
+# Cloudflare Access team name (REQUIRED)
+CF_TEAM_NAME = "${cf_team_name}"
+
+# GitHub token for private repository access (optional)
+GH_TOKEN = "${github_token}"
+
+# Cloudflare R2 configuration for persistent storage
+S3_ENDPOINT = "https://${cf_account_id}.r2.cloudflarestorage.com"
+S3_BUCKET = "${r2_bucket_name}"
+S3_ACCESS_KEY_ID = "${r2_access_key_id}"
+S3_SECRET_ACCESS_KEY = "${r2_secret_access_key}"
+S3_REGION = "auto"
+S3_USE_PATH_STYLE = "true"
+
+# Traefik TLS certificate resolver
+CERT_RESOLVER = "${cert_resolver}"
+CF_DNS_API_TOKEN = "${cf_dns_api_token}"

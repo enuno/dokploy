@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  ai-context:
+    image: tanq16/ai-context:main
+    restart: always
+    networks:
+      - ai-context-net
+      - dokploy-network
+    ports: []
+    volumes:
+      - context-data:/app/context
+    environment:
+      # Domain Configuration
+      APP_DOMAIN: ${DOMAIN:?Set your domain (e.g., ai-context.example.com)}
+      APP_URL: https://${DOMAIN}
+
+      # GitHub Token (Optional - for accessing private repositories)
+      GH_TOKEN: ${GH_TOKEN:-}
+
+      # Cloudflare Access Configuration
+      CF_TEAM_NAME: ${CF_TEAM_NAME:?Set Cloudflare Access team name}
+
+      # Cloudflare R2 Storage Configuration (Optional)
+      S3_ENDPOINT: https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+      S3_BUCKET: ${R2_BUCKET_NAME:-ai-context}
+      S3_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      S3_REGION: auto
+      S3_USE_PATH_STYLE: "true"
+
+    labels:
+      # Traefik Core Configuration
+      - "traefik.enable=true"
+      - "traefik.http.routers.ai-context.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.ai-context.entrypoints=websecure"
+      - "traefik.http.routers.ai-context.tls=true"
+      - "traefik.http.routers.ai-context.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ai-context.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+
+      # Security Headers Middleware
+      - "traefik.http.middlewares.security-headers.headers.accesscontrolalloworigin=*"
+      - "traefik.http.middlewares.security-headers.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.security-headers.headers.addvaryheader=true"
+      - "traefik.http.middlewares.security-headers.headers.customframeoptionsvalue=SAMEORIGIN"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-XSS-Protection=1; mode=block"
+
+      # Public Routes (Web UI, Static Assets, Download)
+      - "traefik.http.routers.ai-context-public.rule=Host(`${DOMAIN}`) && (Path(`/`) || PathPrefix(`/static`) || PathPrefix(`/download`))"
+      - "traefik.http.routers.ai-context-public.entrypoints=websecure"
+      - "traefik.http.routers.ai-context-public.tls=true"
+      - "traefik.http.routers.ai-context-public.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ai-context-public.middlewares=security-headers@docker"
+      - "traefik.http.routers.ai-context-public.service=ai-context"
+
+      # Protected Routes (Generate, Clear, Sync)
+      - "traefik.http.routers.ai-context-protected.rule=Host(`${DOMAIN}`) && (PathPrefix(`/generate`) || PathPrefix(`/clear`) || PathPrefix(`/sync`))"
+      - "traefik.http.routers.ai-context-protected.entrypoints=websecure"
+      - "traefik.http.routers.ai-context-protected.tls=true"
+      - "traefik.http.routers.ai-context-protected.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ai-context-protected.middlewares=cloudflare-access@docker,rate-limit@docker,security-headers@docker"
+      - "traefik.http.routers.ai-context-protected.service=ai-context"
+
+      # Cloudflare Access Middleware - Protects /generate, /clear, /sync with Zero Trust authentication
+      - "traefik.http.middlewares.cloudflare-access.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      - "traefik.http.middlewares.cloudflare-access.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.cloudflare-access.forwardauth.authResponseHeaders=CF-Access-Authenticated-User-Email,CF-Access-Authenticated-User-Id"
+
+      # Rate Limiting Middleware - Protects /generate from resource exhaustion (100 req/hour via Cloudflare Workers)
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=20"
+      - "traefik.http.middlewares.rate-limit.ratelimit.period=3600s"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # Resource Limits (adjust based on your workload)
+    # cpu_shares: 512
+    # cpus: "1"
+    # mem_limit: 512m
+    # memswap_limit: 1g
+
+volumes:
+  context-data:
+    driver: local
+
+networks:
+  ai-context-net:
+    driver: bridge
+  dokploy-network:
+    external: true
