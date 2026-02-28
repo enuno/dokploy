@@ -55,6 +55,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [langflow](/blueprints/langflow/) | Visual AI workflow builder for creating LLM-powered applications with PostgreSQL backend | 2 (langflow, postgres) | Ready |
 | [lightningstream](/blueprints/lightningstream/) | Near real-time LMDB replication for PowerDNS using S3-compatible storage (MinIO/R2) | 3 (authoritative, syncer, minio) | Ready |
 | [lobe-chat](/blueprints/lobe-chat/) | Modern AI chat platform with multi-provider support, knowledge base, and pgvector storage | 2 (lobe-chat, postgres) | Ready |
+| [local-content-share](/blueprints/local-content-share/) | Self-hosted file/snippet/link sharing for local networks with automatic expiration | 1 (local-content-share) | Ready |
 | [n8n](/blueprints/n8n/) | Workflow automation platform with 400+ integrations and task runners | 3 (n8n, postgres, task-runner) | Ready |
 | [nostpy-relay](/blueprints/nostpy-relay/) | Python-based Nostr relay with PostgreSQL backend and Redis pub/sub | 4 (websocket-handler, event-handler, postgres, redis) | Ready |
 | [nostr-rs-relay](/blueprints/nostr-rs-relay/) | High-performance Rust-based Nostr relay with embedded SQLite database and WebSocket protocol support | 1 (nostr-relay) | Ready |
@@ -85,6 +86,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [umami](/blueprints/umami/) | Privacy-focused web analytics platform as an alternative to Google Analytics | 2 (umami, postgres) | Ready |
 | [usesend](/blueprints/usesend/) | Open-source email sending infrastructure powered by AWS SES with analytics dashboard and OAuth authentication | 3 (usesend, postgres, redis) | Ready |
 | [warp-docker](/blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
+| [warpgate](/blueprints/warpgate/) | Transparent SSH/HTTPS/MySQL/PostgreSQL bastion with session recording and access control | 1 (warpgate) | Ready |
 | [warpod](/blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |
 | [wot-relay](/blueprints/wot-relay/) | Web of Trust Nostr relay with trust scoring | 4 | Ready |
 

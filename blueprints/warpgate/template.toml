@@ -1,0 +1,51 @@
+# Warpgate - Transparent SSH, HTTPS, MySQL & PostgreSQL bastion host
+# https://github.com/warp-tech/warpgate
+
+[variables]
+# ===========================================
+# Domain Configuration
+# ===========================================
+domain = "${domain}"
+
+# ===========================================
+# Admin Password (Initial Setup)
+# Must be changed immediately after first login via web UI
+# ===========================================
+admin_password = "${password:32}"
+
+# ===========================================
+# Optional: Cloudflare Zero Trust Access
+# Leave blank to disable, set your Cloudflare team name to enable
+# ===========================================
+cf_team_name = ""
+
+[[config.domains]]
+serviceName = "warpgate"
+port = 8888
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+WARPGATE_DOMAIN = "${domain}"
+
+# ===========================================
+# Admin Configuration (First Run Only)
+# Must be changed immediately after first login
+# ===========================================
+WARPGATE_ADMIN_PASSWORD = "${admin_password}"
+
+# ===========================================
+# Application Settings
+# Log level: debug, info, warn, error
+# ===========================================
+WARPGATE_LOG_LEVEL = "info"
+
+# ===========================================
+# Optional: Cloudflare Zero Trust Access
+# Set to your Cloudflare team name to enable protection on admin interface
+# Example: mycompany.cloudflareaccess.com
+# Leave empty to disable Zero Trust
+# ===========================================
+# CF_TEAM_NAME = "${cf_team_name}"

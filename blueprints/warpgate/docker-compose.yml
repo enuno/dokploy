@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  warpgate:
+    image: ghcr.io/warp-tech/warpgate:0.20.2
+    restart: always
+    ports:
+      - "${SSH_PORT:-2222}:2222"           # SSH bastion
+      - "${MYSQL_PORT:-33306}:33306"       # MySQL routing
+      - "${POSTGRES_PORT:-5432}:5432"      # PostgreSQL routing
+    volumes:
+      - warpgate-data:/data
+    environment:
+      # ===========================================
+      # Domain Configuration
+      # ===========================================
+      WARPGATE_DOMAIN: ${WARPGATE_DOMAIN:?Set your domain}
+
+      # ===========================================
+      # Initial Admin Password (First Run Only)
+      # Change via web UI immediately after first login
+      # ===========================================
+      WARPGATE_ADMIN_PASSWORD: ${WARPGATE_ADMIN_PASSWORD:?Set a strong initial admin password}
+
+      # ===========================================
+      # Application Settings
+      # ===========================================
+      WARPGATE_LOG_LEVEL: ${WARPGATE_LOG_LEVEL:-info}
+
+      # ===========================================
+      # Optional: Cloudflare Zero Trust Access
+      # Set CF_TEAM_NAME and uncomment middleware labels to enable
+      # ===========================================
+      # CF_TEAM_NAME: ${CF_TEAM_NAME:-}
+    networks:
+      - warpgate-net
+      - dokploy-network
+    labels:
+      # Web Admin UI (Traefik HTTPS routing)
+      - "traefik.enable=true"
+      - "traefik.http.routers.warpgate.rule=Host(`${WARPGATE_DOMAIN}`)"
+      - "traefik.http.routers.warpgate.entrypoints=websecure"
+      - "traefik.http.routers.warpgate.tls.certresolver=letsencrypt"
+      - "traefik.http.services.warpgate.loadbalancer.server.port=8888"
+      - "traefik.docker.network=dokploy-network"
+      # Optional: Uncomment below to enable Cloudflare Zero Trust Access
+      # - "traefik.http.routers.warpgate.middlewares=cf-access@docker"
+      # - "traefik.http.middlewares.cf-access.forwardauth.address=https://${CF_TEAM_NAME}.cloudflareaccess.com/cdn-cgi/access/authorized"
+      # - "traefik.http.middlewares.cf-access.forwardauth.trustForwardHeader=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/api/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  warpgate-data:
+    driver: local
+
+networks:
+  warpgate-net:
+    driver: bridge
+  dokploy-network:
+    external: true
