@@ -1,0 +1,122 @@
+version: '3.8'
+
+# Technitium DNS Server - Production-Ready Dokploy Template
+# Supports: Home/Office, Clustered (Primary/Secondary), Cloud/Public DNS
+# Design: https://docs.dokploy.io/guides/dns-server
+
+services:
+  technitium:
+    image: technitiumsoftware/dns-server:14.3
+    restart: always
+    container_name: technitium-dns
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "5380:5380/tcp"
+    volumes:
+      - technitium-data:/etc/dns
+    environment:
+      # Core Configuration (Required)
+      DOMAIN: ${DOMAIN:?Set your domain for the DNS server}
+      TECHNITIUM_ADMIN_PASSWORD: ${TECHNITIUM_ADMIN_PASSWORD:?Set a strong admin password}
+
+      # Clustering Configuration (Primary/Secondary)
+      TECHNITIUM_NODE_ROLE: ${TECHNITIUM_NODE_ROLE:-primary}
+      PRIMARY_NODE_IP: ${PRIMARY_NODE_IP:-}
+
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Cloudflare Integration
+      # Tunnel (optional - enables secure remote management across mining sites)
+      CLOUDFLARE_TUNNEL_ENABLED: ${CLOUDFLARE_TUNNEL_ENABLED:-false}
+      CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
+
+      # R2 Backup (optional - enabled in Clustered/Cloud presets)
+      R2_BACKUP_ENABLED: ${R2_BACKUP_ENABLED:-false}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-technitium-backups}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      CF_ACCOUNT_ID: ${CF_ACCOUNT_ID:-}
+
+      # Backup Schedule (86400s = daily for Clustered, 3600s = hourly for Cloud)
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
+
+      # DNS Features (Cloud preset only - DoT, DoH support)
+      DNS_OVER_TLS_ENABLED: ${DNS_OVER_TLS_ENABLED:-false}
+      DNS_OVER_HTTPS_ENABLED: ${DNS_OVER_HTTPS_ENABLED:-false}
+    networks:
+      - technitium-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.technitium.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.technitium.entrypoints=websecure"
+      - "traefik.http.routers.technitium.tls.certresolver=letsencrypt"
+      - "traefik.http.services.technitium.loadbalancer.server.port=5380"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 53 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # rclone Backup Sidecar (Only in Clustered/Cloud presets when R2_BACKUP_ENABLED=true)
+  rclone-backup:
+    image: rclone/rclone:1.67.0
+    restart: always
+    container_name: technitium-rclone
+    depends_on:
+      technitium:
+        condition: service_healthy
+    volumes:
+      - technitium-data:/etc/dns:ro
+      - rclone-logs:/logs
+      - /opt/dokploy/blueprints/technitium-dns/rclone.conf:/config/rclone/rclone.conf:ro
+    environment:
+      # R2 Backup Configuration (synced from Technitium service)
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-technitium-backups}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      CF_ACCOUNT_ID: ${CF_ACCOUNT_ID:-}
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
+      R2_BACKUP_ENABLED: ${R2_BACKUP_ENABLED:-false}
+    networks:
+      - technitium-net
+    entrypoint: >
+      sh -c '
+      if [ "$$R2_BACKUP_ENABLED" = "true" ]; then
+        while true; do
+          echo "[$(date)] Starting backup sync to R2..." >> /logs/backup-$(date +\%Y-\%m-\%d).log
+          rclone sync /etc/dns r2://$$R2_BUCKET_NAME/technitium --config=/config/rclone/rclone.conf \
+            >> /logs/backup-$(date +\%Y-\%m-\%d).log 2>&1 && \
+            echo "[$(date)] Backup completed successfully" >> /logs/backup-$(date +\%Y-\%m-\%d).log || \
+            echo "[$(date)] Backup failed with error $?" >> /logs/backup-$(date +\%Y-\%m-\%d).log
+          sleep $$BACKUP_INTERVAL
+        done
+      else
+        echo "R2 backup disabled (R2_BACKUP_ENABLED=false). Sidecar will remain idle."
+        tail -f /dev/null
+      fi
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "tail -1 /logs/backup-$(date +\\%Y-\\%m-\\%d).log | grep -q 'successfully' && exit 0 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
+    profiles:
+      - backup
+
+volumes:
+  technitium-data:
+    driver: local
+  rclone-logs:
+    driver: local
+
+networks:
+  technitium-net:
+    driver: bridge
+  dokploy-network:
+    external: true
