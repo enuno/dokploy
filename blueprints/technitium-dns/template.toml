@@ -1,0 +1,135 @@
+# Technitium DNS Server - Production-Ready Dokploy Template
+# Official: https://github.com/TechnitiumSoftware/DnsServer
+# Documentation: https://docs.dokploy.io/guides/dns-server
+
+[variables]
+domain = "${domain:?Set admin console domain (e.g., dns.yourdomain.com)}"
+admin_password = "${password:32}"
+dns_server_domain = "${dns_server_domain:-ns1.local}"
+node_role = "${node_role:-primary}"
+
+# Cloudflare Tunnel (optional - for secure remote management)
+cf_tunnel_token = ""
+
+# R2 Backup (optional - Clustered/Cloud presets only)
+r2_account_id = ""
+r2_bucket_name = ""
+r2_access_key_id = ""
+r2_secret_access_key = ""
+
+[[config.domains]]
+serviceName = "technitium"
+port = 5380
+host = "${domain}"
+
+# ---
+# Preset 1: Home/Office
+# Single DNS server for local network with ad-blocking
+# No external backups, no Tunnel access (admin console only accessible locally)
+# Quick setup: ~5 minutes
+
+[[presets]]
+name = "home-office"
+description = "Single DNS server for home/office network with ad-blocking"
+icon = "🏠"
+shortDescription = "Local DNS with ad-blocking"
+
+[presets.config.env]
+DOMAIN = "${domain}"
+TECHNITIUM_ADMIN_PASSWORD = "${admin_password}"
+TECHNITIUM_NODE_ROLE = "primary"
+LOG_LEVEL = "info"
+CLOUDFLARE_TUNNEL_ENABLED = "false"
+R2_BACKUP_ENABLED = "false"
+DNS_OVER_TLS_ENABLED = "false"
+DNS_OVER_HTTPS_ENABLED = "false"
+
+# ---
+# Preset 2: Clustered - Primary Node
+# Primary node managing a cluster across multiple mining sites
+# Zone replication via catalog zones (no shared storage SPOF)
+# Daily R2 backups + Cloudflare Tunnel for secure remote access
+# Setup: ~10-15 minutes per node
+
+[[presets]]
+name = "clustered-primary"
+description = "Primary node of Technitium cluster with R2 backups and Tunnel"
+icon = "⚙️"
+shortDescription = "Cluster primary + R2 + Tunnel"
+
+[presets.config.env]
+DOMAIN = "${domain}"
+TECHNITIUM_ADMIN_PASSWORD = "${admin_password}"
+TECHNITIUM_NODE_ROLE = "primary"
+LOG_LEVEL = "info"
+CLOUDFLARE_TUNNEL_ENABLED = "true"
+CF_TUNNEL_TOKEN = "${cf_tunnel_token:?Set Cloudflare Tunnel token from dashboard}"
+R2_BACKUP_ENABLED = "true"
+R2_BUCKET_NAME = "${r2_bucket_name:?Set R2 bucket name}"
+R2_ACCESS_KEY_ID = "${r2_access_key_id:?Set R2 access key ID}"
+R2_SECRET_ACCESS_KEY = "${r2_secret_access_key:?Set R2 secret access key}"
+CF_ACCOUNT_ID = "${r2_account_id:?Set Cloudflare account ID}"
+BACKUP_INTERVAL = "86400"
+DNS_OVER_TLS_ENABLED = "false"
+DNS_OVER_HTTPS_ENABLED = "false"
+
+# ---
+# Preset 3: Clustered - Secondary Node
+# Secondary node joining existing cluster for zone replication
+# Subscribes to primary's catalog zone for automatic zone sync
+# Receives zones + DNSSEC keys via DNS protocol (no shared storage)
+# Setup: ~10 minutes (requires primary node IP)
+
+[[presets]]
+name = "clustered-secondary"
+description = "Secondary node joining cluster for automatic zone replication"
+icon = "↔️"
+shortDescription = "Cluster secondary + R2 + Tunnel"
+
+[presets.config.env]
+DOMAIN = "${domain}"
+TECHNITIUM_ADMIN_PASSWORD = "${admin_password}"
+TECHNITIUM_NODE_ROLE = "secondary"
+PRIMARY_NODE_IP = "${primary_node_ip:?Set primary node IP address}"
+LOG_LEVEL = "info"
+CLOUDFLARE_TUNNEL_ENABLED = "true"
+CF_TUNNEL_TOKEN = "${cf_tunnel_token:?Set Cloudflare Tunnel token}"
+R2_BACKUP_ENABLED = "true"
+R2_BUCKET_NAME = "${r2_bucket_name:?Set R2 bucket name}"
+R2_ACCESS_KEY_ID = "${r2_access_key_id:?Set R2 access key ID}"
+R2_SECRET_ACCESS_KEY = "${r2_secret_access_key:?Set R2 secret access key}"
+CF_ACCOUNT_ID = "${r2_account_id:?Set Cloudflare account ID}"
+BACKUP_INTERVAL = "86400"
+DNS_OVER_TLS_ENABLED = "false"
+DNS_OVER_HTTPS_ENABLED = "false"
+
+# ---
+# Preset 4: Cloud/Public DNS
+# High-availability authoritative DNS for customer-facing deployments
+# Multi-instance primary/secondary setup across regions
+# Hourly R2 backups (vs daily for Clustered)
+# Full DNS-over-TLS (DoT) and DNS-over-HTTPS (DoH) support
+# Production monitoring + failover runbook
+# Setup: ~20-30 minutes
+
+[[presets]]
+name = "cloud-authoritative"
+description = "Public authoritative DNS with HA, DoT/DoH, and hourly R2 backups"
+icon = "☁️"
+shortDescription = "Production authoritative DNS"
+
+[presets.config.env]
+DOMAIN = "${domain}"
+TECHNITIUM_ADMIN_PASSWORD = "${admin_password}"
+TECHNITIUM_NODE_ROLE = "primary"
+LOG_LEVEL = "info"
+CLOUDFLARE_TUNNEL_ENABLED = "true"
+CF_TUNNEL_TOKEN = "${cf_tunnel_token:?Set Cloudflare Tunnel token}"
+R2_BACKUP_ENABLED = "true"
+R2_BUCKET_NAME = "${r2_bucket_name:?Set R2 bucket name}"
+R2_ACCESS_KEY_ID = "${r2_access_key_id:?Set R2 access key ID}"
+R2_SECRET_ACCESS_KEY = "${r2_secret_access_key:?Set R2 secret access key}"
+CF_ACCOUNT_ID = "${r2_account_id:?Set Cloudflare account ID}"
+BACKUP_INTERVAL = "3600"
+DNS_OVER_TLS_ENABLED = "true"
+DNS_OVER_HTTPS_ENABLED = "true"
