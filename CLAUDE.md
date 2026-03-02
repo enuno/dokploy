@@ -1,10 +1,9 @@
 # Claude Code Configuration
 
 **Version:** 2.1.0
-**Last Updated:** February 28, 2026
+**Last Updated:** March 1, 2026
 **Project:** Dokploy Templates with Cloudflare Integration
-
-> **See `MEMORY.md`** for curated lessons: Cloudflare patterns, debugging playbooks, architectural decisions, DevOps rules.
+**Status**: 77 production-ready templates, validated framework
 
 ---
 
@@ -17,12 +16,37 @@
 
 ---
 
-## Skills-First Approach
+## Six-Phase Template Development (Validated Pattern)
 
-This project uses **progressive skill loading** for 35% token reduction:
-- Skills loaded on-demand based on task context
-- Generic agents (Builder, Validator) instead of specialized agents
-- Portable skills in `.claude/skills/dokploy-*`
+**Framework** proven with Warpgate template (all phases PASSED):
+
+| Phase | Time | Focus | Validation |
+|-------|------|-------|-----------|
+| 1: Requirements | 10 min | App analysis | Profile doc |
+| 2: Architecture | 10 min | Service design | Design doc |
+| 3: Generation | 20 min | Files (6 skills) | Syntax check |
+| 4: Validation | 5 min | Security + conventions | EXCELLENT + 100% PASS |
+| 5: Documentation | 10 min | README + examples | 350+ lines |
+| 6: Integration | 5 min | Index update | Alphabetical order |
+
+**Total**: ~60 minutes per template, zero defects on validation
+
+---
+
+## Skills-First Approach (Progressive Loading)
+
+**Pattern** achieves 35% token reduction:
+- Phase 3: Load 6 skills sequentially (not all upfront)
+- Phase 4: Use generic validator agents (not specialized)
+- Reusable skills in `.claude/skills/dokploy-*` (portable across projects)
+
+**Warpgate Skills Loaded**:
+1. dokploy-compose-structure (base YAML)
+2. dokploy-traefik-routing (HTTPS/routing)
+3. dokploy-health-patterns (health checks)
+4. dokploy-cloudflare-integration (optional Access)
+5. dokploy-environment-config (variables)
+6. dokploy-template-toml (template.toml)
 
 ---
 
@@ -31,8 +55,24 @@ This project uses **progressive skill loading** for 35% token reduction:
 When starting a Claude Code session:
 
 1. **Load primary reference**: Read `.github/copilot-instructions.md` for universal standards
-2. **Primary command**: `/dokploy-create [app-name]` for template creation
+2. **Primary command**: `/dokploy-create [github-url]` for automated template generation (6-phase framework)
 3. **Reference extended docs**: `AGENTS.md` for design patterns and API references
+
+### Template Creation Workflow
+
+```bash
+/dokploy-create https://github.com/org/app/
+```
+
+Automatically executes:
+- Phase 1: Requirements discovery (manual questions)
+- Phase 2: Architecture design (manual planning)
+- Phase 3: Progressive skill loading + file generation
+- Phase 4: Security + convention validation (agents)
+- Phase 5: Documentation generation
+- Phase 6: Repository index update + git commit/push
+
+**Result**: Production-ready 3-file template in `/blueprints/[app-name]/` with full documentation
 
 ---
 
@@ -79,53 +119,47 @@ npm run validate:all && npm run test:coverage
 
 ---
 
-## Template Patterns & Architecture
-
-**See `MEMORY.md` for detailed Cloudflare, Traefik, and debugging patterns.**
-
-### Single-Service Template (Stateless Apps)
-- Use when: CLI tools, stateless microservices, no external dependencies
-- Structure: One service, straightforward volumes, minimal networking
-- Example: ai-context template (GitHub context analyzer)
-- Benefits: Simple scaling, no startup ordering, clear deployment model
-
-### Multi-Service Templates (Databases, Queues, Caching)
-- Planned for future work; see MEMORY.md "Open Questions"
-- Will support conditional service enabling via template.toml
-
----
-
-## Cloudflare Integration Checklist
-
-When adding Cloudflare features to templates:
-
-- **Authentication**: Use Cloudflare Access forwardauth middleware + MFA policy
-- **Rate Limiting**: Implement Cloudflare Workers with KV state, exponential backoff
-- **Storage**: R2 bucket for backups/sync; include GET `/sync/status` endpoint
-- **Template Variables**: Add `CF_*` prefixed env vars; document in README "Advanced Config"
-- **Documentation**: Include 6-step setup guide, Cloudflare UI screenshots, post-deployment verification tests
-
----
-
-## Template Creation Workflow
-
-1. **Clarification** (5 min): Ask 3–5 questions (stateless? auth needed? storage? rate limiting?)
-2. **Architecture** (10 min): Choose pattern (single-service, Cloudflare integrations)
-3. **Generation** (20 min): Create docker-compose.yml, template.toml, README
-4. **Validation** (5 min): Test with env vars, verify docker-compose config
-5. **Documentation** (30 min): Include setup guide, diagram, troubleshooting
-6. **Index** (2 min): Add alphabetical entry to blueprints/README.md
-
----
-
 ## Template Standards (Quick Reference)
 
 See `.github/copilot-instructions.md` and `AGENTS.md` for complete standards.
 
+### Essential Security Patterns
+
+**Environment Variables**:
+```yaml
+# Required with error message
+VAR_NAME: ${VAR_NAME:?Set description}
+
+# Optional with safe default
+VAR_NAME: ${VAR_NAME:-default_value}
+```
+
+**Password Generation** (template.toml):
+```toml
+admin_password = "${password:32}"  # Auto-generated 32-char
+```
+
+**Traefik HTTPS** (6 mandatory labels):
+- `traefik.enable=true`
+- `traefik.http.routers.{name}.rule=Host(...)`
+- `traefik.http.routers.{name}.entrypoints=websecure` ← HTTPS only
+- `traefik.http.routers.{name}.tls.certresolver=letsencrypt`
+- `traefik.http.services.{name}.loadbalancer.server.port={port}`
+- `traefik.docker.network=dokploy-network`
+
 ### Key Rules
-- Pinned image versions (no `latest`)
+- Pinned image versions (no `:latest`) - use specific tags like `0.20.2`
 - Variables use `${helper}` or `${ENV_VAR}` syntax
 - Service names match between compose and TOML
-- Never hardcode credentials
+- Never hardcode credentials or secrets
 - Cloudflare vars use `${CF_*}` pattern
-- Traefik labels: `entrypoint=websecure`, `certresolver=letsencrypt`, security headers
+- Network isolation: internal bridge + external Traefik network
+- Health checks required (HTTP endpoint + sensible defaults)
+- No privileged containers unless documented
+
+### Validation Checklist (Phase 4)
+- ✅ YAML syntax passes `docker compose config`
+- ✅ TOML syntax valid
+- ✅ Security review: no hardcoded secrets, HTTPS-only, proper isolation
+- ✅ Convention compliance: image pinning, Traefik labels, restart policies
+- ✅ Variables: required fields use `?` syntax, optional use `-` syntax
