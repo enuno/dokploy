@@ -2,17 +2,16 @@ version: '3.8'
 
 # Technitium DNS Server - Production-Ready Dokploy Template
 # Supports: Home/Office, Clustered (Primary/Secondary), Cloud/Public DNS
-# Design: https://docs.dokploy.io/guides/dns-server
+# Note: DNS services require port 53 exposure (exception to "no ports" rule)
+# https://docs.dokploy.io/guides/dns-server
 
 services:
   technitium:
     image: technitiumsoftware/dns-server:14.3
-    restart: always
-    container_name: technitium-dns
+    restart: unless-stopped
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "5380:5380/tcp"
     volumes:
       - technitium-data:/etc/dns
     environment:
@@ -45,16 +44,17 @@ services:
       # DNS Features (Cloud preset only - DoT, DoH support)
       DNS_OVER_TLS_ENABLED: ${DNS_OVER_TLS_ENABLED:-false}
       DNS_OVER_HTTPS_ENABLED: ${DNS_OVER_HTTPS_ENABLED:-false}
-    networks:
-      - technitium-net
-      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.technitium.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.technitium.entrypoints=websecure"
       - "traefik.http.routers.technitium.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.technitium.middlewares=technitium-headers@docker"
       - "traefik.http.services.technitium.loadbalancer.server.port=5380"
-      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.middlewares.technitium-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.technitium-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.technitium-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.technitium-headers.headers.frameDeny=true"
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 53 || exit 1"]
       interval: 30s
@@ -62,18 +62,16 @@ services:
       retries: 3
       start_period: 30s
 
-  # rclone Backup Sidecar (Only in Clustered/Cloud presets when R2_BACKUP_ENABLED=true)
+  # rclone Backup Sidecar (Only when R2_BACKUP_ENABLED=true)
   rclone-backup:
     image: rclone/rclone:1.67.0
-    restart: always
-    container_name: technitium-rclone
+    restart: unless-stopped
     depends_on:
       technitium:
         condition: service_healthy
     volumes:
       - technitium-data:/etc/dns:ro
       - rclone-logs:/logs
-      - /opt/dokploy/blueprints/technitium-dns/rclone.conf:/config/rclone/rclone.conf:ro
     environment:
       # R2 Backup Configuration (synced from Technitium service)
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-technitium-backups}
@@ -82,18 +80,25 @@ services:
       CF_ACCOUNT_ID: ${CF_ACCOUNT_ID:-}
       BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
       R2_BACKUP_ENABLED: ${R2_BACKUP_ENABLED:-false}
-    networks:
-      - technitium-net
+      # rclone R2 configuration
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      RCLONE_CONFIG_R2_ENDPOINT: https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+      RCLONE_CONFIG_R2_ACL: private
     entrypoint: >
       sh -c '
       if [ "$$R2_BACKUP_ENABLED" = "true" ]; then
+        mkdir -p /logs
         while true; do
-          echo "[$(date)] Starting backup sync to R2..." >> /logs/backup-$(date +\%Y-\%m-\%d).log
-          rclone sync /etc/dns r2://$$R2_BUCKET_NAME/technitium --config=/config/rclone/rclone.conf \
-            >> /logs/backup-$(date +\%Y-\%m-\%d).log 2>&1 && \
-            echo "[$(date)] Backup completed successfully" >> /logs/backup-$(date +\%Y-\%m-\%d).log || \
-            echo "[$(date)] Backup failed with error $?" >> /logs/backup-$(date +\%Y-\%m-\%d).log
-          sleep $$BACKUP_INTERVAL
+          logfile="/logs/backup-$(date +%Y-%m-%d).log"
+          echo "[$(date)] Starting backup sync to R2..." >> "$$logfile"
+          rclone sync /etc/dns "r2:$$R2_BUCKET_NAME/technitium" \
+            >> "$$logfile" 2>&1 && \
+            echo "[$(date)] Backup completed successfully" >> "$$logfile" || \
+            echo "[$(date)] Backup failed with exit code $$?" >> "$$logfile"
+          sleep "$$BACKUP_INTERVAL"
         done
       else
         echo "R2 backup disabled (R2_BACKUP_ENABLED=false). Sidecar will remain idle."
@@ -101,22 +106,14 @@ services:
       fi
       '
     healthcheck:
-      test: ["CMD-SHELL", "tail -1 /logs/backup-$(date +\\%Y-\\%m-\\%d).log | grep -q 'successfully' && exit 0 || exit 1"]
-      interval: 60s
+      test: ["CMD-SHELL", "[ -f /logs/backup-$(date +%Y-%m-%d).log ] && tail -5 /logs/backup-$(date +%Y-%m-%d).log | grep -q 'completed successfully' || exit 0"]
+      interval: 300s
       timeout: 10s
-      retries: 2
-      start_period: 30s
-    profiles:
-      - backup
+      retries: 1
+      start_period: 60s
 
 volumes:
   technitium-data:
     driver: local
   rclone-logs:
     driver: local
-
-networks:
-  technitium-net:
-    driver: bridge
-  dokploy-network:
-    external: true

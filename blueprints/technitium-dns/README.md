@@ -122,6 +122,22 @@ Technitium DNS Server is a free, open-source DNS server supporting both recursiv
 
 ---
 
+## Network Requirements: DNS Port Exception
+
+Technitium DNS Server requires **UDP/TCP port 53** for DNS queries from clients. This is a **documented exception** to Dokploy's "no exposed ports" rule because:
+
+1. **DNS Protocol Fundamentals**: Unlike HTTP/HTTPS services routed through Traefik, DNS operates on its own protocol (port 53 UDP/TCP) without TLS encapsulation. DNS clients query port 53 directly and cannot be intercepted by Traefik.
+
+2. **Admin Console Access**: The web admin console (`port 5380`) IS routed through Traefik with HTTPS/Let's Encrypt encryption. Only port 53 is directly exposed.
+
+3. **Architectural Distinction**:
+   - ✅ **Port 53 (DNS)**: Directly exposed (protocol requirement)
+   - ✅ **Port 5380 (Admin)**: Traefik-routed HTTPS via domain
+
+**Security Model**: Port 53 is secured by firewall rules and network isolation, not TLS. Configure your firewall to restrict port 53 access to trusted networks (internal mining sites, specific ISP ranges, etc.).
+
+---
+
 ## Quick Start by Preset
 
 ### Home/Office Setup (5 minutes)
