@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#f0f4f8" rx="20"/>
+
+  <!-- DNS Globe concept with nodes -->
+  <g id="globe">
+    <!-- Outer circle (globe) -->
+    <circle cx="100" cy="100" r="70" fill="none" stroke="#2563eb" stroke-width="3"/>
+
+    <!-- Globe shading lines -->
+    <path d="M 100 30 Q 130 60 130 100 Q 130 140 100 170" fill="none" stroke="#2563eb" stroke-width="2" opacity="0.4"/>
+    <path d="M 100 30 Q 70 60 70 100 Q 70 140 100 170" fill="none" stroke="#2563eb" stroke-width="2" opacity="0.4"/>
+
+    <!-- Horizontal line -->
+    <line x1="30" y1="100" x2="170" y2="100" stroke="#2563eb" stroke-width="1.5" opacity="0.3"/>
+  </g>
+
+  <!-- DNS Query nodes -->
+  <g id="nodes">
+    <!-- Top node -->
+    <circle cx="100" cy="40" r="8" fill="#2563eb"/>
+    <circle cx="100" cy="40" r="5" fill="#60a5fa"/>
+
+    <!-- Right node -->
+    <circle cx="150" cy="100" r="8" fill="#2563eb"/>
+    <circle cx="150" cy="100" r="5" fill="#60a5fa"/>
+
+    <!-- Bottom-right node -->
+    <circle cx="130" cy="150" r="8" fill="#2563eb"/>
+    <circle cx="130" cy="150" r="5" fill="#60a5fa"/>
+
+    <!-- Bottom-left node -->
+    <circle cx="70" cy="150" r="8" fill="#2563eb"/>
+    <circle cx="70" cy="150" r="5" fill="#60a5fa"/>
+
+    <!-- Left node -->
+    <circle cx="50" cy="100" r="8" fill="#2563eb"/>
+    <circle cx="50" cy="100" r="5" fill="#60a5fa"/>
+
+    <!-- Center server -->
+    <circle cx="100" cy="100" r="12" fill="#1e40af"/>
+    <circle cx="100" cy="100" r="8" fill="#3b82f6"/>
+  </g>
+
+  <!-- Connection lines -->
+  <g id="connections" stroke="#3b82f6" stroke-width="2" opacity="0.6">
+    <line x1="100" y1="40" x2="150" y2="100"/>
+    <line x1="100" y1="40" x2="70" y2="150"/>
+    <line x1="100" y1="40" x2="50" y2="100"/>
+    <line x1="150" y1="100" x2="130" y2="150"/>
+    <line x1="50" y1="100" x2="70" y2="150"/>
+  </g>
+
+  <!-- Text label -->
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1e40af">DNS Server</text>
+</svg>
