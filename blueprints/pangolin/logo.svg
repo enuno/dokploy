@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#e94560" stroke-width="3"/>
+
+  <!-- Shield body -->
+  <path d="M100 30 L155 55 L155 105 Q155 145 100 170 Q45 145 45 105 L45 55 Z"
+        fill="#16213e" stroke="#e94560" stroke-width="2.5"/>
+
+  <!-- Shield inner highlight -->
+  <path d="M100 42 L148 64 L148 107 Q148 140 100 160 Q52 140 52 107 L52 64 Z"
+        fill="none" stroke="#0f3460" stroke-width="1.5"/>
+
+  <!-- Lock icon in shield center -->
+  <!-- Lock body -->
+  <rect x="82" y="100" width="36" height="28" rx="4" fill="#e94560"/>
+  <!-- Lock shackle -->
+  <path d="M88 100 L88 90 Q88 78 100 78 Q112 78 112 90 L112 100"
+        fill="none" stroke="#e94560" stroke-width="5" stroke-linecap="round"/>
+  <!-- Keyhole -->
+  <circle cx="100" cy="112" r="5" fill="#1a1a2e"/>
+  <rect x="97" y="112" width="6" height="8" fill="#1a1a2e"/>
+
+  <!-- Network dots - representing identity-aware proxy nodes -->
+  <circle cx="65" cy="75" r="5" fill="#0f3460" stroke="#e94560" stroke-width="1.5"/>
+  <circle cx="135" cy="75" r="5" fill="#0f3460" stroke="#e94560" stroke-width="1.5"/>
+  <circle cx="65" cy="145" r="4" fill="#0f3460" stroke="#53c3a8" stroke-width="1.5"/>
+  <circle cx="135" cy="145" r="4" fill="#0f3460" stroke="#53c3a8" stroke-width="1.5"/>
+
+  <!-- Connection lines -->
+  <line x1="70" y1="75" x2="88" y2="100" stroke="#e94560" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+  <line x1="130" y1="75" x2="112" y2="100" stroke="#e94560" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+  <line x1="70" y1="145" x2="88" y2="128" stroke="#53c3a8" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+  <line x1="130" y1="145" x2="112" y2="128" stroke="#53c3a8" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+
+  <!-- Text label -->
+  <text x="100" y="190" text-anchor="middle" font-family="sans-serif" font-size="13"
+        font-weight="bold" fill="#e94560" letter-spacing="2">PANGOLIN</text>
+</svg>
