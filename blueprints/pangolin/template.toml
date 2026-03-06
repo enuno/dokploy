@@ -139,7 +139,7 @@ traefik:
 # HTTP Server
 # =============================================================================
 server:
-  external_port: 443
+  external_port: ${https_proxy_port}
   session_cookie_name: "p_session_token"
   resource_access_token_param: "p_token"
   resource_access_token_headers: "X-Pangolin-Token"
