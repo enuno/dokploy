@@ -9,8 +9,9 @@
 # Admin dashboard domain (e.g., pangolin.example.com) — REQUIRED
 pangolin_domain = "${domain}"
 
-# Base domain for tunneled services (e.g., example.com) — REQUIRED
-# Wildcard DNS *.example.com should point to this server
+# Base domain for WireGuard tunnel clients and service routing (e.g., example.com) — REQUIRED
+# This domain is used both as the WireGuard endpoint base and to build URLs for
+# services accessed through WireGuard tunnels.
 # Example: "example.com"
 base_domain = ""
 
@@ -22,12 +23,6 @@ admin_email = ""
 admin_password = "${password:32}"
 
 # =============================================================================
-# Let's Encrypt — REQUIRED
-# Email used for certificate notifications and recovery
-# =============================================================================
-letsencrypt_email = ""
-
-# =============================================================================
 # Security Secrets (auto-generated)
 # =============================================================================
 app_secret = "${password:32}"
@@ -35,11 +30,9 @@ resource_access_secret = "${password:32}"
 
 # =============================================================================
 # Port Configuration
-# These can be changed to avoid conflicts with Dokploy's Traefik
 # =============================================================================
+# WireGuard VPN UDP port — exposed directly on the host
 wireguard_port = "51820"
-https_proxy_port = "443"
-http_proxy_port = "80"
 
 # =============================================================================
 # Optional: SMTP Email Configuration
@@ -71,8 +64,6 @@ host = "${pangolin_domain}"
 [config.env]
 PANGOLIN_DOMAIN = "${pangolin_domain}"
 WIREGUARD_PORT = "${wireguard_port}"
-HTTPS_PROXY_PORT = "${https_proxy_port}"
-HTTP_PROXY_PORT = "${http_proxy_port}"
 
 # =============================================================================
 # Pangolin Configuration File
@@ -100,8 +91,6 @@ app:
 # =============================================================================
 domains:
   base_domain: "${base_domain}"
-  cert_resolver: "letsencrypt"
-  prefer_wildcard_cert: false
 
 # =============================================================================
 # Admin User (initial setup — change password after first login)
@@ -128,18 +117,12 @@ gerbil:
   subnet_group: "100.89.137.0/20"
 
 # =============================================================================
-# Traefik (Pangolin's embedded reverse proxy)
-# =============================================================================
-traefik:
-  cert_resolver: "letsencrypt"
-  http_entrypoint: "web"
-  https_entrypoint: "websecure"
-
-# =============================================================================
 # HTTP Server
 # =============================================================================
 server:
-  external_port: ${https_proxy_port}
+  # Port 443 is the standard HTTPS port used in Pangolin-generated resource URLs.
+  # The admin UI is routed through Dokploy's Traefik (no separate proxy in this stack).
+  external_port: 443
   session_cookie_name: "p_session_token"
   resource_access_token_param: "p_token"
   resource_access_token_headers: "X-Pangolin-Token"
@@ -165,76 +148,4 @@ email:
   smtp_password: "${smtp_password}"
   no_reply_address: "${smtp_from_email}"
   email_header: "Pangolin"
-"""
-
-# =============================================================================
-# Traefik Static Configuration
-# Mounted into the Traefik container at /etc/traefik/traefik_config.yml
-# =============================================================================
-[[config.mounts]]
-serviceName = "traefik"
-mountPath = "/etc/traefik/traefik_config.yml"
-content = """
-# Traefik Static Configuration for Pangolin
-# https://doc.traefik.io/traefik/getting-started/configuration-overview/
-
-api:
-  dashboard: false
-  insecure: false
-
-log:
-  level: "INFO"
-
-entryPoints:
-  web:
-    address: ":80"
-    # NOTE: Port 80 must remain mapped to the host for ACME httpChallenge to work.
-    # The HTTP_PROXY_PORT variable controls which host port maps to this container
-    # port 80. If you change HTTP_PROXY_PORT away from 80, Let's Encrypt certificate
-    # issuance will fail. In that case, switch to tlsChallenge below (requires port 443)
-    # by replacing httpChallenge with: tlsChallenge: {}
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
-  websecure:
-    address: ":443"
-
-certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: "${letsencrypt_email}"
-      storage: /letsencrypt/acme.json
-      # httpChallenge requires host port 80 → container port 80.
-      # If HTTP_PROXY_PORT is not 80, switch to: tlsChallenge: {}
-      httpChallenge:
-        entryPoint: web
-
-providers:
-  http:
-    endpoint: "http://pangolin:3001/api/v1/traefik-config"
-    pollInterval: "5s"
-  file:
-    filename: /etc/traefik/dynamic_config.yml
-    watch: true
-"""
-
-# =============================================================================
-# Traefik Dynamic Configuration
-# =============================================================================
-[[config.mounts]]
-serviceName = "traefik"
-mountPath = "/etc/traefik/dynamic_config.yml"
-content = """
-# Traefik Dynamic Configuration for Pangolin
-# This file is managed by Pangolin — changes may be overwritten
-
-http:
-  middlewares:
-    redirect-to-https:
-      redirectScheme:
-        scheme: https
-        permanent: true
 """

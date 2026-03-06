@@ -4,7 +4,6 @@
 
 - 🔐 **Identity-Aware Access**: Enforce authentication before reaching any resource
 - 🌐 **WireGuard VPN Tunnels**: Connect remote sites and clients with modern WireGuard
-- 🔄 **Dynamic Reverse Proxy**: Built-in Traefik for automatic TLS and HTTP routing
 - 👥 **Multi-Org Support**: Isolated organizations with role-based access control
 - 🔑 **SSO / OIDC Integration**: Connect to Authelia, Authentik, Keycloak, and more
 - 🛡️ **Zero-Trust Architecture**: No implicit trust — every request is authenticated
@@ -19,20 +18,19 @@
 ```
 Internet
     │
-    ├── 443 (HTTPS) ──► Gerbil + Traefik ──► Tunneled Services
     ├── 51820 (UDP) ──► Gerbil (WireGuard) ──► VPN Clients
     │
-    └── Dokploy Traefik ──► Pangolin Dashboard (Admin UI)
+    └── Dokploy Traefik (443/HTTPS) ──► Pangolin Dashboard (Admin UI)
 
 ┌─────────────────────────────────────────────────────┐
 │                  Pangolin Stack                     │
 │                                                     │
-│  ┌────────────┐    ┌─────────┐    ┌─────────────┐  │
-│  │  Pangolin  │◄───│ Gerbil  │◄───│   Traefik   │  │
-│  │  (Control) │    │  (VPN)  │    │  (Proxy)    │  │
-│  │ Port 3001  │    │UDP 51820│    │ Port 80/443 │  │
-│  │ Port 3000  │    │         │    │             │  │
-│  └────────────┘    └─────────┘    └─────────────┘  │
+│  ┌────────────┐    ┌─────────┐                      │
+│  │  Pangolin  │◄───│ Gerbil  │                      │
+│  │  (Control) │    │  (VPN)  │                      │
+│  │ Port 3001  │    │UDP 51820│                      │
+│  │ Port 3000  │    │         │                      │
+│  └────────────┘    └─────────┘                      │
 │         │                                           │
 │  ┌──────▼──────┐                                    │
 │  │  SQLite DB  │ (persisted in pangolin-config volume)│
@@ -40,26 +38,20 @@ Internet
 └─────────────────────────────────────────────────────┘
 ```
 
-**Service Type**: Multi-service stack (Pangolin + Gerbil + Traefik)  
+**Service Type**: Multi-service stack (Pangolin + Gerbil)  
 **Database**: Self-contained SQLite (in `/app/config/db`)  
 **VPN**: WireGuard via Gerbil  
-**Proxy**: Embedded Traefik instance for tunneled services  
+**Routing**: Dokploy's Traefik handles HTTPS for the admin dashboard  
 
 ---
 
 ## Prerequisites
 
-1. **Dedicated server or VPS** (recommended — Pangolin uses ports 80, 443, 51820)
+1. **Dokploy** installed and running
 2. **DNS configuration**:
-   - `pangolin.example.com` → Server IP (admin dashboard)
-   - `*.example.com` → Server IP (wildcard for tunneled services)
-3. **Firewall rules**: Open ports `443/tcp`, `80/tcp`, `51820/udp`
-4. **Dokploy** installed and running
-
-> **⚠️ Port Conflict Warning**: Pangolin's embedded Traefik uses ports 80 and 443.
-> If Dokploy's Traefik already uses these ports on the same host, you must either:
-> - Deploy Pangolin on a **dedicated server**
-> - Change `HTTP_PROXY_PORT` and `HTTPS_PROXY_PORT` to alternate values (e.g., 8080, 8443)
+   - `pangolin.example.com` → Server IP (admin dashboard, routed via Dokploy Traefik)
+   - `*.example.com` → Server IP (optional wildcard for services accessed through WireGuard tunnels)
+3. **Firewall rules**: Open port `51820/udp`
 
 ---
 
@@ -72,9 +64,6 @@ Before deploying, set up DNS records:
 ```
 # Admin dashboard
 pangolin.example.com     A    <your-server-ip>
-
-# Wildcard for tunneled services
-*.example.com            A    <your-server-ip>
 ```
 
 ### 2. Deploy Template
@@ -108,10 +97,9 @@ Navigate to `https://pangolin.example.com/auth/initial-setup` and:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `pangolin_domain` | Admin dashboard domain | `pangolin.example.com` |
-| `base_domain` | Base domain for tunneled services | `example.com` |
+| `base_domain` | Base domain for WireGuard tunnel clients | `example.com` |
 | `admin_email` | Initial admin email address | `admin@example.com` |
 | `admin_password` | Initial admin password (auto-generated) | *(generated)* |
-| `letsencrypt_email` | Email for Let's Encrypt certificates | `admin@example.com` |
 | `app_secret` | Application secret key (auto-generated) | *(generated)* |
 | `resource_access_secret` | Resource token secret (auto-generated) | *(generated)* |
 
@@ -120,8 +108,6 @@ Navigate to `https://pangolin.example.com/auth/initial-setup` and:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `wireguard_port` | `51820` | WireGuard VPN UDP port |
-| `https_proxy_port` | `443` | HTTPS port for tunneled services |
-| `http_proxy_port` | `80` | HTTP port (redirects to HTTPS) |
 | `smtp_host` | *(empty)* | SMTP server for email notifications |
 | `smtp_port` | `587` | SMTP port |
 | `smtp_username` | *(empty)* | SMTP username |
@@ -137,8 +123,6 @@ These are set via Dokploy's environment variable injection:
 |----------|-------------|
 | `PANGOLIN_DOMAIN` | Admin dashboard domain |
 | `WIREGUARD_PORT` | WireGuard listen port |
-| `HTTPS_PROXY_PORT` | HTTPS proxy port |
-| `HTTP_PROXY_PORT` | HTTP proxy port |
 
 ---
 
@@ -201,31 +185,24 @@ Pangolin supports SSO via OpenID Connect (OIDC). Configure in the admin UI under
 
 | Port | Protocol | Purpose | Required |
 |------|----------|---------|----------|
-| `443` | TCP | HTTPS for tunneled services + Let's Encrypt | Yes |
-| `80` | TCP | HTTP → HTTPS redirect + Let's Encrypt challenge | Yes |
 | `51820` | UDP | WireGuard VPN tunnels | Yes |
+
+> **Note**: The admin dashboard HTTPS traffic (port 443) is handled by Dokploy's Traefik instance. Only the WireGuard UDP port needs to be opened in the firewall.
 
 ### Firewall Rules
 
 ```bash
-# Open required ports
-ufw allow 80/tcp
-ufw allow 443/tcp
+# Open WireGuard port
 ufw allow 51820/udp
-
-# Restrict admin dashboard to trusted IPs (recommended)
-ufw allow from <your-ip> to any port 443
 ```
 
-### DNS Wildcard Setup
+### DNS Setup
 
-Pangolin creates subdomains for each exposed service:
+Pangolin needs a domain for the admin dashboard:
 
 ```
-# All tunneled services use subdomains of base_domain
-api.example.com       → service behind Pangolin tunnel
-app.example.com       → another service
-db-admin.example.com  → protected database UI
+# Admin dashboard (routed via Dokploy Traefik)
+pangolin.example.com     A    <your-server-ip>
 ```
 
 ---
@@ -241,10 +218,9 @@ db-admin.example.com  → protected database UI
 
 ### Network Security
 
-- ✅ All traffic encrypted via TLS (Let's Encrypt)
+- ✅ Admin dashboard TLS handled by Dokploy's Traefik (Let's Encrypt)
 - ✅ WireGuard provides end-to-end encryption for VPN tunnels
-- ✅ Deploy on a dedicated server to avoid port conflicts
-- ✅ Use firewall to restrict access to management ports
+- ✅ Use firewall to restrict WireGuard port access
 - ✅ Enable identity provider authentication for zero-trust access
 
 ### Secrets Rotation
@@ -282,25 +258,11 @@ nc -u -zv your-server-ip 51820
 docker compose exec gerbil ls /var/config/key
 ```
 
-### Let's Encrypt Certificate Issues
-
-```bash
-# Check Traefik logs
-docker compose logs traefik
-
-# Verify HTTP challenge is reachable
-curl http://your-domain/.well-known/acme-challenge/test
-
-# Common cause: port 80 blocked by firewall
-ufw status
-```
-
 ### Services Not Accessible via Tunnel
 
 1. Verify site is connected: Pangolin admin → **Sites** → check status
 2. Check resource configuration: correct target URL
 3. Review access policies: user has permission to access resource
-4. Check Traefik config: `docker compose logs traefik`
 
 ---
 
@@ -308,12 +270,11 @@ ufw status
 
 ### Critical Data
 
-Back up these named volumes regularly:
+Back up this named volume regularly:
 
 | Volume | Contents |
 |--------|----------|
 | `pangolin-config` | SQLite database, WireGuard keys, Pangolin application configuration |
-| `traefik-certs` | Traefik ACME storage (Let's Encrypt certificates) |
 
 ```bash
 # Example backup command for pangolin config volume
@@ -341,11 +302,11 @@ To update Pangolin:
 
 Before going live:
 
-- [ ] DNS configured: `pangolin.example.com` and `*.example.com` → server IP
-- [ ] Firewall open: ports 80, 443 (TCP), 51820 (UDP)
+- [ ] DNS configured: `pangolin.example.com` → server IP
+- [ ] Firewall open: port 51820 (UDP)
 - [ ] Admin password changed after first login
 - [ ] MFA enabled on admin account
-- [ ] Let's Encrypt certificates active (check Traefik logs)
+- [ ] TLS certificate active (check Dokploy Traefik for domain)
 - [ ] SMTP configured (for user invites)
 - [ ] Identity provider configured (optional but recommended)
 - [ ] Volume backup strategy in place
@@ -368,9 +329,9 @@ Before going live:
 - **Image**: `ghcr.io/fosrl/pangolin:sha256-3013a0e89e3259567fd86d23af50fc1c7ad9216ab0693ceb823b01c35e6acb5`
 - **Gerbil**: `ghcr.io/fosrl/gerbil:1.3.0`
 - **Type**: Identity-aware VPN and Proxy Server
-- **Architecture**: Multi-service (Pangolin + Gerbil + Traefik)
+- **Architecture**: Multi-service (Pangolin + Gerbil)
 - **Storage**: SQLite in persistent volumes
-- **Networking**: WireGuard VPN + HTTP/HTTPS reverse proxy
+- **Networking**: WireGuard VPN, admin UI via Dokploy Traefik
 - **Status**: Production-Ready
 
 ---
