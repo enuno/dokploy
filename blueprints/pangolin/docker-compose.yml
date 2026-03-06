@@ -93,7 +93,7 @@ services:
   # This is Pangolin's own Traefik — separate from Dokploy's Traefik
   # ===========================================================================
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.3.0
     restart: unless-stopped
     # Shares Gerbil's network namespace so it can use Gerbil's exposed ports
     network_mode: "service:gerbil"
