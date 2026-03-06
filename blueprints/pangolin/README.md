@@ -35,7 +35,7 @@ Internet
 │  └────────────┘    └─────────┘    └─────────────┘  │
 │         │                                           │
 │  ┌──────▼──────┐                                    │
-│  │  SQLite DB  │  (persisted in pangolin-db volume) │
+│  │  SQLite DB  │ (persisted in pangolin-config volume)│
 │  └─────────────┘                                    │
 └─────────────────────────────────────────────────────┘
 ```
@@ -312,8 +312,8 @@ Back up these named volumes regularly:
 
 | Volume | Contents |
 |--------|----------|
-| `pangolin-config` | SQLite database, WireGuard keys, Let's Encrypt certs |
-| `traefik-certs` | Traefik certificate store (ACME) |
+| `pangolin-config` | SQLite database, WireGuard keys, Pangolin application configuration |
+| `traefik-certs` | Traefik ACME storage (Let's Encrypt certificates) |
 
 ```bash
 # Example backup command for pangolin config volume

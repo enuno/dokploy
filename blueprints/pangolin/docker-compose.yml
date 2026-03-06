@@ -13,6 +13,8 @@
 # Traefik on the same host — deploy on a dedicated server for best results.
 # =============================================================================
 
+version: "3.8"
+
 services:
   # ===========================================================================
   # Pangolin - Identity-Aware Proxy Control Plane
@@ -71,11 +73,23 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     ports:
-      # WireGuard VPN endpoint (UDP)
+      # ===========================================================================
+      # EXCEPTION TO BLUEPRINT "NO EXPOSED PORTS" RULE:
+      # Pangolin is a self-contained networking stack that includes its own Traefik
+      # instance. It requires host-level port binding for:
+      #   - WireGuard VPN (UDP 51820): must be reachable by remote tunnel clients
+      #   - HTTPS (443): terminates TLS for all services proxied through Pangolin
+      #   - HTTP (80): Let's Encrypt ACME httpChallenge; redirects to HTTPS
+      # These ports CANNOT be routed through Dokploy's Traefik because Gerbil and
+      # its Traefik must bind them directly on the host network stack.
+      # ===========================================================================
+      # WireGuard VPN endpoint (UDP) — must be reachable by tunnel clients
       - "${WIREGUARD_PORT:-51820}:51820/udp"
-      # HTTP/HTTPS for Traefik (Pangolin's own reverse proxy)
-      # WARNING: These may conflict with Dokploy's Traefik on the same host.
-      # Consider changing to alternate ports (e.g., 8443, 8080) if needed.
+      # HTTPS for Pangolin's embedded Traefik — terminates TLS for tunneled services
+      # WARNING: Conflicts with Dokploy's Traefik if deployed on the same host.
+      # Deploy on a dedicated server or change HTTPS_PROXY_PORT and HTTP_PROXY_PORT.
+      # NOTE: Changing HTTP_PROXY_PORT away from 80 will break Let's Encrypt
+      # ACME httpChallenge. Port 80 must remain accessible for certificate issuance.
       - "${HTTPS_PROXY_PORT:-443}:443"
       - "${HTTP_PROXY_PORT:-80}:80"
     networks:
@@ -118,6 +132,15 @@ volumes:
 
 # =============================================================================
 # Networks
+# =============================================================================
+# EXCEPTION TO BLUEPRINT "DON'T DEFINE NETWORKS" RULE:
+# This multi-service stack requires explicit network definitions because:
+#   - pangolin-internal: isolates Pangolin/Gerbil/Traefik inter-service traffic
+#     from the public-facing Dokploy network (security isolation)
+#   - dokploy-network: required to attach the pangolin service to Dokploy's
+#     host Traefik so the admin dashboard can be routed and TLS-terminated
+# Without these, service discovery between Pangolin and Gerbil breaks and the
+# admin dashboard cannot be reached via Dokploy's Traefik.
 # =============================================================================
 networks:
   pangolin-internal:

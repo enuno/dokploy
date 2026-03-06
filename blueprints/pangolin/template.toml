@@ -121,8 +121,8 @@ ingress:
 # Gerbil (WireGuard tunnel agent)
 # =============================================================================
 gerbil:
-  start_port: 51820
-  base_endpoint: "${base_domain}:51820"
+  start_port: ${wireguard_port}
+  base_endpoint: "${base_domain}:${wireguard_port}"
   block_size: 24
   site_block_size: 30
   subnet_group: "100.89.137.0/20"
@@ -188,6 +188,11 @@ log:
 entryPoints:
   web:
     address: ":80"
+    # NOTE: Port 80 must remain mapped to the host for ACME httpChallenge to work.
+    # The HTTP_PROXY_PORT variable controls which host port maps to this container
+    # port 80. If you change HTTP_PROXY_PORT away from 80, Let's Encrypt certificate
+    # issuance will fail. In that case, switch to tlsChallenge below (requires port 443)
+    # by replacing httpChallenge with: tlsChallenge: {}
     http:
       redirections:
         entryPoint:
@@ -202,6 +207,8 @@ certificatesResolvers:
     acme:
       email: "${letsencrypt_email}"
       storage: /letsencrypt/acme.json
+      # httpChallenge requires host port 80 → container port 80.
+      # If HTTP_PROXY_PORT is not 80, switch to: tlsChallenge: {}
       httpChallenge:
         entryPoint: web
 
