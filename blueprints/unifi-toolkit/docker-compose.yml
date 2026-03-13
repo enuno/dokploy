@@ -1,0 +1,101 @@
+version: '3.9'
+
+services:
+  unifi-toolkit:
+    # Pin to specific version (check https://github.com/Crosstalk-Solutions/unifi-toolkit/releases)
+    # Latest available: adjust version as needed
+    image: ghcr.io/crosstalk-solutions/unifi-toolkit:0.20.0
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - unifi-data:/app/data
+    environment:
+      # Domain & Application Configuration
+      DOMAIN: ${DOMAIN:?Set your domain (e.g., unifi.example.com)}
+      APP_URL: https://${DOMAIN}
+
+      # Application Security (CRITICAL - must be set)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set a secure encryption key (32+ characters, use openssl rand -base64 32)}
+
+      # UniFi Controller Configuration (REQUIRED)
+      UNIFI_CONTROLLER_URL: ${UNIFI_CONTROLLER_URL:?Set UniFi controller URL (e.g., https://192.168.1.1)}
+      UNIFI_SITE_ID: ${UNIFI_SITE_ID:-default}
+
+      # UniFi Authentication - Choose ONE option:
+      # Option A: API Key (Recommended for UniFi OS 3+)
+      UNIFI_API_KEY: ${UNIFI_API_KEY:-}
+
+      # Option B: Username/Password (Legacy UniFi Controllers)
+      UNIFI_USERNAME: ${UNIFI_USERNAME:-}
+      UNIFI_PASSWORD: ${UNIFI_PASSWORD:-}
+
+      # Application Logging & Behavior (Optional)
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///app/data/database.db}
+      DEPLOYMENT_TYPE: ${DEPLOYMENT_TYPE:-production}
+
+    networks:
+      - unifi-net
+      - dokploy-network
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unifi-toolkit.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.unifi-toolkit.entrypoints=websecure"
+      - "traefik.http.routers.unifi-toolkit.tls.certresolver=letsencrypt"
+      - "traefik.http.services.unifi-toolkit.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # OPTIONAL: Caddy Reverse Proxy (Alternative to Traefik for HTTPS)
+  # Uncomment the section below if you want to use Caddy instead of Traefik
+  # Note: Traefik is the recommended approach for Dokploy deployments
+  #
+  # caddy:
+  #   image: caddy:2.8-alpine
+  #   restart: always
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   environment:
+  #     CADDY_DOMAIN: ${CADDY_DOMAIN:-${DOMAIN}}
+  #     CADDY_EMAIL: ${CADDY_EMAIL:-admin@example.com}
+  #   networks:
+  #     - unifi-net
+  #     - dokploy-network
+  #   depends_on:
+  #     unifi-toolkit:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:2019/config"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 2
+  #     start_period: 10s
+
+volumes:
+  unifi-data:
+    driver: local
+  # Uncomment if using Caddy
+  # caddy_data:
+  #   driver: local
+  # caddy_config:
+  #   driver: local
+
+networks:
+  unifi-net:
+    driver: bridge
+  dokploy-network:
+    external: true

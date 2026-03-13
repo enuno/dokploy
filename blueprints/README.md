@@ -83,10 +83,12 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [robin](/blueprints/robin/) | AI-powered dark web OSINT tool with Venice.ai/OpenRouter.ai LLM support and Cloudflare R2 investigation storage | 2 (robin, tor) | Ready |
 | [scrt-link](/blueprints/scrt-link/) | End-to-end encrypted ephemeral secret sharing with self-destructing links and Cloudflare R2 storage | 2 (scrt-link, postgres) | Ready |
 | [swarm-bee](/blueprints/swarm-bee/) | Decentralized storage node for Ethereum Swarm network with BZZ token incentives | 1 (bee) | Ready |
+| [technitium-dns](/blueprints/technitium-dns/) | Authoritative/recursive DNS server with clustering, ad-blocking, Cloudflare R2 backups & Tunnel | 2 (technitium, rclone) | Ready |
 | [tor-relay](/blueprints/tor-relay/) | Tor network relay (middle/bridge/exit) supporting anonymous internet routing infrastructure | 1 (tor-relay) | Ready |
 | [uptime-kuma](/blueprints/uptime-kuma/) | Self-hosted monitoring tool for tracking service availability with 90+ notification providers | 1 (uptime-kuma) | Ready |
 | [umami](/blueprints/umami/) | Privacy-focused web analytics platform as an alternative to Google Analytics | 2 (umami, postgres) | Ready |
 | [usesend](/blueprints/usesend/) | Open-source email sending infrastructure powered by AWS SES with analytics dashboard and OAuth authentication | 3 (usesend, postgres, redis) | Ready |
+| [unifi-toolkit](/blueprints/unifi-toolkit/) | Network monitoring and analytics dashboard for Ubiquiti UniFi infrastructure | 1 (unifi-toolkit) | Ready |
 | [warp-docker](/blueprints/warp-docker/) | Cloudflare WARP client in Docker for WireGuard VPN access | 4 | Ready |
 | [warpgate](/blueprints/warpgate/) | Transparent SSH/HTTPS/MySQL/PostgreSQL bastion with session recording and access control | 1 (warpgate) | Ready |
 | [warpod](/blueprints/warpod/) | Cloudflare WARP proxy server for network-wide WARP routing | 3 | Ready |

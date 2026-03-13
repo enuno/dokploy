@@ -1,0 +1,70 @@
+# UniFi Toolkit - Network monitoring and analytics dashboard
+# https://github.com/Crosstalk-Solutions/unifi-toolkit
+
+[variables]
+# ===========================================
+# User-Provided Configuration
+# ===========================================
+domain = "${domain}"
+
+# ===========================================
+# Auto-Generated Secrets
+# ===========================================
+# Encryption key for application data (32 bytes base64-encoded)
+encryption_key = "${base64:32}"
+
+# ===========================================
+# UniFi Controller Configuration (User-Provided)
+# Leave blank - user must provide these
+# ===========================================
+unifi_controller_url = ""
+unifi_api_key = ""
+
+# Domain Configuration for Traefik
+[[config.domains]]
+serviceName = "unifi-toolkit"
+port = 8000
+host = "${domain}"
+
+# Environment Variables for Services
+[config.env]
+# ===========================================
+# Domain & Application Configuration
+# ===========================================
+DOMAIN = "${domain}"
+APP_URL = "https://${domain}"
+
+# ===========================================
+# Application Security (CRITICAL)
+# ===========================================
+# Encryption key for application data encryption
+# Auto-generated as base64-encoded 32-byte key
+ENCRYPTION_KEY = "${encryption_key}"
+
+# ===========================================
+# UniFi Controller Configuration (REQUIRED)
+# Must be set by user before deployment
+# Get from UniFi Controller Settings:
+# 1. Controller URL: https://192.168.1.1 (or your controller IP)
+# 2. API Key: Settings > Admins > Create API Key
+# 3. Site ID: defaults to "default" (from UniFi OS)
+# ===========================================
+UNIFI_CONTROLLER_URL = "${unifi_controller_url}"
+UNIFI_SITE_ID = "default"
+
+# UniFi Authentication - User provides ONE option:
+# Option A: API Key (Recommended for UniFi OS 3+)
+UNIFI_API_KEY = "${unifi_api_key}"
+
+# Option B: Username/Password (Legacy UniFi Controllers)
+# UNIFI_USERNAME = ""
+# UNIFI_PASSWORD = ""
+
+# ===========================================
+# Application Logging & Behavior (Optional)
+# Defaults are suitable for production
+# ===========================================
+LOG_LEVEL = "INFO"
+DEBUG = "false"
+DATABASE_URL = "sqlite:///app/data/database.db"
+DEPLOYMENT_TYPE = "production"
