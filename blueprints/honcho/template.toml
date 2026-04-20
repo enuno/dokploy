@@ -1,0 +1,45 @@
+# Honcho - Open source memory library for building stateful agents
+# https://github.com/plastic-labs/honcho
+
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+
+# LLM Provider API Keys (at least one is required)
+openai_api_key = "${OPENAI_API_KEY}"
+anthropic_api_key = "${ANTHROPIC_API_KEY:-}"
+gemini_api_key = "${GEMINI_API_KEY:-}"
+
+[config]
+[[config.domains]]
+serviceName = "api"
+port = 8000
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration
+# ===========================================
+HONCHO_DOMAIN = "${domain}"
+
+# ===========================================
+# Database Configuration (PostgreSQL + pgvector)
+# ===========================================
+POSTGRES_DB = "honcho"
+POSTGRES_USER = "honcho"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# LLM Provider API Keys
+# OpenAI is the default provider for embeddings and text generation.
+# Set at least one provider key. All keys are optional except OpenAI
+# which is used by default for most features.
+# ===========================================
+LLM_OPENAI_API_KEY = "${openai_api_key}"
+LLM_ANTHROPIC_API_KEY = "${anthropic_api_key}"
+LLM_GEMINI_API_KEY = "${gemini_api_key}"
+
+# ===========================================
+# Application Settings
+# ===========================================
+LOG_LEVEL = "INFO"

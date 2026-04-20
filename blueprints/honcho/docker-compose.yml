@@ -1,0 +1,165 @@
+services:
+  # =============================================================================
+  # Honcho API - Memory library for building stateful agents
+  # https://github.com/plastic-labs/honcho
+  # =============================================================================
+  api:
+    image: ghcr.io/plastic-labs/honcho:v0.0.14
+    restart: unless-stopped
+    command: ["sh", "/app/docker/entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # =====================================================================
+      # Database Configuration (Required)
+      # =====================================================================
+      DB_CONNECTION_URI: postgresql+psycopg://${POSTGRES_USER:-honcho}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-honcho}
+
+      # =====================================================================
+      # Cache Configuration
+      # =====================================================================
+      CACHE_URL: redis://redis:6379/0?suppress=true
+      CACHE_ENABLED: true
+
+      # =====================================================================
+      # LLM Provider API Keys (at least one required)
+      # =====================================================================
+      LLM_OPENAI_API_KEY: ${LLM_OPENAI_API_KEY:?Set OpenAI API key}
+      LLM_ANTHROPIC_API_KEY: ${LLM_ANTHROPIC_API_KEY:-}
+      LLM_GEMINI_API_KEY: ${LLM_GEMINI_API_KEY:-}
+
+      # =====================================================================
+      # Vector Store Configuration
+      # =====================================================================
+      VECTOR_STORE_TYPE: pgvector
+
+      # =====================================================================
+      # Authentication (disabled by default for simple setup)
+      # =====================================================================
+      AUTH_USE_AUTH: false
+
+      # =====================================================================
+      # Application Settings
+      # =====================================================================
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+    networks:
+      - honcho-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.honcho.rule=Host(`${HONCHO_DOMAIN}`)"
+      - "traefik.http.routers.honcho.entrypoints=websecure"
+      - "traefik.http.routers.honcho.tls.certresolver=letsencrypt"
+      - "traefik.http.services.honcho.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # Honcho Deriver - Background worker for memory extraction & reasoning
+  # =============================================================================
+  deriver:
+    image: ghcr.io/plastic-labs/honcho:v0.0.14
+    restart: unless-stopped
+    command: ["/app/.venv/bin/python", "-m", "src.deriver"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # =====================================================================
+      # Database Configuration
+      # =====================================================================
+      DB_CONNECTION_URI: postgresql+psycopg://${POSTGRES_USER:-honcho}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-honcho}
+
+      # =====================================================================
+      # Cache Configuration
+      # =====================================================================
+      CACHE_URL: redis://redis:6379/0?suppress=true
+      CACHE_ENABLED: true
+
+      # =====================================================================
+      # LLM Provider API Keys
+      # =====================================================================
+      LLM_OPENAI_API_KEY: ${LLM_OPENAI_API_KEY:?Set OpenAI API key}
+      LLM_ANTHROPIC_API_KEY: ${LLM_ANTHROPIC_API_KEY:-}
+      LLM_GEMINI_API_KEY: ${LLM_GEMINI_API_KEY:-}
+
+      # =====================================================================
+      # Vector Store Configuration
+      # =====================================================================
+      VECTOR_STORE_TYPE: pgvector
+
+      # =====================================================================
+      # Application Settings
+      # =====================================================================
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+    networks:
+      - honcho-net
+
+  # =============================================================================
+  # PostgreSQL with pgvector - Database & vector store backend
+  # =============================================================================
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg16
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-honcho}
+      POSTGRES_USER: ${POSTGRES_USER:-honcho}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - honcho-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-honcho} -d ${POSTGRES_DB:-honcho}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =============================================================================
+  # Redis - Cache & queue backend
+  # =============================================================================
+  redis:
+    image: redis:8.4-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - honcho-net
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  honcho-net:
+    driver: bridge
+  dokploy-network:
+    external: true
