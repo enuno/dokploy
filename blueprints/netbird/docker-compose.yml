@@ -1,0 +1,116 @@
+version: "3.8"
+
+# =============================================================================
+# NetBird - WireGuard-based VPN & Zero Trust Network Access
+# Combined server (v0.65.0+) with embedded IdP
+# https://github.com/netbirdio/netbird
+# https://docs.netbird.io/selfhosted/external-reverse-proxy
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # NetBird Dashboard - Web UI
+  # ===========================================================================
+  dashboard:
+    image: netbirdio/dashboard:v2.36.0
+    restart: unless-stopped
+    environment:
+      # Endpoints (external HTTPS URL)
+      NETBIRD_MGMT_API_ENDPOINT: https://${NETBIRD_DOMAIN}
+      NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${NETBIRD_DOMAIN}
+      # OIDC - Embedded IdP (Dex built into management server)
+      AUTH_AUDIENCE: netbird-dashboard
+      AUTH_CLIENT_ID: netbird-dashboard
+      AUTH_CLIENT_SECRET: ""
+      AUTH_AUTHORITY: https://${NETBIRD_DOMAIN}/oauth2
+      USE_AUTH0: "false"
+      AUTH_SUPPORTED_SCOPES: openid profile email groups
+      AUTH_REDIRECT_URI: /nb-auth
+      AUTH_SILENT_REDIRECT_URI: /nb-silent-auth
+      NETBIRD_TOKEN_SOURCE: idToken
+      # SSL - Terminated by Traefik
+      NGINX_SSL_PORT: 443
+      LETSENCRYPT_DOMAIN: none
+    networks:
+      - netbird-net
+      - dokploy-network
+    labels:
+      # =====================================================================
+      # Traefik Routing — Dashboard (catch-all, lowest priority)
+      # =====================================================================
+      - "traefik.enable=true"
+      - "traefik.http.routers.netbird-dashboard.rule=Host(`${NETBIRD_DOMAIN}`)"
+      - "traefik.http.routers.netbird-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.netbird-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.netbird-dashboard.priority=1"
+      - "traefik.http.services.netbird-dashboard.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
+  # NetBird Combined Server — Management + Signal + Relay + STUN
+  # v0.65.0+ combined container simplifies reverse-proxy configuration
+  # ===========================================================================
+  netbird-server:
+    image: netbirdio/netbird-server:0.68.3
+    restart: unless-stopped
+    ports:
+      # STUN server — MUST be exposed directly (UDP cannot be proxied)
+      - "3478:3478/udp"
+    volumes:
+      - netbird-data:/var/lib/netbird
+      - ./config.yaml:/etc/netbird/config.yaml:ro
+    command: ["--config", "/etc/netbird/config.yaml"]
+    networks:
+      - netbird-net
+      - dokploy-network
+    labels:
+      # =====================================================================
+      # Traefik Routing — gRPC (h2c / plaintext HTTP/2)
+      # =====================================================================
+      - "traefik.enable=true"
+      - "traefik.http.routers.netbird-grpc.rule=Host(`${NETBIRD_DOMAIN}`) && (PathPrefix(`/signalexchange.SignalExchange/`) || PathPrefix(`/management.ManagementService/`))"
+      - "traefik.http.routers.netbird-grpc.entrypoints=websecure"
+      - "traefik.http.routers.netbird-grpc.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.netbird-grpc.service=netbird-server-h2c"
+      # =====================================================================
+      # Traefik Routing — Backend (WebSocket, REST API, OAuth2)
+      # =====================================================================
+      - "traefik.http.routers.netbird-backend.rule=Host(`${NETBIRD_DOMAIN}`) && (PathPrefix(`/relay`) || PathPrefix(`/ws-proxy`) || PathPrefix(`/api`) || PathPrefix(`/oauth2`))"
+      - "traefik.http.routers.netbird-backend.entrypoints=websecure"
+      - "traefik.http.routers.netbird-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.netbird-backend.service=netbird-server"
+      # =====================================================================
+      # Traefik Services
+      # =====================================================================
+      - "traefik.http.services.netbird-server.loadbalancer.server.port=80"
+      - "traefik.http.services.netbird-server-h2c.loadbalancer.server.port=80"
+      - "traefik.http.services.netbird-server-h2c.loadbalancer.server.scheme=h2c"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  netbird-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  netbird-net:
+    driver: bridge
+  dokploy-network:
+    external: true

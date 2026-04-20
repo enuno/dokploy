@@ -1,0 +1,72 @@
+# NetBird - WireGuard-based VPN & Zero Trust Network Access
+# Self-hosted combined server with embedded IdP and web dashboard
+# https://github.com/netbirdio/netbird
+# https://docs.netbird.io/selfhosted/external-reverse-proxy
+
+[variables]
+# =============================================================================
+# Domain Configuration (REQUIRED)
+# =============================================================================
+domain = "${domain}"
+
+# =============================================================================
+# Security Secrets (auto-generated)
+# =============================================================================
+# Relay authentication secret (used by TURN/STUN and relay services)
+relay_auth_secret = "${password:32}"
+
+# SQLite datastore encryption key (must be base64, keep = padding)
+datastore_encryption_key = "${base64:32}"
+
+# =============================================================================
+# Dokploy Domain Mapping
+# =============================================================================
+[[config.domains]]
+serviceName = "dashboard"
+port = 80
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+NETBIRD_DOMAIN = "${domain}"
+
+# =============================================================================
+# NetBird Server Configuration File Mount
+# Combined server config (management + signal + relay + STUN)
+# =============================================================================
+[[config.mounts]]
+serviceName = "netbird-server"
+mountPath = "/etc/netbird/config.yaml"
+content = """
+server:
+  listenAddress: ":80"
+  exposedAddress: "https://${domain}:443"
+  stunPorts:
+    - 3478
+  metricsPort: 9090
+  healthcheckAddress: ":9000"
+  logLevel: "info"
+  logFile: "console"
+
+  authSecret: "${relay_auth_secret}"
+  dataDir: "/var/lib/netbird"
+
+  auth:
+    issuer: "https://${domain}/oauth2"
+    signKeyRefreshEnabled: true
+    dashboardRedirectURIs:
+      - "https://${domain}/nb-auth"
+      - "https://${domain}/nb-silent-auth"
+    cliRedirectURIs:
+      - "http://localhost:53000/"
+
+  reverseProxy:
+    trustedHTTPProxies:
+      - "0.0.0.0/0"
+
+  store:
+    engine: "sqlite"
+    encryptionKey: "${datastore_encryption_key}"
+"""
