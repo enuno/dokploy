@@ -1,0 +1,63 @@
+# signal-cli - Commandline interface for the Signal messenger
+# Official packaging from packaging.gitlab.io
+# JSON-RPC daemon for sending/receiving Signal messages on servers
+# https://packaging.gitlab.io/signal-cli/installation/docker/
+# https://github.com/AsamK/signal-cli
+
+[variables]
+# =============================================================================
+# Domain Configuration (REQUIRED)
+# =============================================================================
+domain = "${domain}"
+
+# =============================================================================
+# Image Variant
+# =============================================================================
+# Options: jre (stable, recommended) | native (experimental GraalVM build)
+variant = "jre"
+
+# =============================================================================
+# Image Tag (pinned release)
+# =============================================================================
+# Match the upstream signal-cli version.
+# Format: v<major>-<minor>-<patch>-<build>  (e.g. v0-14-2-1)
+tag = "v0-14-2-1"
+
+# =============================================================================
+# JSON-RPC Daemon Mode
+# =============================================================================
+# Options: http (recommended for Traefik) | tcp (raw TCP socket)
+# http -> port 3000, endpoint /api/v1/rpc
+# tcp  -> port 7583, raw JSON-RPC over TCP
+mode = "http"
+
+# =============================================================================
+# Daemon Port
+# =============================================================================
+# 3000 for http mode, 7583 for tcp mode
+port = "3000"
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+# Timezone for message timestamps
+tz = "UTC"
+
+# =============================================================================
+# Dokploy Domain Mapping
+# =============================================================================
+[[config.domains]]
+serviceName = "signal-cli"
+port = 3000
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+SIGNAL_DOMAIN = "${domain}"
+SIGNAL_CLI_VARIANT = "${variant}"
+SIGNAL_CLI_TAG = "${tag}"
+SIGNAL_CLI_MODE = "${mode}"
+SIGNAL_CLI_PORT = "${port}"
+TZ = "${tz}"
