@@ -1,0 +1,53 @@
+# Borgmatic Director UI - Web UI for Borgmatic and Borg Backup
+# Create, schedule, and manage backups with an intuitive web interface
+# https://github.com/SpeedbitsInfinityTools/borgmatic-ui-community
+
+[variables]
+# =============================================================================
+# Domain Configuration (REQUIRED)
+# =============================================================================
+domain = "${domain}"
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+# Optional: Pre-configured admin password (minimum 10 characters).
+# If left empty, you will create the password on first web login.
+admin_password = ""
+
+# Optional: JWT Secret Key for session tokens.
+# Auto-generated if empty. Set explicitly for consistent tokens across restarts.
+# Generate with: openssl rand -hex 32
+secret_key = ""
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+# Timezone for backup schedules and logs
+tz = "UTC"
+
+# Access token expiration in minutes (default: 1 day)
+access_token_expire_minutes = "1440"
+
+# Log level: debug, info, warn, error
+log_level = "info"
+
+# =============================================================================
+# Dokploy Domain Mapping
+# =============================================================================
+[[config.domains]]
+serviceName = "borgmatic-ui"
+port = 8000
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+BORGMATIC_DOMAIN = "${domain}"
+NODE_ENV = "production"
+TZ = "${tz}"
+ADMIN_PASSWORD = "${admin_password}"
+SECRET_KEY = "${secret_key}"
+ACCESS_TOKEN_EXPIRE_MINUTES = "${access_token_expire_minutes}"
+LOG_LEVEL = "${log_level}"

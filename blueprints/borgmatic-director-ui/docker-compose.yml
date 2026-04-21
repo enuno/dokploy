@@ -1,0 +1,100 @@
+version: "3.8"
+
+# =============================================================================
+# Borgmatic Director UI - Web UI for Borgmatic and Borg Backup
+# https://github.com/SpeedbitsInfinityTools/borgmatic-ui-community
+# =============================================================================
+
+services:
+  borgmatic-ui:
+    image: ghcr.io/speedbitsinfinitytools/borgmatic-ui:v1.0.33
+    restart: unless-stopped
+    volumes:
+      # Configuration storage (SSH keys, repositories, schedules)
+      - borgmatic-config:/app/config
+      # Data storage (job history, logs, cache)
+      - borgmatic-data:/app/data
+      # =====================================================================
+      # OPTIONAL: Host filesystem access for backups
+      # Mounts host root as read-only so borgmatic can back up host paths.
+      # Uncomment if you want to back up the host filesystem.
+      # =====================================================================
+      # - /:/host:ro
+      # =====================================================================
+      # OPTIONAL: Docker socket for database discovery
+      # Allows automatic detection of MySQL, PostgreSQL, MongoDB containers.
+      # Uncomment if you want database auto-discovery.
+      # SECURITY: Read-only mount — container can inspect but not modify.
+      # =====================================================================
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # =====================================================================
+      # Core Configuration
+      # =====================================================================
+      NODE_ENV: production
+      TZ: ${TZ:-UTC}
+      # =====================================================================
+      # Optional: Pre-configured admin password (min 10 characters)
+      # If unset, you will create the password on first web login.
+      # =====================================================================
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # =====================================================================
+      # Optional: JWT Secret Key (auto-generated if not provided)
+      # Set this for consistent tokens across container restarts.
+      # Generate: openssl rand -hex 32
+      # =====================================================================
+      SECRET_KEY: ${SECRET_KEY:-}
+      # =====================================================================
+      # Optional: Access token expiration (minutes)
+      # =====================================================================
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      # =====================================================================
+      # Optional: Log level
+      # =====================================================================
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    networks:
+      - borgmatic-net
+      - dokploy-network
+    labels:
+      # =====================================================================
+      # Traefik Routing
+      # =====================================================================
+      - "traefik.enable=true"
+      - "traefik.http.routers.borgmatic-ui.rule=Host(`${BORGMATIC_DOMAIN}`)"
+      - "traefik.http.routers.borgmatic-ui.entrypoints=websecure"
+      - "traefik.http.routers.borgmatic-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.borgmatic-ui.middlewares=borgmatic-security@docker"
+      # Security headers middleware
+      - "traefik.http.middlewares.borgmatic-security.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.borgmatic-security.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.borgmatic-security.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.borgmatic-security.headers.frameDeny=true"
+      - "traefik.http.middlewares.borgmatic-security.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.borgmatic-security.headers.referrerPolicy=strict-origin-when-cross-origin"
+      # Service configuration
+      - "traefik.http.services.borgmatic-ui.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  borgmatic-config:
+    driver: local
+  borgmatic-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  borgmatic-net:
+    driver: bridge
+  dokploy-network:
+    external: true
