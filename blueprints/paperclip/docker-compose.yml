@@ -1,0 +1,94 @@
+services:
+  paperclip:
+    build:
+      context: https://github.com/paperclipai/paperclip.git#master
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      # =====================================================================
+      # Core Server Configuration
+      # =====================================================================
+      PORT: "3100"
+      HOST: "0.0.0.0"
+      SERVE_UI: "true"
+      PAPERCLIP_HOME: /paperclip
+      PAPERCLIP_PUBLIC_URL: https://${PAPERCLIP_DOMAIN}
+      PAPERCLIP_DEPLOYMENT_MODE: "${PAPERCLIP_DEPLOYMENT_MODE:-authenticated}"
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "${PAPERCLIP_DEPLOYMENT_EXPOSURE:-private}"
+
+      # =====================================================================
+      # Database
+      # =====================================================================
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+      # =====================================================================
+      # Authentication
+      # =====================================================================
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a strong secret for auth}
+
+      # =====================================================================
+      # Optional LLM Provider Keys (fill in as needed)
+      # =====================================================================
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # =====================================================================
+      # Telemetry
+      # =====================================================================
+      PAPERCLIP_TELEMETRY_DISABLED: "${PAPERCLIP_TELEMETRY_DISABLED:-1}"
+
+    volumes:
+      - paperclip-data:/paperclip
+    networks:
+      - paperclip-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperclip.rule=Host(`${PAPERCLIP_DOMAIN}`)"
+      - "traefik.http.routers.paperclip.entrypoints=websecure"
+      - "traefik.http.routers.paperclip.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paperclip.loadbalancer.server.port=3100"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-paperclip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong Postgres password}
+      POSTGRES_DB: ${POSTGRES_DB:-paperclip}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - paperclip-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  paperclip-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  paperclip-net:
+    driver: bridge
+  dokploy-network:
+    external: true

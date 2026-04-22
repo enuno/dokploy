@@ -72,6 +72,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [paaster](/blueprints/paaster/) | Secure end-to-end encrypted pastebin with zero-knowledge server | 5 (paaster, mongodb, + helpers) | Ready |
 | [padloc](/blueprints/padloc/) | Open-source password manager with end-to-end encryption and zero-knowledge architecture | 2 (server, pwa) | Ready |
 | [pangolin](/blueprints/pangolin/) | Identity-aware VPN and proxy server with WireGuard tunnels and zero-trust access control | 2 (pangolin, gerbil) | Ready |
+| [paperclip](/blueprints/paperclip/) | AI agent orchestration platform — run a company of agents with org charts, budgets, goals, and governance | 2 (paperclip, postgres) | Ready |
 | [personalized-deep-research](/blueprints/personalized-deep-research/) | Intelligent research agent with Nuxt frontend for complex AI-powered research tasks | 1 (deep-research-web) | Ready |
 | [signal-cli-rest-api](/blueprints/signal-cli-rest-api/) | REST API wrapper for Signal Messenger enabling programmatic messaging with QR code device linking | 1 (signal-cli-rest-api) | Ready |
 | [someguy](/blueprints/someguy/) | HTTP Delegated Routing V1 server for IPFS with Amino DHT proxy | 1 (someguy) | Ready |

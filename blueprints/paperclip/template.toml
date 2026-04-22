@@ -1,0 +1,55 @@
+# Paperclip — AI agent orchestration platform
+# https://github.com/paperclipai/paperclip
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+domain = "${domain}"
+postgres_password = "${password:32}"
+auth_secret = "${password:64}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "paperclip"
+port = 3100
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+# ---------------------------------------------------------------------------
+# Domain & Deployment
+# ---------------------------------------------------------------------------
+PAPERCLIP_DOMAIN = "${domain}"
+PAPERCLIP_PUBLIC_URL = "https://${domain}"
+
+# ---------------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------------
+POSTGRES_USER = "paperclip"
+POSTGRES_PASSWORD = "${postgres_password}"
+POSTGRES_DB = "paperclip"
+DATABASE_URL = "postgres://paperclip:${postgres_password}@postgres:5432/paperclip"
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+BETTER_AUTH_SECRET = "${auth_secret}"
+
+# ---------------------------------------------------------------------------
+# Deployment Mode
+# ---------------------------------------------------------------------------
+# Options: authenticated (default), local_trusted
+PAPERCLIP_DEPLOYMENT_MODE = "authenticated"
+
+# Options: private (default), public
+PAPERCLIP_DEPLOYMENT_EXPOSURE = "private"
+
+# ---------------------------------------------------------------------------
+# Telemetry
+# ---------------------------------------------------------------------------
+PAPERCLIP_TELEMETRY_DISABLED = "1"
