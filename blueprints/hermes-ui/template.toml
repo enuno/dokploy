@@ -1,0 +1,23 @@
+# Hermes UI — Glassmorphic web interface for Hermes Agent
+# https://github.com/pyrate-llama/hermes-ui
+# https://github.com/NousResearch/hermes-agent
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+domain = "${domain}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "hermes-ui"
+port = 3333
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+HERMES_DOMAIN = "${domain}"

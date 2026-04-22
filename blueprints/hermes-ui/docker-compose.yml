@@ -1,0 +1,54 @@
+services:
+  hermes-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      # =====================================================================
+      # Domain & Network
+      # =====================================================================
+      HERMES_DOMAIN: ${HERMES_DOMAIN:?Set your Hermes UI domain}
+
+      # =====================================================================
+      # Hermes Agent Configuration
+      # =====================================================================
+      # These are passed through to the agent runtime.
+      # For full provider setup, edit ~/.hermes/config.yaml in the volume
+      # or use the Settings modal inside the UI.
+      # ----------------------------------------------------------------------
+      HERMES_HOME: /home/agent/.hermes
+      HOME: /home/agent
+
+    volumes:
+      - hermes-data:/home/agent/.hermes
+    networks:
+      - hermes-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hermes-ui.rule=Host(`${HERMES_DOMAIN}`)"
+      - "traefik.http.routers.hermes-ui.entrypoints=websecure"
+      - "traefik.http.routers.hermes-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hermes-ui.loadbalancer.server.port=3333"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3333/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  hermes-data:
+    driver: local
+
+networks:
+  hermes-net:
+    driver: bridge
+  dokploy-network:
+    external: true

@@ -38,6 +38,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [gitingest](/blueprints/gitingest/) | Convert Git repositories into LLM-friendly text digests | 3 | Ready |
 | [glance](/blueprints/glance/) | Lightweight customizable feed dashboard aggregating RSS, weather, stocks, and more | 1 (glance) | Ready |
 | [goaccess-npm](/blueprints/goaccess-npm/) | Real-time web log analyzer with dashboard for Nginx Proxy Manager, Traefik, and Caddy logs | 1 (goaccess) | Ready |
+| [hermes-ui](/blueprints/hermes-ui/) | Glassmorphic web interface for Hermes Agent — self-hosted AI assistant with chat, skills, memory, and MCP tools | 1 (hermes-ui) | Ready |
 | [grafana-observability](/blueprints/grafana-observability/) | Complete observability stack with metrics, logs, and traces | 17 | Ready |
 | [haven](/blueprints/haven/) | High Availability Vault for Events on Nostr with S3 backend | 5 | Ready |
 | [homarr](/blueprints/homarr/) | Modern homelab dashboard with 30+ service integrations and Docker management | 1 (homarr) | Ready |
