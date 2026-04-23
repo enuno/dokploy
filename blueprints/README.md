@@ -53,6 +53,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [matrix-synapse](/blueprints/matrix-synapse/) | Matrix homeserver with Cloudflare R2 media storage and federation support | 3 (synapse, postgres, redis) | Ready |
 | [mcp-context-forge](/blueprints/mcp-context-forge/) | Model Context Protocol Gateway & Registry with enterprise auth, multi-tenant teams, and OpenTelemetry observability | 3 (mcpgateway, mariadb, redis) | Ready |
 | [mcp-registry](/blueprints/mcp-registry/) | Community-driven MCP server registry with GitHub OAuth namespace ownership and server publishing | 2 (mcp-registry, postgres) | Ready |
+| [mission-control](/blueprints/mission-control/) | Self-hosted AI agent orchestration dashboard with task dispatch, multi-agent workflows, cost tracking, and governance | 1 (mission-control) | Ready |
 | [kubo](/blueprints/kubo/) | Full IPFS node with Gateway (HTTP content access) and RPC API (node management) | 1 (kubo) | Ready |
 | [langflow](/blueprints/langflow/) | Visual AI workflow builder for creating LLM-powered applications with PostgreSQL backend | 2 (langflow, postgres) | Ready |
 | [lightningstream](/blueprints/lightningstream/) | Near real-time LMDB replication for PowerDNS using S3-compatible storage (MinIO/R2) | 3 (authoritative, syncer, minio) | Ready |

@@ -1,0 +1,25 @@
+# Mission Control — Self-hosted AI agent orchestration dashboard
+# https://github.com/builderz-labs/mission-control
+
+# =============================================================================
+# Variables
+# =============================================================================
+[variables]
+domain = "${domain}"
+admin_password = "${password:32}"
+
+# =============================================================================
+# Domains
+# =============================================================================
+[[config.domains]]
+serviceName = "mission-control"
+port = 3000
+host = "${domain}"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[config.env]
+MISSION_CONTROL_DOMAIN = "${domain}"
+AUTH_USER = "admin"
+AUTH_PASS = "${admin_password}"

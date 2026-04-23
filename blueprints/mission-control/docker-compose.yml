@@ -1,0 +1,77 @@
+services:
+  mission-control:
+    image: ghcr.io/builderz-labs/mission-control:v2.0.1
+    restart: always
+    environment:
+      # =====================================================================
+      # Server
+      # =====================================================================
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+      # =====================================================================
+      # Authentication
+      # =====================================================================
+      # Optional: seed an admin account on first run.
+      # If unset, visit /setup after deploy to create the admin manually.
+      AUTH_USER: ${AUTH_USER:-admin}
+      AUTH_PASS: ${AUTH_PASS:-}
+
+      # =====================================================================
+      # Network Security
+      # =====================================================================
+      # Must include the public domain or Traefik will be blocked.
+      MC_ALLOWED_HOSTS: "localhost,127.0.0.1,::1,${MISSION_CONTROL_DOMAIN}"
+      MC_COOKIE_SECURE: "true"
+      MC_COOKIE_SAMESITE: "strict"
+
+      # =====================================================================
+      # Data Paths
+      # =====================================================================
+      MISSION_CONTROL_DATA_DIR: /app/.data
+
+      # =====================================================================
+      # Gateway (optional — configure via UI if needed)
+      # =====================================================================
+      # Set to true to disable gateway-required warnings in the UI.
+      # NEXT_PUBLIC_GATEWAY_OPTIONAL is baked at build time; use the
+      # Advanced Settings panel in the login screen to override at runtime.
+      # NEXT_PUBLIC_GATEWAY_OPTIONAL: "true"
+
+      # =====================================================================
+      # Telemetry / Privacy
+      # =====================================================================
+      # No telemetry is sent by default; all data stays local.
+
+    volumes:
+      - mission-control-data:/app/.data
+    networks:
+      - mission-control-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mission-control.rule=Host(`${MISSION_CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.mission-control.entrypoints=websecure"
+      - "traefik.http.routers.mission-control.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mission-control.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "node", "/app/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  mission-control-data:
+    driver: local
+
+networks:
+  mission-control-net:
+    driver: bridge
+  dokploy-network:
+    external: true
