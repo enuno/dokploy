@@ -55,12 +55,15 @@ On first visit, Paperclip will guide you through creating:
 
 ### 2. Configure LLM Providers
 
-Add your API keys in the Paperclip settings or via environment variables:
+This template is pre-configured for **Kimi** as the primary LLM provider. Add your API key in the Paperclip settings or via environment variables:
 
-| Provider | Env Var |
-|----------|---------|
-| OpenAI | `OPENAI_API_KEY` |
-| Anthropic | `ANTHROPIC_API_KEY` |
+| Provider | Env Var | Endpoint |
+|----------|---------|----------|
+| **Kimi (primary)** | `KIMI_API_KEY` | `https://api.kimi.com/coding/v1` |
+| OpenAI (fallback) | `OPENAI_API_KEY` | auto-mapped from Kimi key |
+| Anthropic (fallback) | `ANTHROPIC_API_KEY` | — |
+
+Kimi uses an OpenAI-compatible API, so Paperclip's OpenAI adapter automatically routes to `https://api.kimi.com/coding/v1` when `KIMI_API_KEY` is set.
 
 ### 3. Invite Your First CEO
 
@@ -69,6 +72,7 @@ In `authenticated` mode (default), Paperclip requires you to invite a CEO user v
 ### 4. Connect Agents
 
 Paperclip supports adapters for:
+- **Kimi CLI** (local or in-container)
 - OpenClaw / OpenClaw Gateway
 - Claude Code (local)
 - Codex (local)
@@ -76,6 +80,26 @@ Paperclip supports adapters for:
 - Gemini (local)
 - OpenCode (local)
 - Pi (local)
+
+#### Using Kimi CLI as an Agent Adapter
+
+To use [Kimi Code CLI](https://github.com/MoonshotAI/kimi-cli) (`kimi-cli`) as a Paperclip agent adapter:
+
+**Option A — Local install (recommended)**
+```bash
+curl -L code.kimi.com/install.sh | bash
+# Then configure Paperclip to invoke `kimi` on the host machine
+```
+
+**Option B — In-container install**
+Open a terminal in the running Paperclip container and run:
+```bash
+# Install kimi-cli (Python + uv based)
+curl -L code.kimi.com/install.sh | bash
+# or via pipx/uv if available in the container
+```
+
+After installation, run `/login` inside `kimi` to authenticate with the Kimi Code platform using your API key. Paperclip can then dispatch heartbeats to `kimi` as an agent employee.
 
 ## Environment Variables
 
@@ -90,7 +114,10 @@ Paperclip supports adapters for:
 | `POSTGRES_USER` | `paperclip` | Database user |
 | `POSTGRES_PASSWORD` | — | Database password |
 | `POSTGRES_DB` | `paperclip` | Database name |
-| `OPENAI_API_KEY` | — | Optional OpenAI API key |
+| `KIMI_API_KEY` | — | **Required.** Kimi API key |
+| `KIMI_BASE_URL` | `https://api.kimi.com/coding/v1` | Kimi API endpoint |
+| `OPENAI_API_KEY` | — | Auto-set from `KIMI_API_KEY` for OpenAI-compatible adapters |
+| `OPENAI_BASE_URL` | `https://api.kimi.com/coding/v1` | OpenAI-compatible base URL (points to Kimi) |
 | `ANTHROPIC_API_KEY` | — | Optional Anthropic API key |
 | `PAPERCLIP_TELEMETRY_DISABLED` | `1` | Disable telemetry by default |
 

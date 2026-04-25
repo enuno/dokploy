@@ -27,9 +27,17 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a strong secret for auth}
 
       # =====================================================================
-      # Optional LLM Provider Keys (fill in as needed)
+      # LLM Provider Configuration — Kimi (primary) with OpenAI/Anthropic fallback
       # =====================================================================
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Kimi API (OpenAI-compatible endpoint)
+      KIMI_API_KEY: ${KIMI_API_KEY:?Set your Kimi API key}
+      KIMI_BASE_URL: "https://api.kimi.com/coding/v1"
+
+      # Map Kimi credentials to OpenAI-compatible env vars for Paperclip adapters
+      OPENAI_API_KEY: ${KIMI_API_KEY}
+      OPENAI_BASE_URL: "https://api.kimi.com/coding/v1"
+
+      # Optional fallback providers
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
       # =====================================================================

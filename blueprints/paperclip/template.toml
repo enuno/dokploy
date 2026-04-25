@@ -8,6 +8,7 @@
 domain = "${domain}"
 postgres_password = "${password:32}"
 auth_secret = "${password:64}"
+kimi_api_key = "${KIMI_API_KEY}"
 
 # =============================================================================
 # Domains
@@ -48,6 +49,17 @@ PAPERCLIP_DEPLOYMENT_MODE = "authenticated"
 
 # Options: private (default), public
 PAPERCLIP_DEPLOYMENT_EXPOSURE = "private"
+
+# ---------------------------------------------------------------------------
+# LLM Providers — Kimi (primary)
+# ---------------------------------------------------------------------------
+KIMI_API_KEY = "${kimi_api_key}"
+KIMI_BASE_URL = "https://api.kimi.com/coding/v1"
+OPENAI_API_KEY = "${kimi_api_key}"
+OPENAI_BASE_URL = "https://api.kimi.com/coding/v1"
+
+# Optional fallback providers
+# ANTHROPIC_API_KEY = ""
 
 # ---------------------------------------------------------------------------
 # Telemetry
