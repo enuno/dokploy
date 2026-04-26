@@ -6,7 +6,9 @@
 # =============================================================================
 [variables]
 domain = "${domain}"
+postgres_user = "paperclip"
 postgres_password = "${password:32}"
+postgres_db = "paperclip"
 auth_secret = "${password:64}"
 kimi_api_key = "${KIMI_API_KEY}"
 
@@ -31,9 +33,9 @@ PAPERCLIP_PUBLIC_URL = "https://${domain}"
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-POSTGRES_USER = "paperclip"
+POSTGRES_USER = "${postgres_user}"
 POSTGRES_PASSWORD = "${postgres_password}"
-POSTGRES_DB = "paperclip"
+POSTGRES_DB = "${postgres_db}"
 DATABASE_URL = "postgres://paperclip:${postgres_password}@postgres:5432/paperclip"
 
 # ---------------------------------------------------------------------------

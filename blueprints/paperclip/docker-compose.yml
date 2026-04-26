@@ -1,7 +1,7 @@
 services:
   paperclip:
     build:
-      context: https://github.com/paperclipai/paperclip.git#master
+      context: .
       dockerfile: Dockerfile
     restart: always
     environment:
@@ -19,7 +19,10 @@ services:
       # =====================================================================
       # Database
       # =====================================================================
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-paperclip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong Postgres password}
+      POSTGRES_DB: ${POSTGRES_DB:-paperclip}
+      DATABASE_URL: postgres://${POSTGRES_USER:-paperclip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-paperclip}
 
       # =====================================================================
       # Authentication
