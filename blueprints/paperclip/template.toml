@@ -36,7 +36,6 @@ PAPERCLIP_PUBLIC_URL = "https://${domain}"
 POSTGRES_USER = "${postgres_user}"
 POSTGRES_PASSWORD = "${postgres_password}"
 POSTGRES_DB = "${postgres_db}"
-DATABASE_URL = "postgres://paperclip:${postgres_password}@postgres:5432/paperclip"
 
 # ---------------------------------------------------------------------------
 # Auth

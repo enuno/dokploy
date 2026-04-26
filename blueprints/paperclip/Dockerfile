@@ -80,6 +80,20 @@ RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/cod
 COPY --from=clone /src/scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Wrapper to URL-encode POSTGRES_PASSWORD before constructing DATABASE_URL
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'set -e' \
+  '' \
+  'if [ -z "$DATABASE_URL" ] && [ -n "$POSTGRES_PASSWORD" ]; then' \
+  '  ENCODED_PASS=$(node -pe "encodeURIComponent(process.env.POSTGRES_PASSWORD)")' \
+  '  export DATABASE_URL="postgres://${POSTGRES_USER:-paperclip}:${ENCODED_PASS}@postgres:5432/${POSTGRES_DB:-paperclip}"' \
+  'fi' \
+  '' \
+  'exec /usr/local/bin/docker-entrypoint.sh "$@"' \
+  > /usr/local/bin/start-paperclip.sh \
+  && chmod +x /usr/local/bin/start-paperclip.sh
+
 ENV NODE_ENV=production \
  HOME=/paperclip \
  HOST=0.0.0.0 \
@@ -97,5 +111,5 @@ ENV NODE_ENV=production \
 VOLUME ["/paperclip"]
 EXPOSE 3100
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/start-paperclip.sh"]
 CMD ["node", "--import", "./server/node_modules/tsx/dist/loader.mjs", "server/dist/index.js"]
