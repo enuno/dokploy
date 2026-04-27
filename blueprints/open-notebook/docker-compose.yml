@@ -1,91 +1,53 @@
+version: "3.8"
+
 services:
   # =============================================================================
-  # Open Notebook - Private Multi-Model AI Knowledge Management Platform
-  # Local alternative to NotebookLM with full privacy and control
+  # Open Notebook - AI-powered notebook for researchers
+  # https://github.com/lfnovo/open-notebook
   # =============================================================================
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:1.8.5
     restart: always
+    depends_on:
+      surrealdb:
+        condition: service_started
     volumes:
-      # Persist user notebooks and research data
       - open-notebook-data:/app/data
-      # Persist SurrealDB embedded database
-      - open-notebook-db:/mydata
     environment:
-      # =======================================================================
-      # API Configuration
-      # =======================================================================
-      API_URL: https://${OPEN_NOTEBOOK_DOMAIN}:5055
+      # ========================================================================
+      # Security (REQUIRED)
+      # ========================================================================
+      OPEN_NOTEBOOK_ENCRYPTION_KEY: ${OPEN_NOTEBOOK_ENCRYPTION_KEY:?Set an encryption key}
+
+      # ========================================================================
+      # Domain & API Configuration
+      # ========================================================================
+      API_URL: https://${OPEN_NOTEBOOK_DOMAIN:?Set your domain}
       INTERNAL_API_URL: http://localhost:5055
+      CORS_ORIGINS: https://${OPEN_NOTEBOOK_DOMAIN}
 
-      # =======================================================================
-      # Database Configuration (SurrealDB Embedded)
-      # =======================================================================
-      SURREAL_URL: ws://localhost:8000/rpc
+      # ========================================================================
+      # SurrealDB Connection
+      # ========================================================================
+      SURREAL_URL: ws://surrealdb:8000/rpc
       SURREAL_USER: ${SURREAL_USER:-root}
-      SURREAL_PASSWORD: ${SURREAL_PASSWORD:?Set SurrealDB password}
+      SURREAL_PASSWORD: ${SURREAL_PASSWORD:-root}
       SURREAL_NAMESPACE: ${SURREAL_NAMESPACE:-open_notebook}
-      SURREAL_DATABASE: ${SURREAL_DATABASE:-production}
+      SURREAL_DATABASE: ${SURREAL_DATABASE:-open_notebook}
 
-      # =======================================================================
-      # Security (Optional - Recommended for Public Hosting)
-      # =======================================================================
-      OPEN_NOTEBOOK_PASSWORD: ${OPEN_NOTEBOOK_PASSWORD:-}
-
-      # =======================================================================
-      # AI Provider Configuration (At Least One Required)
-      # =======================================================================
-      # OpenAI
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-
-      # Anthropic Claude
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-
-      # Local Ollama
-      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-}
-
-      # Google Gemini
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
-
-      # Mistral
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
-
-      # DeepSeek
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-
-      # =======================================================================
-      # Optional Features
-      # =======================================================================
-      # ElevenLabs TTS (for podcast generation)
-      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
-
-      # Web Crawling
-      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
-      JINA_API_KEY: ${JINA_API_KEY:-}
-
-      # Voyage AI Embeddings
-      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
-
-      # =======================================================================
-      # Application Settings
-      # =======================================================================
-      API_CLIENT_TIMEOUT: ${API_CLIENT_TIMEOUT:-300}
-      ESPERANTO_LLM_TIMEOUT: ${ESPERANTO_LLM_TIMEOUT:-60}
-      TTS_BATCH_SIZE: ${TTS_BATCH_SIZE:-5}
-
-      # =======================================================================
-      # Container User (Optional)
-      # =======================================================================
-      UID: ${UID:-1000}
-      GID: ${GID:-1000}
+      # ========================================================================
+      # Optional: Content Processing
+      # ========================================================================
+      CHUNK_SIZE: ${CHUNK_SIZE:-1500}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-150}
 
     networks:
-      - open-notebook-network
+      - open-notebook-net
       - dokploy-network
     labels:
-      # =======================================================================
+      # ========================================================================
       # Traefik Routing Configuration
-      # =======================================================================
+      # ========================================================================
       - "traefik.enable=true"
       - "traefik.http.routers.open-notebook.rule=Host(`${OPEN_NOTEBOOK_DOMAIN}`)"
       - "traefik.http.routers.open-notebook.entrypoints=websecure"
@@ -104,11 +66,43 @@ services:
       - "traefik.http.services.open-notebook.loadbalancer.server.port=8502"
       - "traefik.docker.network=dokploy-network"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8502"]
+      test: ["CMD", "curl", "-f", "http://localhost:8502/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Next.js + FastAPI + embedded SurrealDB startup time
+      start_period: 60s
+
+  # =============================================================================
+  # SurrealDB - Distributed NoSQL database
+  # https://surrealdb.com
+  # =============================================================================
+  surrealdb:
+    image: surrealdb/surrealdb:v2.6.5
+    restart: always
+    # NOTE: Credentials are hardcoded here because SurrealDB CLI args do not
+    # support env interpolation in array form. The DB is isolated to the
+    # internal network and not exposed externally.
+    command:
+      - start
+      - --log
+      - info
+      - --user
+      - root
+      - --pass
+      - root
+      - rocksdb:/mydata/mydatabase.db
+    volumes:
+      - surrealdb-data:/mydata
+    environment:
+      SURREAL_EXPERIMENTAL_GRAPHQL: "true"
+    networks:
+      - open-notebook-net
+    healthcheck:
+      test: ["CMD", "surreal", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # =============================================================================
 # Volumes
@@ -116,14 +110,14 @@ services:
 volumes:
   open-notebook-data:
     driver: local
-  open-notebook-db:
+  surrealdb-data:
     driver: local
 
 # =============================================================================
 # Networks
 # =============================================================================
 networks:
-  open-notebook-network:
+  open-notebook-net:
     driver: bridge
   dokploy-network:
     external: true
