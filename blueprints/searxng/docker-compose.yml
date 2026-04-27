@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  searxng:
+    image: searxng/searxng:2026.4.24-a7ac696b4
+    restart: always
+    depends_on:
+      valkey:
+        condition: service_healthy
+    volumes:
+      - searxng-data:/var/cache/searxng
+    environment:
+      SEARXNG_BASE_URL: https://${SEARXNG_DOMAIN:?Set your domain}
+      SEARXNG_PORT: 8080
+      SEARXNG_BIND_ADDRESS: "0.0.0.0"
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set a secret key}
+      SEARXNG_LIMITER: ${SEARXNG_LIMITER:-false}
+      SEARXNG_PUBLIC_INSTANCE: ${SEARXNG_PUBLIC_INSTANCE:-false}
+      SEARXNG_IMAGE_PROXY: ${SEARXNG_IMAGE_PROXY:-true}
+      SEARXNG_METHOD: ${SEARXNG_METHOD:-POST}
+      SEARXNG_VALKEY_URL: redis://valkey:6379/0
+    networks:
+      - searxng-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.searxng.rule=Host(`${SEARXNG_DOMAIN}`)"
+      - "traefik.http.routers.searxng.entrypoints=websecure"
+      - "traefik.http.routers.searxng.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.searxng.middlewares=searxng-security-headers@docker"
+      - "traefik.http.middlewares.searxng-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.searxng-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.searxng-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.searxng-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.searxng-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.searxng-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.services.searxng.loadbalancer.server.port=8080"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  valkey:
+    image: valkey/valkey:9.0.3-alpine
+    restart: always
+    command: valkey-server --save 30 1 --loglevel warning
+    volumes:
+      - valkey-data:/data
+    networks:
+      - searxng-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  searxng-data:
+    driver: local
+  valkey-data:
+    driver: local
+
+networks:
+  searxng-net:
+    driver: bridge
+  dokploy-network:
+    external: true

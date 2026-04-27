@@ -1,0 +1,41 @@
+# SearXNG - Privacy-respecting metasearch engine
+# https://github.com/searxng/searxng
+
+[variables]
+domain = "${domain}"
+secret_key = "${base64:32}"
+
+[[config.domains]]
+serviceName = "searxng"
+port = 8080
+host = "${domain}"
+
+[config.env]
+# ===========================================
+# Domain Configuration (REQUIRED)
+# ===========================================
+SEARXNG_DOMAIN = "${domain}"
+
+# ===========================================
+# Security (REQUIRED)
+# ===========================================
+SEARXNG_SECRET = "${secret_key}"
+
+# ===========================================
+# Server Settings
+# ===========================================
+SEARXNG_PORT = "8080"
+SEARXNG_BIND_ADDRESS = "0.0.0.0"
+
+# ===========================================
+# Instance Behavior
+# ===========================================
+SEARXNG_LIMITER = "false"
+SEARXNG_PUBLIC_INSTANCE = "false"
+SEARXNG_IMAGE_PROXY = "true"
+SEARXNG_METHOD = "POST"
+
+# ===========================================
+# Valkey Cache
+# ===========================================
+SEARXNG_VALKEY_URL = "redis://valkey:6379/0"
