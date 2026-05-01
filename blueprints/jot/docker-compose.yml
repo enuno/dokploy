@@ -1,0 +1,34 @@
+services:
+  jot:
+    image: ghcr.io/badlogic/jot:latest
+    restart: always
+    volumes:
+      - jot-data:/app/data
+    environment:
+      - NODE_ENV=production
+    networks:
+      - jot-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jot.rule=Host(`${DOMAIN:?Set your domain}`)"
+      - "traefik.http.routers.jot.entrypoints=websecure"
+      - "traefik.http.routers.jot.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jot.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  jot-data:
+    driver: local
+
+networks:
+  jot-net:
+    driver: bridge
+  dokploy-network:
+    external: true

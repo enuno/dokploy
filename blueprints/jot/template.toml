@@ -1,0 +1,14 @@
+# Jot - Minimal self-hosted collaborative markdown editor with inline comment threads
+# https://github.com/badlogic/jot
+
+[variables]
+domain = "${domain}"
+
+[[config.domains]]
+serviceName = "jot"
+port = 3000
+host = "${domain}"
+
+[config.env]
+# Domain configuration
+DOMAIN = "${domain}"
