@@ -47,6 +47,7 @@ This directory contains custom Dokploy templates for deploying applications in t
 | [ipfs-gateway-checker](/blueprints/ipfs-gateway-checker/) | Web-based tool for monitoring and checking the status of public IPFS gateways | 1 (nginx) | Ready |
 | [ipfs-sw-gateway](/blueprints/ipfs-sw-gateway/) | Browser-based IPFS gateway using Service Workers with wildcard SSL for subdomain content addressing | 1 (gateway) | Ready |
 | [it-tools](/blueprints/it-tools/) | Collection of 45+ handy developer utilities with client-side processing and great UX | 1 (it-tools) | Ready |
+| [jot](/blueprints/jot/) | Minimal collaborative markdown editor with inline comment threads for humans and agents | 1 (jot) | Ready |
 | [kestra](/blueprints/kestra/) | Event-driven orchestration platform for workflows with 400+ plugins | 2 (kestra, postgres) | Ready |
 | [lnd-rtl](/blueprints/lnd-rtl/) | Lightning Network Daemon with Ride The Lightning web UI and Bitcoin Core backend | 3 (rtl, lnd, bitcoind) | Ready |
 | [matomo](/blueprints/matomo/) | Self-hosted web analytics platform with privacy-first tracking and GDPR compliance | 3 (matomo, nginx, mariadb) | Ready |
