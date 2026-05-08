@@ -1,0 +1,104 @@
+# Multica - Open-source managed AI coding agents platform
+# https://github.com/multica-ai/multica
+
+[variables]
+# Frontend domain (e.g. multica.example.com)
+domain = "${domain}"
+# Backend API domain — set to api.yourdomain.com for a clean two-domain setup.
+# Defaults to the same value as domain; change before deploying.
+api_domain = "${domain}"
+postgres_password = "${password:32}"
+jwt_secret = "${base64:64}"
+
+# ===========================================
+# Email (Resend) — optional
+# Leave blank to print verification codes to backend logs.
+# Production: get API key at https://resend.com
+# ===========================================
+resend_api_key = ""
+resend_from_email = "noreply@multica.ai"
+
+# ===========================================
+# Google OAuth — optional
+# ===========================================
+google_client_id = ""
+google_client_secret = ""
+
+# ===========================================
+# Signup control
+# ===========================================
+allow_signup = "true"
+allowed_email_domains = ""
+allowed_emails = ""
+
+# ===========================================
+# Cloudflare R2 Storage — optional
+# Leave all blank to use local volume storage.
+# Set aws_endpoint_url to https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+# ===========================================
+aws_endpoint_url = ""
+s3_bucket = ""
+s3_region = "auto"
+aws_access_key_id = ""
+aws_secret_access_key = ""
+
+# Set to .yourdomain.com when frontend and backend are on different subdomains
+cookie_domain = ""
+
+[[config.domains]]
+serviceName = "frontend"
+port = 3000
+host = "${domain}"
+
+[[config.domains]]
+serviceName = "backend"
+port = 8080
+host = "${api_domain}"
+
+[config.env]
+# ===========================================
+# Domain
+# ===========================================
+DOMAIN = "${domain}"
+API_DOMAIN = "${api_domain}"
+
+# ===========================================
+# Database
+# ===========================================
+POSTGRES_DB = "multica"
+POSTGRES_USER = "multica"
+POSTGRES_PASSWORD = "${postgres_password}"
+
+# ===========================================
+# Authentication
+# ===========================================
+JWT_SECRET = "${jwt_secret}"
+COOKIE_DOMAIN = "${cookie_domain}"
+
+# ===========================================
+# Email (Resend)
+# ===========================================
+RESEND_API_KEY = "${resend_api_key}"
+RESEND_FROM_EMAIL = "${resend_from_email}"
+
+# ===========================================
+# Google OAuth
+# ===========================================
+GOOGLE_CLIENT_ID = "${google_client_id}"
+GOOGLE_CLIENT_SECRET = "${google_client_secret}"
+
+# ===========================================
+# Signup Control
+# ===========================================
+ALLOW_SIGNUP = "${allow_signup}"
+ALLOWED_EMAIL_DOMAINS = "${allowed_email_domains}"
+ALLOWED_EMAILS = "${allowed_emails}"
+
+# ===========================================
+# Cloudflare R2 Storage
+# ===========================================
+AWS_ENDPOINT_URL = "${aws_endpoint_url}"
+S3_BUCKET = "${s3_bucket}"
+S3_REGION = "${s3_region}"
+AWS_ACCESS_KEY_ID = "${aws_access_key_id}"
+AWS_SECRET_ACCESS_KEY = "${aws_secret_access_key}"

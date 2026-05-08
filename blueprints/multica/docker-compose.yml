@@ -1,0 +1,146 @@
+# Multica - Open-source managed AI coding agents platform
+# https://github.com/multica-ai/multica
+
+name: multica
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-multica}
+      POSTGRES_USER: ${POSTGRES_USER:-multica}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database password}
+    networks:
+      - multica-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-multica} -d ${POSTGRES_DB:-multica}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  backend:
+    image: ghcr.io/multica-ai/multica-backend:v0.2.27
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend-uploads:/app/data/uploads
+    environment:
+      # ===========================================
+      # Database
+      # ===========================================
+      DATABASE_URL: postgres://${POSTGRES_USER:-multica}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-multica}?sslmode=disable
+
+      # ===========================================
+      # Server
+      # ===========================================
+      PORT: "8080"
+      APP_ENV: production
+      FRONTEND_ORIGIN: https://${DOMAIN:?Set your frontend domain}
+      MULTICA_APP_URL: https://${DOMAIN}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # Set to .yourdomain.com when frontend and backend are on different subdomains
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+
+      # ===========================================
+      # Authentication
+      # ===========================================
+      JWT_SECRET: ${JWT_SECRET:?Set a secure random JWT secret}
+
+      # ===========================================
+      # Email — leave blank to print codes to backend logs (dev/private use only)
+      # Production: set RESEND_API_KEY to a key from https://resend.com
+      # ===========================================
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@multica.ai}
+
+      # ===========================================
+      # Google OAuth (optional)
+      # ===========================================
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: https://${DOMAIN}/auth/callback
+
+      # ===========================================
+      # Signup Control
+      # ===========================================
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS:-}
+
+      # ===========================================
+      # Cloudflare R2 Storage (optional)
+      # Falls back to local volume when AWS_ENDPOINT_URL is unset.
+      # Set AWS_ENDPOINT_URL to https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+      # to use R2 as an S3-compatible backend.
+      # Note: CLOUDFRONT_DOMAIN is AWS-specific and not compatible with R2.
+      # ===========================================
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-auto}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    networks:
+      - multica-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.multica-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.multica-api.entrypoints=websecure"
+      - "traefik.http.routers.multica-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.multica-api.loadbalancer.server.port=8080"
+      # Flush immediately — required for WebSocket upgrade on /ws (daemon connections)
+      - "traefik.http.services.multica-api.loadbalancer.responseforwarding.flushinterval=-1"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # Backend runs DB migrations on first boot — allow extra time
+      start_period: 60s
+
+  frontend:
+    image: ghcr.io/multica-ai/multica-web:v0.2.27
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      HOSTNAME: "0.0.0.0"
+      # Point the frontend at the backend API domain.
+      # If API_DOMAIN matches DOMAIN, Traefik path routing is required instead.
+      NEXT_PUBLIC_API_URL: https://${API_DOMAIN}
+      NEXT_PUBLIC_WS_URL: wss://${API_DOMAIN}
+    networks:
+      - multica-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.multica-web.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.multica-web.entrypoints=websecure"
+      - "traefik.http.routers.multica-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.multica-web.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres-data:
+    driver: local
+  backend-uploads:
+    driver: local
+
+networks:
+  multica-net:
+    driver: bridge
+  dokploy-network:
+    external: true
