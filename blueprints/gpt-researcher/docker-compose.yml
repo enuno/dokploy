@@ -1,0 +1,114 @@
+# gpt-researcher - Open deep research agent with LLM-powered web and local document research
+# https://github.com/assafelovic/gpt-researcher
+#
+# NOTE: gptresearcher images do not publish semver Docker tags; :latest is intentional here.
+# The only versioned tag on Docker Hub (0.8.1) is 2 years stale. For production deployments
+# pin to a specific digest: docker pull gptresearcher/gpt-researcher:latest@sha256:<digest>
+#
+# NETWORK NOTE: Manual Traefik label routing requires explicit dokploy-network attachment.
+# Both services are web-facing (frontend + backend API); this is the correct pattern for
+# multi-subdomain templates. See CONTRIBUTING exception note for details.
+
+services:
+  gpt-researcher:
+    image: gptresearcher/gpt-researcher:latest
+    restart: always
+    volumes:
+      - gptr-docs:/usr/src/app/my-docs
+      - gptr-outputs:/usr/src/app/outputs
+      - gptr-logs:/usr/src/app/logs
+    environment:
+      # ===========================================
+      # LLM Provider (required)
+      # ===========================================
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set your OpenAI API key (or compatible provider key)}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+
+      # ===========================================
+      # Web Search (required)
+      # Get free API key at: https://tavily.com
+      # Free tier: 1,000 credits/month (~50-200 research tasks)
+      # ===========================================
+      TAVILY_API_KEY: ${TAVILY_API_KEY:?Set your Tavily API key for web search}
+
+      # ===========================================
+      # Optional: LangChain Tracing
+      # ===========================================
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-}
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+      LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT:-gpt-researcher}
+
+      # ===========================================
+      # Optional: Image Generation
+      # Requires GOOGLE_API_KEY for Gemini models
+      # ===========================================
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      IMAGE_GENERATION_ENABLED: ${IMAGE_GENERATION_ENABLED:-false}
+      IMAGE_GENERATION_MODEL: ${IMAGE_GENERATION_MODEL:-dall-e-3}
+      IMAGE_GENERATION_MAX_IMAGES: ${IMAGE_GENERATION_MAX_IMAGES:-5}
+
+      # ===========================================
+      # Optional: Logging
+      # ===========================================
+      LOGGING_LEVEL: ${LOGGING_LEVEL:-INFO}
+    networks:
+      # Manual Traefik label routing requires explicit dokploy-network attachment.
+      - gptr-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gptr-api.rule=Host(`api.${DOMAIN}`)"
+      - "traefik.http.routers.gptr-api.entrypoints=websecure"
+      - "traefik.http.routers.gptr-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gptr-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  gptr-nextjs:
+    image: gptresearcher/gptr-nextjs:latest
+    restart: always
+    volumes:
+      - gptr-outputs:/usr/src/app/outputs
+    environment:
+      # NEXT_PUBLIC_* variables are embedded at build time in Next.js.
+      # This must be the public URL the browser can reach — not a service name.
+      NEXT_PUBLIC_GPTR_API_URL: https://api.${DOMAIN}
+      LOGGING_LEVEL: ${LOGGING_LEVEL:-INFO}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-}
+    networks:
+      # Manual Traefik label routing requires explicit dokploy-network attachment.
+      - gptr-net
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gptr-web.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.gptr-web.entrypoints=websecure"
+      - "traefik.http.routers.gptr-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gptr-web.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+volumes:
+  gptr-docs:
+    driver: local
+  gptr-outputs:
+    driver: local
+  gptr-logs:
+    driver: local
+
+networks:
+  gptr-net:
+    driver: bridge
+  # Manual Traefik label routing requires explicit dokploy-network attachment.
+  dokploy-network:
+    external: true
